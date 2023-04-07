@@ -51,12 +51,15 @@ npm install
 
 ## Configuration
 
-1. Configure your local DigiByte node by editing its configuration file (\`digibyte.conf\`). You'll need to enable RPC and set a username and password. Add the following lines to the configuration file:
+1. Configure your local DigiByte node by editing its configuration file (\`digibyte.conf\`). You'll need to enable RPC and set a username and password. Add the following lines to the configuration file including turning on txindex, debug and server:
 
 \`\`\`ini
 server=1
 rpcuser=dgbuser
 rpcpassword=dgbpassword
+txindex=1
+debug=1
+
 \`\`\`
 
 Replace \`dgbuser\` and \`dgbpassword\` with your desired RPC username and password.
