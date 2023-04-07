@@ -1,70 +1,100 @@
-# Getting Started with Create React App
+# DigiByte Blockchain Stats
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This project is a simple web application that displays DigiByte blockchain statistics. It uses React for the frontend, Express for the backend, and communicates with a local DigiByte node using RPC.
 
-## Available Scripts
+## Prerequisites
 
-In the project directory, you can run:
+To run this project, you'll need:
 
-### `npm start`
+1. [Node.js](https://nodejs.org/) (version 14.x or higher)
+2. A local DigiByte node with RPC enabled (e.g., [digibyted](https://github.com/digibyte-core/digibyte))
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Installation
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### Install Node.js and npm on macOS using Homebrew
 
-### `npm test`
+If you don't have Homebrew installed, follow the instructions on the [Homebrew website](https://brew.sh/) to install it.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Once Homebrew is installed, you can install Node.js and npm using the following commands:
 
-### `npm run build`
+\`\`\`bash
+brew update
+brew install node
+\`\`\`
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Check that Node.js and npm are installed by running:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+\`\`\`bash
+node -v
+npm -v
+\`\`\`
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Set up the project
 
-### `npm run eject`
+1. Clone the repository:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+\`\`\`bash
+git clone https://github.com/yourusername/digibyte-blockchain-stats.git
+\`\`\`
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+2. Change to the project directory:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+\`\`\`bash
+cd digibyte-blockchain-stats
+\`\`\`
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+3. Install the dependencies:
 
-## Learn More
+\`\`\`bash
+npm install
+\`\`\`
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Configuration
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+1. Configure your local DigiByte node by editing its configuration file (\`digibyte.conf\`). You'll need to enable RPC and set a username and password. Add the following lines to the configuration file:
 
-### Code Splitting
+\`\`\`ini
+server=1
+rpcuser=dgbuser
+rpcpassword=dgbpassword
+\`\`\`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+Replace \`dgbuser\` and \`dgbpassword\` with your desired RPC username and password.
 
-### Analyzing the Bundle Size
+2. Start your local DigiByte node (\`digibyted\`). Follow the instructions provided by the DigiByte project to install and start the node.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+3. Configure the backend server by updating the \`rpcUser\`, \`rpcPassword\`, and \`rpcUrl\` variables in the \`server.js\` file:
 
-### Making a Progressive Web App
+\`\`\`javascript
+const rpcUser = 'dgbuser';
+const rpcPassword = 'dgbpassword';
+const rpcUrl = 'http://127.0.0.1:14022';
+\`\`\`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+Replace \`dgbuser\` and \`dgbpassword\` with the RPC username and password you set in the \`digibyte.conf\` file. Update the \`rpcUrl\` if your node is running on a different address or port.
 
-### Advanced Configuration
+## Running the Application
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+1. Start the backend server inside /dgbstatsbackend:
 
-### Deployment
+\`\`\`bash
+npm run server
+\`\`\`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+The server will start on port 5001 or the port defined in your environment variable \`PORT\`.
 
-### `npm run build` fails to minify
+2. Open a new terminal, and start the frontend application (in /src folder):
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+\`\`\`bash
+npm run start
+\`\`\`
+
+The application will open in your default web browser at \`http://localhost:3000/\`.
+
+## Usage
+
+Once both the backend server and frontend application are running, you can view DigiByte blockchain statistics in your browser. The statistics will be fetched from your local DigiByte node using RPC.
+
+## License
+
+This project is open-source and available under the [MIT License](https://opensource.org/licenses/MIT).
