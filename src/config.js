@@ -1,7 +1,7 @@
 const config = {
     development: {
-      apiBaseUrl: 'http://localhost:5001',
-      wsBaseUrl: 'ws://localhost:5002',
+      apiBaseUrl: 'http://digibyte.io',
+      wsBaseUrl: 'ws://digibyte.io/ws',
     },
     production: {
       apiBaseUrl: 'http://digibyte.io',
@@ -9,6 +9,6 @@ const config = {
     },
   };
   
-  const env = process.env.NODE_ENV || 'production';
+  const env = process.env.NODE_ENV || 'development';
   
   export default config[env];
