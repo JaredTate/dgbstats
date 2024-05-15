@@ -3,7 +3,7 @@ import { Chart, registerables } from 'chart.js';
 import 'chartjs-adapter-luxon';
 import { LineController } from 'chart.js';
 import { Typography } from '@mui/material';
-import config from '././config';
+import config from '../config';
 
 Chart.register(...registerables);
 Chart.register(LineController);
