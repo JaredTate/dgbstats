@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Typography, Grid, Button } from '@mui/material';
-import config from './config';
+import config from '././config';
 
 const BlocksPage = () => {
   // State variables

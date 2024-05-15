@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Container, Typography } from '@mui/material';
 import * as d3 from 'd3';
-import config from './config';
+import config from '././config';
 
 const BlocksPage = () => {
   // State variables
