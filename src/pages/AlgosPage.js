@@ -10,7 +10,7 @@ const BlocksPage = () => {
 
   // WebSocket connection
   useEffect(() => {
-    const socket = new WebSocket('ws://localhost:5002');
+    const socket = new WebSocket('ws://digibyte.io/ws');
 
     // Event handler for WebSocket connection open
     socket.onopen = () => {
