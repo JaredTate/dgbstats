@@ -1,6 +1,6 @@
 # DigiByte Blockchain Stats
 
-This project is a simple web application that displays DigiByte blockchain statistics. It uses React for the frontend, Express for the backend, and communicates with a local DigiByte node using RPC.
+This project is a simple web application that displays DigiByte blockchain statistics. It uses React for the frontend, Express for the backend, and communicates with a local digibyted full node using RPC commands.
 
 ## Prerequisites
 

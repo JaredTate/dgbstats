@@ -4,13 +4,25 @@
   min-height: 100vh;
 }
 
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.contentContainer {
+  flex: 1;
+  padding-bottom: 80px; /* Adjust this value according to the height of your footer */
+}
+
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   background-color: #002352;
-  padding: 1rem;
-  font-size: 20px;
+  padding: 2rem;
+  font-size: 25px;
+  font-weight: bold;
   color: white;
 }
 
@@ -34,10 +46,10 @@
   text-align: center;
 }
 
-
 .main {
   flex-grow: 1;
   padding: 1rem;
+  padding-bottom: 60px; /* Add padding at the bottom to prevent content from being hidden by the footer */
 }
 
 .gridContainer {
@@ -94,11 +106,11 @@
 }
 
 .footer {
-  position: fixed;
+  position: relative;
   bottom: 0;
   left: 0;
   width: 100%;
-  background-color: #0066CC;
+  background-color: #0066cc;
   padding: 1rem;
   text-align: center;
   color: white;
@@ -124,8 +136,4 @@
   height: 1px;
   background: #cccccc;
   margin-bottom: 0.5rem;
-}
-
-.footerText {
-  margin: 0;
 }

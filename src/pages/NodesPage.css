@@ -1,0 +1,55 @@
+.centered-text .MuiDataGrid-cell {
+    color: black;
+    text-align: center;
+  }
+  
+  .page-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .centered-text {
+    color: black;
+    text-align: center;
+  }
+  
+  .centered-text .MuiDataGrid-cell,
+  .data-grid .MuiDataGrid-columnHeaderTitle { /* Add this selector to target column headers */
+    color: black;
+    text-align: center;
+  }
+  .grid-container {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 1rem;
+  }
+  
+  .zoom-controls {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+  
+  .zoom-controls button {
+    margin: 0 0.5rem;
+  }
+  /* Add this CSS class */
+.nodes-by-country {
+    color: black;
+    margin-left: 2rem;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  
+  .nodes-by-country ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .nodes-by-country li {
+    margin-bottom: 5px;
+  }
+  
+  /* ... (rest of the existing CSS code) */
+  
