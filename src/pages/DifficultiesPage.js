@@ -3,6 +3,7 @@ import { Chart, registerables } from 'chart.js';
 import 'chartjs-adapter-luxon';
 import { LineController } from 'chart.js';
 import { Typography } from '@mui/material';
+import config from './config';
 
 Chart.register(...registerables);
 Chart.register(LineController);
@@ -21,7 +22,7 @@ const DifficultiesPage = () => {
 
   // WebSocket connection and event handling
   useEffect(() => {
-    const socket = new WebSocket('ws://digibyte.io/ws');
+    const socket = new WebSocket(config.wsBaseUrl);
 
     // Event handler for WebSocket connection open
     socket.onopen = () => {

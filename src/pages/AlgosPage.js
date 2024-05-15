@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Container, Typography } from '@mui/material';
 import * as d3 from 'd3';
+import config from './config';
 
 const BlocksPage = () => {
   // State variables
@@ -10,7 +11,7 @@ const BlocksPage = () => {
 
   // WebSocket connection
   useEffect(() => {
-    const socket = new WebSocket('ws://digibyte.io/ws');
+    const socket = new WebSocket(config.wsBaseUrl);
 
     // Event handler for WebSocket connection open
     socket.onopen = () => {

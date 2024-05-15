@@ -11,6 +11,7 @@ import DownloadsPage from './pages/DownloadsPage';
 import NodesPage from './pages/NodesPage';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import config from './config';
 
 const App = () => {
   const [blockchainInfo, setBlockchainInfo] = useState(null);
@@ -26,24 +27,24 @@ const App = () => {
   const fetchData = async () => {
     try {
       setBlockchainInfoLoading(true);
-      const response1 = await fetch('http://digibyte.io/api/getblockchaininfo');
+      const response1 = await fetch(`${config.apiBaseUrl}/api/getblockchaininfo`);
       const data1 = await response1.json();
       setBlockchainInfo(data1);
       setBlockchainInfoLoading(false);
 
       setChainTxStatsLoading(true);
-      const response2 = await fetch('http://digibyte.io/api/getchaintxstats');
+      const response2 = await fetch(`${config.apiBaseUrl}/api/getchaintxstats`);
       const data2 = await response2.json();
       setChainTxStats(data2);
       setChainTxStatsLoading(false);
 
       setTxOutsetInfoLoading(true);
-      const response3 = await fetch('http://digibyte.io/api/gettxoutsetinfo');
+      const response3 = await fetch(`${config.apiBaseUrl}/api/gettxoutsetinfo`);
       const data3 = await response3.json();
       setTxOutsetInfo(data3);
       setTxOutsetInfoLoading(false);
 
-      const response4 = await fetch('http://digibyte.io/api/getblockreward');
+      const response4 = await fetch(`${config.apiBaseUrl}/api/getblockreward`);
       const data4 = await response4.json();
       setBlockReward(parseFloat(data4.blockReward.blockreward));
 
