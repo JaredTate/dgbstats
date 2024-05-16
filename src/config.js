@@ -1,9 +1,9 @@
 const config = {
     development: {
-      apiBaseUrl: 'https://digibyte.io',
+      apiBaseUrl: 'https://localhost:5001',
       //  http://localhost:5001
       //  https://digibyte.io
-      wsBaseUrl: 'wss://digibyte.io/ws',
+      wsBaseUrl: 'wss://localhost:5002',
       //  ws://localhost:5002
       //  wss://digibyte.io/ws
     },
