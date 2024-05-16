@@ -10,8 +10,7 @@ const Footer = () => {
           variant="body1"
           className={styles.footerText}
           sx={{
-            fontSize: '1.3rem',
-            fontWeight: 'bold',
+            fontSize: '18px',
           }}
         >
           Donate DGB Here To Support This Site: dgb1qf6rxawqk6chveffxqstdpvr428yekf73hz4sjt
