@@ -89,22 +89,22 @@ const BlocksPage = () => {
   }}
 >
   <Grid item xs={3}>
-    <Typography variant="body1" sx={{ fontWeight: 'bold', paddingTop: '3px', paddingBottom: '7px' }}>
+    <Typography variant="body2" sx={{ fontWeight: 'bold', paddingTop: '3px', paddingBottom: '7px' }}>
       Height: {block.height}
     </Typography>
   </Grid>
   <Grid item xs={5}>
-    <Typography variant="body1" sx={{ fontWeight: 'bold', paddingTop: '3px', paddingBottom: '7px', }}>
+    <Typography variant="body2" sx={{ fontWeight: 'bold', paddingTop: '3px', paddingBottom: '7px', }}>
       Hash: {block.hash}
     </Typography>
   </Grid>
   <Grid item xs={2}>
-    <Typography variant="body1" sx={{ fontWeight: 'bold', paddingTop: '3px', paddingBottom: '7px' }}>
+    <Typography variant="body2" sx={{ fontWeight: 'bold', paddingTop: '3px', paddingBottom: '7px' }}>
       Algo: {block.algo}
     </Typography>
   </Grid>
   <Grid item xs={2}>
-    <Typography variant="body1" sx={{ fontWeight: 'bold', paddingTop: '3px', paddingBottom: '7px' }}>
+    <Typography variant="body2" sx={{ fontWeight: 'bold', paddingTop: '3px', paddingBottom: '7px' }}>
       TX Count: {block.txCount}
     </Typography>
   </Grid>
