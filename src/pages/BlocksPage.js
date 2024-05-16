@@ -70,7 +70,7 @@ const BlocksPage = () => {
         Latest Blocks
       </Typography>
       <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '20px' }}>
-        This page starts with the 25 most recent DGB blocks & will keep incrementing as long as you leave it open as blocks are mined in realtime.
+        This page starts with the 10 most recent DGB blocks & will keep incrementing as long as you leave it open as blocks are mined in realtime.
       </Typography>
       {loading ? (
         <Typography variant="h5">Loading...</Typography>
@@ -78,37 +78,37 @@ const BlocksPage = () => {
         <>
           {displayedBlocks.map((block, index) => (
             <Grid
-              container
-              spacing={2}
-              key={index}
-              sx={{
-                backgroundColor: index % 2 === 0 ? '#002352' : '#0066cc',
-                color: 'white',
-                marginBottom: '10px',
-                borderRadius: '4px',
-              }}
-            >
-              <Grid item xs={3}>
-                <Typography variant="h6" sx={{ fontWeight: 'bold', paddingTop: '10px', paddingBottom: '10px' }}>
-                  Height: {block.height}
-                </Typography>
-              </Grid>
-              <Grid item xs={5}>
-                <Typography variant="h6" sx={{ fontWeight: 'bold', paddingTop: '10px', paddingBottom: '10px' }}>
-                  Hash: {block.hash}
-                </Typography>
-              </Grid>
-              <Grid item xs={2}>
-                <Typography variant="h6" sx={{ fontWeight: 'bold', paddingTop: '10px', paddingBottom: '10px' }}>
-                  Algo: {block.algo}
-                </Typography>
-              </Grid>
-              <Grid item xs={2}>
-                <Typography variant="h6" sx={{ fontWeight: 'bold', paddingTop: '10px', paddingBottom: '10px' }}>
-                  TX Count: {block.txCount}
-                </Typography>
-              </Grid>
-            </Grid>
+  container
+  spacing={2}
+  key={index}
+  sx={{
+    backgroundColor: index % 2 === 0 ? '#002352' : '#0066cc',
+    color: 'white',
+    marginBottom: '20px',
+    borderRadius: '4px',
+  }}
+>
+  <Grid item xs={3}>
+    <Typography variant="h7" sx={{ fontWeight: 'bold', paddingTop: '3px', paddingBottom: '7px' }}>
+      Height: {block.height}
+    </Typography>
+  </Grid>
+  <Grid item xs={5}>
+    <Typography variant="h7" sx={{ fontWeight: 'bold', paddingTop: '3px', paddingBottom: '7px', }}>
+      Hash: {block.hash}
+    </Typography>
+  </Grid>
+  <Grid item xs={2}>
+    <Typography variant="h7" sx={{ fontWeight: 'bold', paddingTop: '3px', paddingBottom: '7px' }}>
+      Algo: {block.algo}
+    </Typography>
+  </Grid>
+  <Grid item xs={2}>
+    <Typography variant="h7" sx={{ fontWeight: 'bold', paddingTop: '3px', paddingBottom: '7px' }}>
+      TX Count: {block.txCount}
+    </Typography>
+  </Grid>
+</Grid>
           ))}
           <Grid container justifyContent="space-between" mt={2}>
             <Button variant="contained" onClick={handlePrevPage} disabled={currentPage === 0}>
