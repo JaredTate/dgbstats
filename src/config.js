@@ -1,11 +1,11 @@
 const config = {
     development: {
-      apiBaseUrl: 'http://localhost:5001',
+      apiBaseUrl: 'https://digibyte.io',
       //  http://localhost:5001
       //  https://digibyte.io
-      wsBaseUrl: 'ws://localhost:5002/ws',
+      wsBaseUrl: 'wss://digibyte.io/ws',
       //  ws://localhost:5002
-      //  ws://digibyte.io/ws
+      //  wss://digibyte.io/ws
     },
     production: {
       apiBaseUrl: 'https://digibyte.io',

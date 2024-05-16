@@ -99,9 +99,8 @@ const BlocksPage = () => {
       <Typography variant="h2" component="h2" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
         Recent DGB Blocks By Algo
       </Typography>
-      <Typography variant="h6" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}>
-        Wait for blocks to be mined to show realtime blockchain algo breakdown. 
-        This page will keep incrementing as long as you leave it open.
+      <Typography variant="h6" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}> 
+        This page starts with the 25 most recent DGB blocks & will keep incrementing as long as you leave it open as blocks are mined in realtime.
         240 blocks, or roughly 1 hour is a good time frame to look at.
       </Typography>
       <svg ref={svgRef} width="800" height="800" style={{ display: 'block', margin: 'auto' }}></svg>
