@@ -9,20 +9,36 @@ const BlocksPage = () => {
   const [loading, setLoading] = useState(true); // Indicates if the page is loading
   const svgRef = useRef(); // Reference to the SVG element
 
-  // WebSocket connection
-  useEffect(() => {
-    const socket = new WebSocket(config.wsBaseUrl);
+// WebSocket connection
+useEffect(() => {
+  const socket = new WebSocket(config.wsBaseUrl);
 
-    // Event handler for WebSocket connection open
-    socket.onopen = () => {
-      console.log('WebSocket connection established');
+  // Event handler for WebSocket connection open
+  socket.onopen = () => {
+    console.log('WebSocket connection established');
+  };
+
+  // Event handler for receiving messages from the server
+  socket.onmessage = (event) => {
+    const message = JSON.parse(event.data);
+
+    if (message.type === 'recentBlocks') {
+      // Set the initial recent blocks
+      setBlocks(message.data);
+    } else if (message.type === 'newBlock') {
+      // Add new block to the beginning of the blocks array
+      setBlocks((prevBlocks) => [message.data, ...prevBlocks.slice(0, maxRecentBlocks - 1)]);
+    }
+  };
+
+    // Event handler for receiving ping messages
+    socket.onping = () => {
+      console.log('Received ping from server');
     };
 
-    // Event handler for receiving block data from the server
-    socket.onmessage = (event) => {
-      const newBlock = JSON.parse(event.data);
-      console.log('Received block data:', newBlock);
-      setBlocks((prevBlocks) => [newBlock, ...prevBlocks]); // Add new block to the beginning of the blocks array
+    // Event handler for receiving pong messages
+    socket.onpong = () => {
+      console.log('Received pong from server');
     };
 
     // Event handler for WebSocket connection close
