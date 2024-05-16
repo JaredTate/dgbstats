@@ -18,22 +18,22 @@ const BlocksPage = () => {
       console.log('WebSocket connection established');
     };
 
-  // Event handler for receiving messages from the server
-  socket.onmessage = (event) => {
-    const message = JSON.parse(event.data);
-    console.log('Received message from server:', message);
+    // Event handler for receiving messages from the server
+    socket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      console.log('Received message from server:', message);
 
-    if (message.type === 'recentBlocks') {
-      console.log('Received recent blocks:', message.data);
-      // Set the initial recent blocks
-      setBlocks(message.data);
-      setLoading(false);
-    } else if (message.type === 'newBlock') {
-      console.log('Received new block:', message.data);
-      // Add new block to the beginning of the blocks array
-      setBlocks((prevBlocks) => [message.data, ...prevBlocks.slice(0, 24)]);
-    }
-  };
+      if (message.type === 'recentBlocks') {
+        console.log('Received recent blocks:', message.data);
+        // Set the initial recent blocks
+        setBlocks(message.data);
+        setLoading(false);
+      } else if (message.type === 'newBlock') {
+        console.log('Received new block:', message.data);
+        // Add new block to the beginning of the blocks array
+        setBlocks((prevBlocks) => [message.data, ...prevBlocks]);
+      }
+    };
 
     // Event handler for WebSocket connection close
     socket.onclose = () => {

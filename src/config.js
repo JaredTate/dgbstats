@@ -3,7 +3,7 @@ const config = {
       apiBaseUrl: 'http://localhost:5001',
       //  http://localhost:5001
       //  https://digibyte.io
-      wsBaseUrl: 'ws://localhost:5002',
+      wsBaseUrl: 'ws://localhost:5002/ws',
       //  ws://localhost:5002
       //  ws://digibyte.io/ws
     },
