@@ -117,10 +117,10 @@ const DifficultiesPage = () => {
   return (
     <div>
       <div style={{ textAlign: 'center' }}>
-        <Typography variant="h2" component="h2" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
+        <Typography variant="h3" component="h3" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
           Recent DGB Algo Difficulties
         </Typography>
-        <Typography variant="h6" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}>
+        <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}>
           This page starts with the difficulty of the 25 most recent DGB blocks for each algorithm & will keep incrementing as long as you leave it open as blocks are mined in realtime.
         </Typography>
       </div>

@@ -66,10 +66,10 @@ const BlocksPage = () => {
   // Render the component
   return (
     <Container maxWidth="lg">
-      <Typography variant="h2" component="h2" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
+      <Typography variant="h3" component="h3" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
         Latest Blocks
       </Typography>
-      <Typography variant="h6" component="p" align="center" gutterBottom sx={{ paddingBottom: '20px' }}>
+      <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '20px' }}>
         This page starts with the 25 most recent DGB blocks & will keep incrementing as long as you leave it open as blocks are mined in realtime.
       </Typography>
       {loading ? (
@@ -89,22 +89,22 @@ const BlocksPage = () => {
               }}
             >
               <Grid item xs={3}>
-                <Typography variant="h5" sx={{ fontWeight: 'bold', paddingTop: '10px', paddingBottom: '10px' }}>
+                <Typography variant="h6" sx={{ fontWeight: 'bold', paddingTop: '10px', paddingBottom: '10px' }}>
                   Height: {block.height}
                 </Typography>
               </Grid>
               <Grid item xs={5}>
-                <Typography variant="h5" sx={{ fontWeight: 'bold', paddingTop: '10px', paddingBottom: '10px' }}>
+                <Typography variant="h6" sx={{ fontWeight: 'bold', paddingTop: '10px', paddingBottom: '10px' }}>
                   Hash: {block.hash}
                 </Typography>
               </Grid>
               <Grid item xs={2}>
-                <Typography variant="h5" sx={{ fontWeight: 'bold', paddingTop: '10px', paddingBottom: '10px' }}>
+                <Typography variant="h6" sx={{ fontWeight: 'bold', paddingTop: '10px', paddingBottom: '10px' }}>
                   Algo: {block.algo}
                 </Typography>
               </Grid>
               <Grid item xs={2}>
-                <Typography variant="h5" sx={{ fontWeight: 'bold', paddingTop: '10px', paddingBottom: '10px' }}>
+                <Typography variant="h6" sx={{ fontWeight: 'bold', paddingTop: '10px', paddingBottom: '10px' }}>
                   TX Count: {block.txCount}
                 </Typography>
               </Grid>

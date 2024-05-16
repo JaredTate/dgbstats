@@ -91,7 +91,7 @@ const NodesPage = () => {
 
   return (
     <div className="page-container">
-      <h1 className="centered-text"> Active DGB Nodes</h1>
+      <h1 className="centered-text"> Active DGB Nodes (Currently Connected To Server Node)</h1>
       {!loading && (
         <>
           <h2 className="centered-text">Nodes Seen Recently: {uniqueNodes.length}</h2>

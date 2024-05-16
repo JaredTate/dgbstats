@@ -59,8 +59,8 @@ const BlocksPage = () => {
 
     // Set up the pie chart using D3.js
     const svg = d3.select(svgRef.current),
-      width = 800,
-      height = 800,
+      width = 600,
+      height = 600,
       radius = Math.min(width, height) / 2;
 
     const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
@@ -85,7 +85,7 @@ const BlocksPage = () => {
       .append('text')
       .attr('transform', (d) => `translate(${labelArc.centroid(d)})`)
       .attr('text-anchor', 'middle')
-      .attr('font-size', '20px')
+      .attr('font-size', '25px')
       .attr('fill', 'white')
       .html((d) => {
         const percentage = ((d.data.count / totalBlocks) * 100).toFixed(1);
@@ -96,18 +96,18 @@ const BlocksPage = () => {
   // Render the component
   return (
     <Container maxWidth="lg">
-      <Typography variant="h2" component="h2" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
+      <Typography variant="h3" component="h3" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
         Recent DGB Blocks By Algo
       </Typography>
-      <Typography variant="h6" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}> 
+      <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}> 
         This page starts with the 25 most recent DGB blocks & will keep incrementing as long as you leave it open as blocks are mined in realtime.
         240 blocks, or roughly 1 hour is a good time frame to look at.
       </Typography>
-      <svg ref={svgRef} width="800" height="800" style={{ display: 'block', margin: 'auto' }}></svg>
+      <svg ref={svgRef} width="600" height="600" style={{ display: 'block', margin: 'auto' }}></svg>
       {loading ? (
-        <Typography variant="h5" align="center">Loading...</Typography>
+        <Typography variant="h4" align="center">Loading...</Typography>
       ) : (
-        <Typography variant="h5" align="center">Recent blocks: {blocks.length}</Typography>
+        <Typography variant="h4" align="center" sx={{ paddingTop: '10px' }}>Recent blocks: {blocks.length}</Typography>
       )}
     </Container>
   );

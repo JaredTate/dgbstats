@@ -6,7 +6,7 @@ import styles from '../App.module.css';
 const Header = () => {
   return (
     <header className={styles.header}>
-      <Typography variant="h3" component="div" className={styles.headerTitle}>
+      <Typography variant="h4" component="div" className={styles.headerTitle}>
         DigiByte Stats
       </Typography>
       <nav className={styles.nav}>
