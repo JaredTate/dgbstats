@@ -73,6 +73,10 @@ const NodesPage = () => {
       <Typography variant="h4" component="h4" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
         Active DigiByte Nodes
       </Typography>
+      <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}>
+          This page displays recent nodes seen in the last hour by the main DGB seeder. It is currently far from accurate, and way undercounting.
+          <br /> I am working to get the bugs out & make this map crawler as realistic as it can be. Current bug only shows 25 recent nodes.
+        </Typography>
       {!loading && (
         <>
           <h2 className="centered-text">Nodes Seen Recently by Seeder: {uniqueNodes.length}</h2>
