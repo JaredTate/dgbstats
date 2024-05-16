@@ -7,6 +7,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
+    height: 100vh;
   }
   
   .centered-text {
@@ -34,22 +36,23 @@
   .zoom-controls button {
     margin: 0 0.5rem;
   }
-  /* Add this CSS class */
+/* ... (existing CSS code) */
+
 .nodes-by-country {
-    color: black;
-    margin-left: 2rem;
-    max-height: 400px;
-    overflow-y: auto;
-  }
-  
-  .nodes-by-country ul {
-    list-style: none;
-    padding: 0;
-  }
-  
-  .nodes-by-country li {
-    margin-bottom: 5px;
-  }
+  color: black;
+  margin-top: 2rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.nodes-by-country ul {
+  list-style: none;
+  padding: 0;
+}
+
+.nodes-by-country li {
+  margin-bottom: 5px;
+}
   
   /* ... (rest of the existing CSS code) */
   
