@@ -117,11 +117,12 @@ const DifficultiesPage = () => {
   return (
     <div>
       <div style={{ textAlign: 'center' }}>
-        <Typography variant="h3" component="h3" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
+        <Typography variant="h4" component="h4" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
           Recent DGB Algo Difficulties
         </Typography>
         <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}>
-          This page starts with the difficulty of the 25 most recent DGB blocks for each algorithm & will keep incrementing as long as you leave it open as blocks are mined in realtime.
+          This page preloads the difficulty of the 25 most recent DGB blocks & will keep incrementing as long as you leave it open as blocks are mined in realtime.
+          <br />  DigiByte uses independent, realtime difficulty adjustment for each algo to further decentralize & secure the blockchain.
         </Typography>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '1rem' }}>

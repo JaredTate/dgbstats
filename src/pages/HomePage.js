@@ -15,7 +15,7 @@ const HomePage = ({
     <>
       <main>
                   <Container maxWidth="lg" className={styles.container}>
-                    <Typography variant="h2" component="h2" className={styles.title}>
+                  <Typography variant="h4" component="h4" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
                       DigiByte Blockchain Statistics
                     </Typography>
                     <Typography variant="body1" component="p" align="center" gutterBottom>

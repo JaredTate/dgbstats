@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Container, Typography } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { Graticule } from '@visx/geo';
 import axios from 'axios';
@@ -91,10 +92,11 @@ const NodesPage = () => {
 
   return (
     <div className="page-container">
-      <h1 className="centered-text"> Active DGB Nodes (Currently Connected To Server Node)</h1>
+      <Typography variant="h4" component="h4" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
+      Active DigiByte Nodes </Typography>
       {!loading && (
         <>
-          <h2 className="centered-text">Nodes Seen Recently: {uniqueNodes.length}</h2>
+          <h2 className="centered-text">Nodes Seen Recently by Server: {uniqueNodes.length}</h2>
           <div className="grid-container">
             <DataGrid className="centered-text data-grid" rows={versionData} columns={columns} autoHeight />
             {/* Add a new div for the nodes by country list */}

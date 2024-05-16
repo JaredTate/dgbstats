@@ -96,12 +96,12 @@ const BlocksPage = () => {
   // Render the component
   return (
     <Container maxWidth="lg">
-      <Typography variant="h3" component="h3" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
+      <Typography variant="h4" component="h4" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
         Recent DGB Blocks By Algo
       </Typography>
       <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}> 
-        This page starts with the 25 most recent DGB blocks & will keep incrementing as long as you leave it open as blocks are mined in realtime.
-        240 blocks, or roughly 1 hour is a good time frame to look at.
+        This page preloads the 25 most recent DGB blocks & will keep incrementing in realtime as blocks are mined.<br /> 
+        Each algo should mine roughly 20% of all blocks. 240 blocks, or roughly 1 hour is a good time frame to look at.
       </Typography>
       <svg ref={svgRef} width="600" height="600" style={{ display: 'block', margin: 'auto' }}></svg>
       {loading ? (

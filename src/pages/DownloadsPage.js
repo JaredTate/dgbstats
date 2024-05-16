@@ -33,18 +33,18 @@ const DownloadsPage = () => {
 
   return (
     <Container maxWidth="lg" className={styles.container}>
-      <Typography variant="h1" component="h1" className={styles.title}>
+      <Typography variant="h4" component="h4" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
         DigiByte Core Wallet Downloads
       </Typography>
-      <Typography variant="body1" className={styles.description}>
-        There are various ways to count the number of potential active nodes on a blockchain, one useful metric is looking at the total amount of downloads that have occurred for a release version from GitHub.
+      <Typography variant="body1" component="p" align="center" className={styles.description}>
+        One useful metric for estimating total blockchain network size is to look at the total amount of core wallet download from GitHub.
       </Typography>
-      <Typography variant="h3" className={styles.totalDownloads} style={{ textAlign: 'center' }}>
+      <Typography variant="h5" className={styles.totalDownloads} style={{ textAlign: 'center' }}>
         Total Github Release Downloads: <strong>{numberWithCommas(totalDownloads)}</strong>
       </Typography>
       <Box className={styles.nodesList}>
         {loading ? (
-          <Typography variant="h4" className={styles.loading}>
+          <Typography variant="h5" className={styles.loading}>
             Loading...
           </Typography>
         ) : (
@@ -52,7 +52,7 @@ const DownloadsPage = () => {
             const releaseDownloads = release.assets.reduce((a, asset) => a + asset.download_count, 0);
             return (
               <Box key={release.id} className={styles.release}>
-                <Typography variant="h3" className={styles.releaseVersion} style={{ backgroundColor: '#0066cc', padding: '10px', textAlign: 'center', color: 'white', fontSize: '24px' }}>
+                <Typography variant="h5" className={styles.releaseVersion} style={{ backgroundColor: '#0066cc', padding: '10px', textAlign: 'center', color: 'white', fontSize: '24px' }}>
   {release.name} - <strong>{numberWithCommas(releaseDownloads)}</strong> downloads
 </Typography>
 
