@@ -6,7 +6,7 @@ This project is a simple web application that displays DigiByte blockchain stati
 
 To run this project, you'll need:
 
-1. [Node.js](https://nodejs.org/) (version 14.x or higher)
+1. [Node.js](https://nodejs.org/) (version 14.x or higher) I used 21.7.2
 2. A local DigiByte node with RPC enabled (e.g., [digibyted](https://github.com/digibyte-core/digibyte))
 
 ## Installation
@@ -44,7 +44,7 @@ git clone https://github.com/JaredTate/dgbstats-server.git
 2. Change to the project directory:
 
 ```
-cd digibyte-blockchain-stats
+cd dgbstats
 ```
 
 3. Install the dependencies:
@@ -58,15 +58,19 @@ npm install
 1. Configure your local DigiByte node by editing its configuration file (\`digibyte.conf\`). You'll need to enable RPC and set a username and password. Add the following lines to the configuration file including turning on txindex, debug and server:
 
 ```
+rpcuser=user
+rpcpassword=password
 server=1
-rpcuser=dgbuser
-rpcpassword=dgbpassword
 txindex=1
 debug=1
-
+rpcworkqueue=64
+rpcthreads=8
+maxconnections=128
+dandelion=0
+blocknotify=/YourServerParth/dgbstats-server/blocknotify.sh %s
 ```
 
-Replace \`dgbuser\` and \`dgbpassword\` with your desired RPC username and password.
+Replace \`user\` and \`password\` with your desired RPC username and password.
 
 2. Start your local DigiByte node (\`digibyted\`). Follow the instructions provided by the DigiByte project to install and start the node.
 
@@ -82,21 +86,21 @@ Replace \`dgbuser\` and \`dgbpassword\` with the RPC username and password you s
 
 ## Running the Application
 
-1. Start the backend server inside /dgbstatsbackend:
+1. Start the backend server inside /dgbstats-server:
 
 ```
-npm run server
+sudo npm start
 ```
 
 The server will start on port 5001 or the port defined in your environment variable \`PORT\`.
 
-2. Open a new terminal, and start the frontend application (in /src folder):
+2. Open a new terminal, and start the frontend application (in dgbstats folder:
 
 ```
-npm run start
+sudo npm start
 ```
 
-The application will open in your default web browser at \`http://localhost:3000/\`.
+The application will open in your default web browser at \`http://localhost:3005/\`.
 
 ## Usage
 
