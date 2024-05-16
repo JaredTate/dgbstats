@@ -9,27 +9,29 @@ const BlocksPage = () => {
   const [loading, setLoading] = useState(true); // Indicates if the page is loading
   const svgRef = useRef(); // Reference to the SVG element
 
-// WebSocket connection
-useEffect(() => {
-  const socket = new WebSocket(config.wsBaseUrl);
+  const maxRecentBlocks = 25; // Maximum number of recent blocks to store
 
-  // Event handler for WebSocket connection open
-  socket.onopen = () => {
-    console.log('WebSocket connection established');
-  };
+  // WebSocket connection
+  useEffect(() => {
+    const socket = new WebSocket(config.wsBaseUrl);
 
-  // Event handler for receiving messages from the server
-  socket.onmessage = (event) => {
-    const message = JSON.parse(event.data);
+    // Event handler for WebSocket connection open
+    socket.onopen = () => {
+      console.log('WebSocket connection established');
+    };
 
-    if (message.type === 'recentBlocks') {
-      // Set the initial recent blocks
-      setBlocks(message.data);
-    } else if (message.type === 'newBlock') {
-      // Add new block to the beginning of the blocks array
-      setBlocks((prevBlocks) => [message.data, ...prevBlocks.slice(0, maxRecentBlocks - 1)]);
-    }
-  };
+    // Event handler for receiving messages from the server
+    socket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+
+      if (message.type === 'recentBlocks') {
+        // Set the initial recent blocks
+        setBlocks(message.data);
+      } else if (message.type === 'newBlock') {
+        // Add new block to the beginning of the blocks array
+        setBlocks((prevBlocks) => [message.data, ...prevBlocks.slice(0, maxRecentBlocks - 1)]);
+      }
+    };
 
     // Event handler for receiving ping messages
     socket.onping = () => {
