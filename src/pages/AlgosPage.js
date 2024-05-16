@@ -9,8 +9,6 @@ const BlocksPage = () => {
   const [loading, setLoading] = useState(true); // Indicates if the page is loading
   const svgRef = useRef(); // Reference to the SVG element
 
-  const maxRecentBlocks = 25; // Maximum number of recent blocks to store
-
   // WebSocket connection
   useEffect(() => {
     const socket = new WebSocket(config.wsBaseUrl);
@@ -23,24 +21,19 @@ const BlocksPage = () => {
     // Event handler for receiving messages from the server
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data);
+      console.log('Received message from server:', message);
 
       if (message.type === 'recentBlocks') {
+        console.log('Received recent blocks:', message.data);
         // Set the initial recent blocks
         setBlocks(message.data);
+        setLoading(false);
       } else if (message.type === 'newBlock') {
+        console.log('Received new block:', message.data);
         // Add new block to the beginning of the blocks array
-        setBlocks((prevBlocks) => [message.data, ...prevBlocks.slice(0, maxRecentBlocks - 1)]);
+        setBlocks((prevBlocks) => [message.data, ...prevBlocks.slice(0, 24)]);
+        setLoading(false); // Set loading to false when receiving new blocks
       }
-    };
-
-    // Event handler for receiving ping messages
-    socket.onping = () => {
-      console.log('Received ping from server');
-    };
-
-    // Event handler for receiving pong messages
-    socket.onpong = () => {
-      console.log('Received pong from server');
     };
 
     // Event handler for WebSocket connection close
@@ -48,23 +41,16 @@ const BlocksPage = () => {
       console.log('WebSocket connection closed');
     };
 
-    setLoading(false); // Set loading state to false once the WebSocket connection is established
-
     // Cleanup function to close the WebSocket connection when the component unmounts
     return () => {
       socket.close();
     };
   }, []);
 
-  // Log the updated blocks state whenever it changes
-  useEffect(() => {
-    console.log('Blocks state updated:', blocks);
-  }, [blocks]);
-
   // Update the pie chart whenever the blocks state changes
   useEffect(() => {
-    if (!svgRef.current) return;
-
+    if (blocks.length === 0) return; // Don't update the chart if there are no blocks
+    
     // Count the number of blocks for each algorithm
     const algoCounts = {};
     blocks.forEach((block) => (algoCounts[block.algo] = (algoCounts[block.algo] || 0) + 1));
