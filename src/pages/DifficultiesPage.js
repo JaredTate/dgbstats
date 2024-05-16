@@ -17,7 +17,7 @@ const DifficultiesPage = () => {
 
   // State for storing difficulties data
   const [difficulties, setDifficulties] = useState(
-    algoNames.reduce((acc, algo) => ({ ...acc, [algo]: null }), {})
+    algoNames.reduce((acc, algo) => ({ ...acc, [algo]: [] }), {})
   );
 
   // WebSocket connection and event handling
@@ -29,13 +29,29 @@ const DifficultiesPage = () => {
       console.log('WebSocket connection established');
     };
 
-    // Event handler for receiving block data from the server
+    // Event handler for receiving messages from the server
     socket.onmessage = (event) => {
-      const newBlock = JSON.parse(event.data);
-      setDifficulties((prevDifficulties) => ({
-        ...prevDifficulties,
-        [newBlock.algo]: newBlock.difficulty,
-      }));
+      const message = JSON.parse(event.data);
+      console.log('Received message from server:', message);
+
+      if (message.type === 'recentBlocks') {
+        console.log('Received recent blocks:', message.data);
+        // Update the difficulties state with the recent blocks data
+        const updatedDifficulties = algoNames.reduce((acc, algo) => {
+          const algoDifficulties = message.data
+            .filter((block) => block.algo === algo)
+            .map((block) => block.difficulty);
+          return { ...acc, [algo]: algoDifficulties };
+        }, {});
+        setDifficulties(updatedDifficulties);
+      } else if (message.type === 'newBlock') {
+        console.log('Received new block:', message.data);
+        // Update the difficulties state with the new block data
+        setDifficulties((prevDifficulties) => ({
+          ...prevDifficulties,
+          [message.data.algo]: [...prevDifficulties[message.data.algo], message.data.difficulty],
+        }));
+      }
     };
 
     // Event handler for WebSocket connection close
@@ -90,12 +106,10 @@ const DifficultiesPage = () => {
         chartInstances.current[index] = chartInstance;
       }
 
-      // Update the chart with new difficulty data if available
-      if (difficulties[algo] !== null) {
-        chartInstance.data.labels.push(algo);
-        chartInstance.data.datasets[0].data.push(difficulties[algo]);
-        chartInstance.update();
-      }
+      // Update the chart with the difficulties data
+      chartInstance.data.labels = difficulties[algo].map((_, i) => i + 1);
+      chartInstance.data.datasets[0].data = difficulties[algo];
+      chartInstance.update();
     });
   }, [difficulties]);
 
@@ -107,8 +121,7 @@ const DifficultiesPage = () => {
           Recent DGB Algo Difficulties
         </Typography>
         <Typography variant="h6" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}>
-          Wait for blocks to be mined to show realtime algo difficulties.
-          This page will keep incrementing as long as you leave it open.
+          This page starts with the difficulty of the 25 most recent DGB blocks for each algorithm & will keep incrementing as long as you leave it open as blocks are mined in realtime.
         </Typography>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '1rem' }}>
@@ -123,7 +136,7 @@ const DifficultiesPage = () => {
               }}
               style={{ maxWidth: '100%', height: '400px', margin: '0 auto' }}
             />
-            <div style={{ textAlign: 'center' }}>Current Diff: {difficulties[algo] || 'N/A'}</div>
+            <div style={{ textAlign: 'center' }}>Current Diff: {difficulties[algo]?.[difficulties[algo].length - 1] || 'N/A'}</div>
           </div>
         ))}
       </div>

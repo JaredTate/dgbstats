@@ -18,18 +18,27 @@ const BlocksPage = () => {
       console.log('WebSocket connection established');
     };
 
-    // Event handler for receiving block data from the server
+    // Event handler for receiving messages from the server
     socket.onmessage = (event) => {
-      const newBlock = JSON.parse(event.data);
-      setBlocks((prevBlocks) => [newBlock, ...prevBlocks]); // Add new block to the beginning of the blocks array
+      const message = JSON.parse(event.data);
+      console.log('Received message from server:', message);
+
+      if (message.type === 'recentBlocks') {
+        console.log('Received recent blocks:', message.data);
+        // Set the initial recent blocks
+        setBlocks(message.data);
+        setLoading(false);
+      } else if (message.type === 'newBlock') {
+        console.log('Received new block:', message.data);
+        // Add new block to the beginning of the blocks array
+        setBlocks((prevBlocks) => [message.data, ...prevBlocks]);
+      }
     };
 
     // Event handler for WebSocket connection close
     socket.onclose = () => {
       console.log('WebSocket connection closed');
     };
-
-    setLoading(false); // Set loading state to false once the WebSocket connection is established
 
     // Cleanup function to close the WebSocket connection when the component unmounts
     return () => {
@@ -61,8 +70,7 @@ const BlocksPage = () => {
         Latest Blocks
       </Typography>
       <Typography variant="h6" component="p" align="center" gutterBottom sx={{ paddingBottom: '20px' }}>
-        Please wait for the 10 most recent DGB blocks to be mined.  
-        This page will keep incrementing as long as you leave it open.
+        This page starts with the 25 most recent DGB blocks & will keep incrementing as long as you leave it open as blocks are mined in realtime.
       </Typography>
       {loading ? (
         <Typography variant="h5">Loading...</Typography>
