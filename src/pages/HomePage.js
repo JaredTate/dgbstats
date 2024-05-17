@@ -47,7 +47,8 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
         </Typography>
         <Typography variant="body1" component="p" align="center" gutterBottom>
           This is a free & open source information website to find real time data & information about the DigiByte blockchain.
-          DigiByte Stats is a React app created by DGB founder Jared Tate. It pulls data direct from the blockchain via digibyted the core wallet.
+          <br />  DigiByte Stats is a React app created by DGB founder Jared Tate. It pulls data direct from the DGB blockchain.
+          <br />  This page auto updates every 60 seconds.
         </Typography>
         <Grid container spacing={2}>
           <Grid item xs={12} md={6} lg={4}>
