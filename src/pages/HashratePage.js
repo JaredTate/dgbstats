@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Typography } from '@mui/material';
+import { Container, Typography, Grid, Paper, Box } from '@mui/material';
+import styles from '../App.module.css';
 import config from '../config';
 
 const algoNames = ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo'];
@@ -9,7 +10,7 @@ const HashratePage = () => {
     algoNames.reduce((acc, algo) => ({ ...acc, [algo]: 0 }), {})
   );
   const [totalHashrate, setTotalHashrate] = useState(0);
-  const [isFirstHourComplete, setIsFirstHourComplete] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const blocksRef = useRef([]);
 
   useEffect(() => {
@@ -27,6 +28,7 @@ const HashratePage = () => {
         console.log('Received recent blocks:', message.data);
         blocksRef.current = message.data;
         calculateHashrates();
+        setIsLoading(false);
       } else if (message.type === 'newBlock') {
         console.log('Received new block:', message.data);
         blocksRef.current.unshift(message.data);
@@ -56,13 +58,12 @@ const HashratePage = () => {
       const avgDifficulty =
         algoBlocks.reduce((sum, block) => sum + block.difficulty, 0) / blocksPerHour;
 
-      const hashrate = (blocksPerHour / 48) * avgDifficulty * Math.pow(2, 32) / 900;
+      const hashrate = (blocksPerHour / 48) * avgDifficulty * Math.pow(2, 32) / 75;
 
       return { ...acc, [algo]: hashrate };
     }, {});
 
     setHashrates(updatedHashrates);
-    setIsFirstHourComplete(hourBlocks.length === 240);
 
     const total = Object.values(updatedHashrates).reduce((sum, rate) => sum + rate, 0);
     setTotalHashrate(total);
@@ -79,38 +80,101 @@ const HashratePage = () => {
   };
 
   return (
-    <div>
-      <Typography variant="h4" component="h1" align="center" gutterBottom>
-        DigiByte Hashrate
+    <Container maxWidth="lg" className={styles.container}>
+      <Typography variant="h4" component="h4" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
+        DigiByte Hashrate By Algo
       </Typography>
-      <Typography variant="body1" align="center" paragraph>
-        The hashrate for each DigiByte algorithm is calculated based on the blocks solved over the last hour.
-        With a 15-second block time, the expected number of blocks per hour for each algorithm is 48.
-        The formula used to calculate the hashrate is:
+      <Typography variant="body1" component="p" align="center" gutterBottom>
+        This page displays the real-time hashrate for each DigiByte mining algorithm based on the blocks mined over the last hour.
+        <br />
+        Hashrate represents the total computational power being used to mine, process & secure transactions on the DigiByte blockchain.
       </Typography>
-      <Typography variant="body1" align="center" paragraph>
-        Hashrate = (blocks solved over last hour / 48) * difficulty * 2^32 / 900
-      </Typography>
-      {!isFirstHourComplete && (
-        <Typography variant="body1" align="center" color="error" paragraph>
-          Waiting for the first hour of blocks to be available...
+      {isLoading ? (
+        <Typography variant="body1" align="center" color="textSecondary" paragraph>
+          Loading hashrate data...
         </Typography>
+      ) : (
+        <>
+          <Grid container spacing={2}>
+            {algoNames.map((algo) => (
+              <Grid item xs={12} md={6} lg={4} key={algo}>
+                <Paper className={styles.paper}>
+                  <Typography variant="h1" className={styles.centerText}>
+                    {algo} Hashrate
+                  </Typography>
+                  <Typography variant="h2" className={`${styles.centerText} ${styles.boldText}`}>
+                    {formatHashrate(hashrates[algo])}
+                  </Typography>
+                  <Typography variant="body1" className={styles.paragraph}>
+                    The current hashrate for the {algo} algorithm.
+                  </Typography>
+                </Paper>
+              </Grid>
+            ))}
+            <Grid item xs={12} md={6} lg={4}>
+              <Paper className={styles.paper} style={{ backgroundColor: 'black' }}>
+                <Typography variant="h1" className={styles.centerText} style={{ color: 'white' }}>
+                  Total Hashrate
+                </Typography>
+                <Typography variant="h2" className={`${styles.centerText} ${styles.boldText}`} style={{ color: 'white' }}>
+                  {formatHashrate(totalHashrate)}
+                </Typography>
+                <Typography variant="body1" className={styles.paragraph} style={{ color: 'white' }}>
+                  The combined hashrate of all 5 DGB mining algorithms.
+                </Typography>
+              </Paper>
+            </Grid>
+          </Grid>
+          <Box mt={4}>
+            <Typography variant="h5" align="center" gutterBottom>
+              <strong>How Hashrates are Calculated</strong>
+            </Typography>
+            <Typography variant="body1" align="center" paragraph>
+              The hashrate for each DigiByte algorithm is calculated using the following formula:
+            </Typography>
+            <Typography variant="h5" align="center" paragraph>
+              <strong>Hashrate (per algo) = [(blocks solved over last hour / 48) * difficulty * 2^32] / 75</strong>
+            </Typography>
+            <Typography variant="h6" align="center" paragraph>
+              Here's what each part of the formula represents:
+            </Typography>
+            <Typography variant="body1" align="left" paragraph>
+              <strong>Blocks solved over last hour:</strong> The number of blocks mined by the specific algorithm in the last 60 minutes.
+            </Typography>
+            <Typography variant="body1" align="left" paragraph>
+              <strong>48:</strong> With a 15-second block time for each algorithm, the expected number of blocks per algorithm in a 1-hour period is 48.
+            </Typography>
+            <Typography variant="body1" align="left" paragraph>
+              <strong>Difficulty * 2^32:</strong> The average difficulty of the blocks mined by the algorithm, multiplied by 2^32. This represents the average amount of work (hashes) needed to solve a block.
+            </Typography>
+            <Typography variant="body1" align="left" paragraph>
+              <strong>75:</strong> Since hashpower is measured in hashes per second, and there are 75 seconds in a 1 minute and 15-second block (15 seconds * 5 algorithms = 75 seconds), we divide by 75 to get the hashrate in H/s.
+            </Typography>
+            <Typography variant="body1" align="center" paragraph>
+              The calculated hashrates for each algorithm are then summed up to obtain the total network hashrate.
+            </Typography>
+          </Box>
+        </>
       )}
-      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
-        {algoNames.map((algo) => (
-          <div key={algo} style={{ margin: '1rem', textAlign: 'center' }}>
-            <Typography variant="h6">{algo}</Typography>
-            <Typography variant="body1">{formatHashrate(hashrates[algo])}</Typography>
-          </div>
-        ))}
-      </div>
-      <Typography variant="h5" align="center" gutterBottom>
-        Total DGB Blockchain Hashrate
+                  <Typography variant="h5" align="center" gutterBottom>
+              <strong>Hashrate units:</strong>
+            </Typography>
+      <Typography variant="body1" align="center" paragraph>
+        H/s - Hashes per second
+        <br />
+        KH/s - Kilohashes per second (Thousands of Hashes)
+        <br />
+        MH/s - Megahashes per second (Millions of Hashes)
+        <br />
+        GH/s - Gigahashes per second (Billions of Hashes)
+        <br />
+        TH/s - Terahashes per second (Trillions of Hashes)
+        <br />
+        PH/s - Petahashes per second (Quadrillions of Hashes)
+        <br />
+        EH/s - Exahashes per second (Quintillions of Hashes)
       </Typography>
-      <Typography variant="body1" align="center">
-        {formatHashrate(totalHashrate)}
-      </Typography>
-    </div>
+    </Container>
   );
 };
 
