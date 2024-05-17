@@ -15,27 +15,27 @@ const useFetchData = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get('http://localhost:5001/api/seedNodes');
-        const data = response.data;
-        console.log('Received node data:', data);
-        setNodesData(data);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching node data:', error);
+    const socket = new WebSocket('ws://localhost:5002');
+
+    socket.onopen = () => {
+      console.log('WebSocket connection established');
+    };
+
+    socket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === 'geoData') {
+        console.log('Received geo data:', message.data);
+        setNodesData(message.data);
         setLoading(false);
       }
     };
 
-    fetchData();
-    const interval = setInterval(() => {
-      fetchData();
-    }, 30000);
+    socket.onclose = () => {
+      console.log('WebSocket connection closed');
+    };
 
     return () => {
-      clearInterval(interval);
+      socket.close();
     };
   }, []);
 
