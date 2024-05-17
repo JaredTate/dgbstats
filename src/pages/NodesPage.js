@@ -73,12 +73,12 @@ const NodesPage = () => {
         Active DigiByte Nodes
       </Typography>
       <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}>
-        This page displays unique nodes seen recently in the last 24 hours by the main DGB seeder. 
-        <br />  This is still not accurate & the bug of only displaying 25 nodes is being worked out.
+        This page displays unique nodes seen recently by the main DGB seeder. 
+        <br />  This page is still under counting nodes & multiple bugs are being worked out.
       </Typography>
       {!loading && (
         <>
-          <h2 className="centered-text">Unique Nodes Seen in the Last 24 Hours: {nodesData.length}</h2>
+          <h2 className="centered-text">Unique Nodes Seen Recently: {nodesData.length}</h2>
           <svg width={width} height={height}>
             <rect width={width} height={height} fill="#f3f3f3" />
             <Graticule graticule={() => geoGraticule10()} stroke="#000" />
