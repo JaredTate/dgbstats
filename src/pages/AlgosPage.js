@@ -100,7 +100,7 @@ const BlocksPage = () => {
         Realtime DGB Blocks By Algo
       </Typography>
       <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}> 
-        This page preloads the 240 most recent DGB blocks & will keep incrementing in realtime as blocks are mined.<br /> 
+        This page preloads the last 240 DGB blocks (1 hour) & will keep incrementing in realtime as blocks are mined.<br /> 
         Each algo should mine roughly 20% of all blocks. 240 blocks should roughly be 1 hour of time.
       </Typography>
       <svg ref={svgRef} width="500" height="500" style={{ display: 'block', margin: 'auto' }}></svg>
