@@ -12,6 +12,7 @@ import NodesPage from './pages/NodesPage';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import config from './config';
+import HashratePage from './pages/HashratePage';
 
 const App = () => {
   const [blockchainInfo, setBlockchainInfo] = useState(null);
@@ -99,6 +100,10 @@ const App = () => {
             <Route
               path="/difficulties"
               element={<DifficultiesPage difficultiesData={blockchainInfo?.difficulties} />}
+            />
+                        <Route
+              path="/hashrate"
+              element={<HashratePage difficultiesData={blockchainInfo?.difficulties} />}
             />
           </Routes>
         </div>
