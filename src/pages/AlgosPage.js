@@ -59,8 +59,8 @@ const BlocksPage = () => {
 
     // Set up the pie chart using D3.js
     const svg = d3.select(svgRef.current),
-      width = 600,
-      height = 600,
+      width = 500,
+      height = 500,
       radius = Math.min(width, height) / 2;
 
     const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
@@ -103,7 +103,7 @@ const BlocksPage = () => {
         This page preloads the 25 most recent DGB blocks & will keep incrementing in realtime as blocks are mined.<br /> 
         Each algo should mine roughly 20% of all blocks. 240 blocks, or roughly 1 hour is a good time frame to look at.
       </Typography>
-      <svg ref={svgRef} width="600" height="600" style={{ display: 'block', margin: 'auto' }}></svg>
+      <svg ref={svgRef} width="500" height="500" style={{ display: 'block', margin: 'auto' }}></svg>
       {loading ? (
         <Typography variant="h4" align="center">Loading...</Typography>
       ) : (
