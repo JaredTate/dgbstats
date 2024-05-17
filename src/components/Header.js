@@ -35,7 +35,7 @@ const Header = () => {
               Algos
             </NavLink>
             <NavLink to="/difficulties" style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
-              Difficulties
+              Difficulty
             </NavLink>
             <NavLink to="/downloads" style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
               Downloads
@@ -94,7 +94,7 @@ const Header = () => {
                 Algos
               </MenuItem>
               <MenuItem onClick={handleMenuClose} component={NavLink} to="/difficulties">
-                Difficulties
+                Difficulty
               </MenuItem>
               <MenuItem onClick={handleMenuClose} component={NavLink} to="/downloads">
                 Downloads

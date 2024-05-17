@@ -118,7 +118,7 @@ const DifficultiesPage = () => {
     <div>
       <div style={{ textAlign: 'center' }}>
         <Typography variant="h4" component="h4" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
-          Recent DGB Algo Difficulties
+          Realtime DGB Algo Difficulty
         </Typography>
         <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}>
           This page preloads the difficulty of the 25 most recent DGB blocks & will keep incrementing as long as you leave it open as blocks are mined in realtime.
@@ -137,7 +137,7 @@ const DifficultiesPage = () => {
               }}
               style={{ maxWidth: '100%', height: '400px', margin: '0 auto' }}
             />
-            <div style={{ textAlign: 'center' }}>Current Diff: {difficulties[algo]?.[difficulties[algo].length - 1] || 'N/A'}</div>
+            <div style={{ textAlign: 'center' }}>Latest Block Difficulty: {difficulties[algo]?.[difficulties[algo].length - 1] || 'N/A'}</div>
           </div>
         ))}
       </div>

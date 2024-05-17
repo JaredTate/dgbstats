@@ -67,7 +67,7 @@ const BlocksPage = () => {
   return (
     <Container maxWidth="lg">
       <Typography variant="h4" component="h4" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
-        Latest DigiByte Blocks
+        Realtime DigiByte Blocks
       </Typography>
       <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '20px' }}>
         This page pre-loads the 10 most recent DGB blocks & will keep incrementing in realtime as long as you leave it open as blocks are mined.

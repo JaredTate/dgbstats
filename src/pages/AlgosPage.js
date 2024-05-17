@@ -97,7 +97,7 @@ const BlocksPage = () => {
   return (
     <Container maxWidth="lg">
       <Typography variant="h4" component="h4" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
-        Recent DGB Blocks By Algo
+        Realtime DGB Blocks By Algo
       </Typography>
       <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}> 
         This page preloads the 25 most recent DGB blocks & will keep incrementing in realtime as blocks are mined.<br /> 
