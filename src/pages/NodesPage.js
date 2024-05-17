@@ -9,13 +9,14 @@ import { geoMercator, geoPath, geoGraticule10 } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { useWidth } from '../utils';
 import world from '../countries-110m.json';
+import config from '../config';
 
 const useFetchData = () => {
   const [nodesData, setNodesData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const socket = new WebSocket('ws://localhost:5002');
+    const socket = new WebSocket(config.wsBaseUrl);
 
     socket.onopen = () => {
       console.log('WebSocket connection established');
