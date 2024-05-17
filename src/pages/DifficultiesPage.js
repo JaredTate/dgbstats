@@ -70,8 +70,8 @@ const DifficultiesPage = () => {
     algoNames.forEach((algo, index) => {
       const ctx = chartRefs.current[index].getContext('2d');
       const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-      gradient.addColorStop(0, 'rgba(250,174,50,1)');
-      gradient.addColorStop(1, 'rgba(250,174,50,0)');
+      gradient.addColorStop(0, 'rgba(0, 102, 204, 1)');
+      gradient.addColorStop(1, 'rgba(0, 102, 204, 0)');
 
       let chartInstance = chartInstances.current[index];
 
@@ -86,8 +86,10 @@ const DifficultiesPage = () => {
                 label: 'Difficulty',
                 data: [],
                 backgroundColor: gradient,
-                borderColor: 'rgba(250,174,50,1)',
+                borderColor: 'rgba(0, 102, 204, 1)',
                 borderWidth: 1,
+                pointBackgroundColor: 'rgba(0, 102, 204, 1)',
+                pointBorderColor: 'rgba(0, 102, 204, 1)',
               },
             ],
           },
