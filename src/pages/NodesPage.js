@@ -74,7 +74,7 @@ const NodesPage = () => {
       </Typography>
       <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}>
         This page displays unique nodes seen recently in the last 24 hours by the main DGB seeder. 
-        <br />  This is still not accurate & bugs are being worked out. Nodes are under counted.
+        <br />  This is still not accurate & the bug of only displaying 25 nodes is being worked out.
       </Typography>
       {!loading && (
         <>
