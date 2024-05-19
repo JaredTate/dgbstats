@@ -42,8 +42,8 @@ const SupplyPage = ({ worldPopulation }) => {
   
     const currentSupply = txOutsetInfo.total_amount;
     const totalSupply = 21000000000; // Max supply
-    const today = new Date();
     const start = new Date('2014-01-10');
+    const today = new Date();
     const end = new Date('2035-07-01');
   
     const ctx = chartRef.current.getContext('2d');
@@ -54,29 +54,37 @@ const SupplyPage = ({ worldPopulation }) => {
         datasets: [
           {
             label: 'DGB Supply History',
-            data: [0, currentSupply],
+            data: [0, currentSupply, currentSupply],
             borderColor: '#0066cc',
-            backgroundColor: 'rgba(0, 102, 204, 0.5)', // light blue with transparency
+            backgroundColor: '#0066cc',
             borderWidth: 2,
-            fill: 'origin', // Fills the area under the curve from 2014 to today
-            tension: 0.4, // Curved line
+            fill: true, // Solid fill
+            tension: 0.0, // Adds curvature
           },
           {
             label: 'Current DGB Supply',
             data: [currentSupply, currentSupply],
             borderColor: '#0066cc',
             borderWidth: 2,
-            borderDash: [5, 5], // Dashed line
+            borderDash: [5, 5], // Dashed line from 2014 to 2035
+            fill: false,
+          },
+          {
+            label: 'Max DGB Supply',
+            data: [{x: start, y: totalSupply}, {x: end, y: totalSupply}],
+            borderColor: '#000',
+            borderWidth: 3,
+            borderDash: [5, 5], // Dashed line from 2014 to 2035
             fill: false,
           },
           {
             label: 'DGB Yet To Be Mined',
             data: [{x: today, y: currentSupply}, {x: end, y: totalSupply}],
             borderColor: '#002352',
-            backgroundColor: 'rgba(0, 35, 82, 0.5)', // dark blue with transparency
+            backgroundColor: '#002352', // Solid dark blue
             borderWidth: 2,
-            fill: true, // Fills the area under the curve from today to 2035
-            tension: 0.4, // Curved line
+            fill: true, // Solid fill under the curve
+            tension: 0.0, // Ensures the line is curved
           }
         ],
       },
@@ -124,7 +132,8 @@ const SupplyPage = ({ worldPopulation }) => {
     return () => {
       chartInstance.destroy();
     };
-  }, [txOutsetInfo]);  
+  }, [txOutsetInfo]);
+   
   
   if (txOutsetInfoLoading) {
     return <Typography variant="body1">Loading supply data...</Typography>;
@@ -162,7 +171,7 @@ const SupplyPage = ({ worldPopulation }) => {
         <Typography variant="body1" component="p" align="center" gutterBottom>
           There is currently only <strong>{(currentSupply / worldPopulation).toFixed(2)}</strong> DGB for each person on planet Earth.
           <br />
-          World Population: {worldPopulation.toLocaleString()}
+          World Population Estimate: {worldPopulation.toLocaleString()}
         </Typography>
       </div>
     </div>
