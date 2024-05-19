@@ -42,32 +42,41 @@ const SupplyPage = ({ worldPopulation }) => {
   
     const currentSupply = txOutsetInfo.total_amount;
     const totalSupply = 21000000000; // Max supply
-    const remainingSupply = totalSupply - currentSupply;
-    const endDate = new Date('2035-01-01');
+    const today = new Date();
+    const start = new Date('2014-01-10');
+    const end = new Date('2035-07-01');
   
     const ctx = chartRef.current.getContext('2d');
     const chartInstance = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: [new Date('2014-01-10'), new Date(), endDate],
+        labels: [start, today, end],
         datasets: [
           {
-            label: 'Current DGB Supply',
-            data: [0, currentSupply, currentSupply], // end current supply at current amount
+            label: 'DGB Supply History',
+            data: [0, currentSupply],
             borderColor: '#0066cc',
-            backgroundColor: '#0066cc',
+            backgroundColor: 'rgba(0, 102, 204, 0.5)', // light blue with transparency
             borderWidth: 2,
-            fill: true,
-            tension: 0.4,
+            fill: 'origin', // Fills the area under the curve from 2014 to today
+            tension: 0.4, // Curved line
+          },
+          {
+            label: 'Current DGB Supply',
+            data: [currentSupply, currentSupply],
+            borderColor: '#0066cc',
+            borderWidth: 2,
+            borderDash: [5, 5], // Dashed line
+            fill: false,
           },
           {
             label: 'DGB Yet To Be Mined',
-            data: [null, currentSupply, totalSupply], // start remaining supply at current amount
+            data: [{x: today, y: currentSupply}, {x: end, y: totalSupply}],
             borderColor: '#002352',
-            backgroundColor: '#002352',
+            backgroundColor: 'rgba(0, 35, 82, 0.5)', // dark blue with transparency
             borderWidth: 2,
-            fill: true,
-            tension: 0.4,
+            fill: true, // Fills the area under the curve from today to 2035
+            tension: 0.4, // Curved line
           }
         ],
       },
@@ -91,9 +100,14 @@ const SupplyPage = ({ worldPopulation }) => {
             ticks: {
               callback: (value) => `${(value / 1000000000).toFixed(2)} B`,
             },
+            suggestedMax: totalSupply, // Ensure the y-axis accommodates the total supply
           },
         },
         plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+          },
           tooltip: {
             callbacks: {
               label: function (context) {
@@ -110,7 +124,7 @@ const SupplyPage = ({ worldPopulation }) => {
     return () => {
       chartInstance.destroy();
     };
-  }, [txOutsetInfo]);
+  }, [txOutsetInfo]);  
   
   if (txOutsetInfoLoading) {
     return <Typography variant="body1">Loading supply data...</Typography>;
