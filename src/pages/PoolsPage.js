@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Container, Typography, List, ListItem, ListItemText } from '@mui/material';
+import { Container, Typography, List, ListItem, ListItemText, Box } from '@mui/material';
 import * as d3 from 'd3';
 import config from '../config';
 
@@ -41,16 +41,33 @@ const PoolsPage = () => {
   useEffect(() => {
     if (blocks.length === 0) return;
 
-    const poolCounts = {};
+    const addressCounts = {};
     blocks.forEach((block) => {
-      const poolIdentifier = block.poolIdentifier;
-      poolCounts[poolIdentifier] = (poolCounts[poolIdentifier] || 0) + 1;
+      const address = block.minedTo;
+      if (address) {
+        addressCounts[address] = (addressCounts[address] || 0) + 1;
+      }
     });
 
-    const data = Object.entries(poolCounts).map(([poolIdentifier, count]) => ({
-      poolIdentifier,
+    const data = Object.entries(addressCounts).map(([address, count]) => ({
+      address,
       count,
     }));
+
+    const singleBlockAddresses = data.filter((item) => item.count === 1);
+    const multipleBlockAddresses = data.filter((item) => item.count > 1);
+
+    const pieChartData = [
+      ...multipleBlockAddresses.map((item) => ({
+        address: item.address.substring(0, 5),
+        count: item.count,
+      })),
+      {
+        address: 'Addresses With 1 Block',
+        count: blocks.length - sortedAddresses.reduce((sum, item) => sum + item.count, 0),
+    
+      },
+    ];
 
     const svg = d3.select(svgRef.current),
       width = 500,
@@ -66,13 +83,13 @@ const PoolsPage = () => {
 
     const chart = svg.append('g').attr('transform', `translate(${width / 2},${height / 2})`);
 
-    chart.selectAll('path').data(pie(data)).enter().append('path').attr('d', arc).attr('fill', (d) => colorScale(d.data.poolIdentifier));
+    chart.selectAll('path').data(pie(pieChartData)).enter().append('path').attr('d', arc).attr('fill', (d) => colorScale(d.data.address));
 
     const totalBlocks = blocks.length;
 
     chart
       .selectAll('text')
-      .data(pie(data))
+      .data(pie(pieChartData))
       .enter()
       .append('text')
       .attr('transform', (d) => `translate(${labelArc.centroid(d)})`)
@@ -81,44 +98,70 @@ const PoolsPage = () => {
       .attr('fill', 'white')
       .html((d) => {
         const percentage = ((d.data.count / totalBlocks) * 100).toFixed(1);
-        return `${d.data.poolIdentifier}<tspan x="0" dy="1.2em">${percentage}%</tspan>`;
+        return `${d.data.address}<tspan x="0" dy="1.2em">${percentage}%</tspan>`;
       });
   }, [blocks, svgRef]);
 
-  const sortedPools = Object.entries(
+  const sortedAddresses = Object.entries(
     blocks.reduce((acc, block) => {
+      const address = block.minedTo;
       const poolIdentifier = block.poolIdentifier;
-      acc[poolIdentifier] = (acc[poolIdentifier] || 0) + 1;
+      if (address) {
+        if (!acc[address]) {
+          acc[address] = { count: 0, poolIdentifier: poolIdentifier };
+        }
+        acc[address].count += 1;
+      }
       return acc;
     }, {})
   )
-    .sort((a, b) => b[1] - a[1])
-    .map(([poolIdentifier, count]) => ({ poolIdentifier, count }));
+    .sort((a, b) => b[1].count - a[1].count)
+    .map(([address, data], index) => ({ address, count: data.count, poolIdentifier: data.poolIdentifier, rank: index + 1 }))
+    .filter((item) => item.count > 1);
+
+  const singleBlockAddressCount = blocks.length - sortedAddresses.reduce((sum, item) => sum + item.count, 0);
 
   return (
     <Container maxWidth="lg">
       <Typography variant="h4" component="h4" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
-        Realtime DGB Blocks By Pool
+        Realtime DGB Blocks Mined By Address
       </Typography>
       <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}>
         This page preloads the last 240 DGB blocks (1 hour) & will keep incrementing in realtime as blocks are mined.
         <br />
-        The pie chart shows the breakdown of blocks mined to each address, and the list displays the addresses sorted by the number of blocks mined.
+        The pie chart shows the breakdown of blocks mined to an address, and the list displays the addresses sorted by the number of blocks mined.
       </Typography>
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <svg ref={svgRef} width="500" height="500" style={{ display: 'block' }}></svg>
         <List style={{ width: '50%' }}>
-          {sortedPools.map((pool, index) => (
-            <ListItem key={index}>
-              <ListItemText primary={`${pool.poolIdentifier} (${pool.count} blocks)`} />
+          {sortedAddresses.map((item) => (
+            <ListItem key={item.address}>
+              <ListItemText
+                primary={
+                  <>
+                    <Box component="span" fontWeight="bold">
+                      {item.rank}.{' '}
+                    </Box>
+                    {item.address} ({item.count} blocks)
+                  </>
+                }
+                secondary={item.poolIdentifier}
+              />
             </ListItem>
           ))}
+          <ListItem>
+            <ListItemText primary={`Other Addresses with only 1 block: ${singleBlockAddressCount}`} />
+          </ListItem>
         </List>
       </div>
       {loading ? (
-        <Typography variant="h4" align="center">Loading...</Typography>
+        <Typography variant="h4" align="center">
+          Loading...
+        </Typography>
       ) : (
-        <Typography variant="h4" align="center" sx={{ paddingTop: '10px' }}>Recent blocks: {blocks.length}</Typography>
+        <Typography variant="h4" align="center" sx={{ paddingTop: '10px' }}>
+          Recent blocks: {blocks.length}
+        </Typography>
       )}
     </Container>
   );
