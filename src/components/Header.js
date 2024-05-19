@@ -43,6 +43,9 @@ const Header = () => {
             <NavLink to="/hashrate" style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
               Hashrate
             </NavLink>
+            <NavLink to="/supply" style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
+              Supply
+            </NavLink>
             <NavLink to="/downloads" style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
               Downloads
             </NavLink>
@@ -107,6 +110,9 @@ const Header = () => {
               </MenuItem>
               <MenuItem onClick={handleMenuClose} component={NavLink} to="/hashrate">
                 Hashrate
+              </MenuItem>
+              <MenuItem onClick={handleMenuClose} component={NavLink} to="/supply">
+                Supply
               </MenuItem>
               <MenuItem onClick={handleMenuClose} component={NavLink} to="/downloads">
                 Downloads

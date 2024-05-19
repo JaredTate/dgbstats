@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import { Container, Typography, Box, Grid, Paper } from '@mui/material';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { formatNumber, numberWithCommas } from './utils';
 import styles from './App.module.css';
 import HomePage from './pages/HomePage';
@@ -8,6 +7,7 @@ import DifficultiesPage from './pages/DifficultiesPage';
 import BlocksPage from './pages/BlocksPage';
 import AlgosPage from './pages/AlgosPage';
 import PoolsPage from './pages/PoolsPage';
+import SupplyPage from './pages/SupplyPage';
 import DownloadsPage from './pages/DownloadsPage';
 import NodesPage from './pages/NodesPage';
 import Header from './components/Header';
@@ -20,50 +20,33 @@ const App = () => {
   const [chainTxStats, setChainTxStats] = useState(null);
   const [txOutsetInfo, setTxOutsetInfo] = useState(null);
   const [blockReward, setBlockReward] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [blockchainInfoLoading, setBlockchainInfoLoading] = useState(true);
-  const [chainTxStatsLoading, setChainTxStatsLoading] = useState(true);
-  const [txOutsetInfoLoading, setTxOutsetInfoLoading] = useState(true);
-  const [lastBlockReward, setLastBlockReward] = useState(null);
-
-  const fetchData = async () => {
-    try {
-      setBlockchainInfoLoading(true);
-      const response1 = await fetch(`${config.apiBaseUrl}/api/getblockchaininfo`);
-      const data1 = await response1.json();
-      setBlockchainInfo(data1);
-      setBlockchainInfoLoading(false);
-
-      setChainTxStatsLoading(true);
-      const response2 = await fetch(`${config.apiBaseUrl}/api/getchaintxstats`);
-      const data2 = await response2.json();
-      setChainTxStats(data2);
-      setChainTxStatsLoading(false);
-
-      setTxOutsetInfoLoading(true);
-      const response3 = await fetch(`${config.apiBaseUrl}/api/gettxoutsetinfo`);
-      const data3 = await response3.json();
-      setTxOutsetInfo(data3);
-      setTxOutsetInfoLoading(false);
-
-      const response4 = await fetch(`${config.apiBaseUrl}/api/getblockreward`);
-      const data4 = await response4.json();
-      setBlockReward(parseFloat(data4.blockReward.blockreward));
-
-      console.log("blockchainInfo", data1);
-      console.log("chainTxStats", data2);
-      console.log("txOutsetInfo", data3);
-      console.log("data4.blockReward:", data4.blockReward);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      setBlockchainInfoLoading(false);
-      setChainTxStatsLoading(false);
-      setTxOutsetInfoLoading(false);
-    }
-  };
+  const worldPopulation = 8100000000; // Assuming a world population of 8.1 billion
 
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response1 = await fetch(`${config.apiBaseUrl}/api/getblockchaininfo`);
+        const data1 = await response1.json();
+        setBlockchainInfo(data1);
+
+        const response2 = await fetch(`${config.apiBaseUrl}/api/getchaintxstats`);
+        const data2 = await response2.json();
+        setChainTxStats(data2);
+
+        const response3 = await fetch(`${config.apiBaseUrl}/api/gettxoutsetinfo`);
+        const data3 = await response3.json();
+        setTxOutsetInfo(data3);
+
+        const response4 = await fetch(`${config.apiBaseUrl}/api/getblockreward`);
+        const data4 = await response4.json();
+        setBlockReward(parseFloat(data4.blockReward.blockreward));
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
     fetchData();
+
     const interval = setInterval(() => {
       fetchData();
     }, 30000);
@@ -90,7 +73,6 @@ const App = () => {
                   blockReward={blockReward}
                   numberWithCommas={numberWithCommas}
                   formatNumber={formatNumber}
-                  txOutsetInfoLoading={txOutsetInfoLoading}
                 />
               }
             />
@@ -98,12 +80,16 @@ const App = () => {
             <Route path="/downloads" element={<DownloadsPage />} />
             <Route path="/nodes" element={<NodesPage />} />
             <Route path="/pools" element={<PoolsPage />} />
+            <Route
+              path="/supply"
+              element={<SupplyPage txOutsetInfo={txOutsetInfo} worldPopulation={worldPopulation} />}
+            />
             <Route path="/algos" element={<AlgosPage />} />
             <Route
               path="/difficulties"
               element={<DifficultiesPage difficultiesData={blockchainInfo?.difficulties} />}
             />
-                        <Route
+            <Route
               path="/hashrate"
               element={<HashratePage difficultiesData={blockchainInfo?.difficulties} />}
             />
