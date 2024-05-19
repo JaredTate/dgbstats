@@ -160,6 +160,7 @@ const SupplyPage = ({ worldPopulation }) => {
         </Typography>
         <Typography variant="body1" component="p" align="center" gutterBottom>
           There will only ever be 21 Billion DGB mined in 21 years. The last DGB will be mined in the year 2035.
+          <br /> (wait for chart to load)
         </Typography>
       </div>
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px', overflow: 'hidden', marginTop: '20px' }}>

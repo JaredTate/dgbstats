@@ -51,7 +51,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
           <br />  <br />The DigiByte blockchain was launched on January 10th, 2014. There is <strong>NO </strong> company, centralized group, mass premine, entity or individual who controls DGB. 
           DGB is truly decentralized and is the best combination of speed, security & decentralization you will see in any blockchain in the world today.
 
-          <br /> <br />DGB is a layer 1 UTXO based blockchain with 15 second blocks and 5 independent mining algorithms. DGB has pioneered several innovations since 2014.
+          <br /> <br />DGB is a layer 1 UTXO blockchain with 15 second blocks, 5 mining algos & a max supply of 21 Billion DGB. DGB has pioneered several innovations since 2014.
         </Typography>
         <Grid container spacing={2}>
           <Grid item xs={12} md={6} lg={4}>
