@@ -124,7 +124,7 @@ const DifficultiesPage = () => {
         </Typography>
         <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}>
           This page preloads the difficulty of the last 240 DGB blocks (1 hour) & will keep incrementing as long as you leave it open as blocks are mined in realtime.
-          <br />  DigiByte uses independent, realtime difficulty adjustment for each algo to further decentralize & secure the blockchain.
+          <br />  DigiByte uses independent, realtime difficulty adjustment for each algo known as <strong>DigiShield</strong> or <strong>MultiShield</strong> to further decentralize & secure the blockchain.
         </Typography>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '1rem' }}>

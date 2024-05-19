@@ -46,9 +46,12 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
           DigiByte Blockchain Statistics
         </Typography>
         <Typography variant="body1" component="p" align="center" gutterBottom>
-          This is a free & open source information website to find real time data & information about the DigiByte blockchain.
-          <br />  DigiByte Stats is a React app created by DGB founder Jared Tate. It pulls data direct from the DGB blockchain.
-          <br />  This page auto updates every 60 seconds.
+          This is a free & open source website to find real time data & information about DigiByte blockchain pulled directly from the chain via digibyted.
+
+          <br />  <br />The DigiByte blockchain was launched on January 10th, 2014. There is <strong>NO </strong> company, centralized group, mass premine, entity or individual who controls DGB. 
+          DGB is truly decentralized and is the best combination of speed, security & decentralization you will see in any blockchain in the world today.
+
+          <br /> <br />DGB is a layer 1 UTXO based blockchain with 15 second blocks and 5 independent mining algorithms. DGB has pioneered several innovations since 2014.
         </Typography>
         <Grid container spacing={2}>
           <Grid item xs={12} md={6} lg={4}>
@@ -153,7 +156,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
                 </Typography>
               )}
               <Typography variant="body1" className={styles.paragraph}>
-                The mining reward amount for the most recent block.
+                The DigiByte mining reward amount for the most recent block on the blockchain.
               </Typography>
             </Paper>
           </Grid>
