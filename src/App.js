@@ -7,6 +7,7 @@ import HomePage from './pages/HomePage';
 import DifficultiesPage from './pages/DifficultiesPage';
 import BlocksPage from './pages/BlocksPage';
 import AlgosPage from './pages/AlgosPage';
+import PoolsPage from './pages/PoolsPage';
 import DownloadsPage from './pages/DownloadsPage';
 import NodesPage from './pages/NodesPage';
 import Header from './components/Header';
@@ -96,6 +97,7 @@ const App = () => {
             <Route path="/blocks" element={<BlocksPage />} />
             <Route path="/downloads" element={<DownloadsPage />} />
             <Route path="/nodes" element={<NodesPage />} />
+            <Route path="/pools" element={<PoolsPage />} />
             <Route path="/algos" element={<AlgosPage />} />
             <Route
               path="/difficulties"

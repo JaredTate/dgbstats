@@ -34,6 +34,9 @@ const Header = () => {
             <NavLink to="/algos" style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
               Algos
             </NavLink>
+            <NavLink to="/pools" style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
+              Miners
+            </NavLink>
             <NavLink to="/difficulties" style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
               Difficulty
             </NavLink>
@@ -95,6 +98,9 @@ const Header = () => {
               </MenuItem>
               <MenuItem onClick={handleMenuClose} component={NavLink} to="/algos">
                 Algos
+              </MenuItem>
+              <MenuItem onClick={handleMenuClose} component={NavLink} to="/pools">
+                Miners
               </MenuItem>
               <MenuItem onClick={handleMenuClose} component={NavLink} to="/difficulties">
                 Difficulty
