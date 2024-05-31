@@ -73,12 +73,12 @@ const NodesPage = () => {
   Active DigiByte Nodes
 </Typography>
 <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}>
-  This page displays unique nodes seen in the peers.dat file of the DigiHash mining pool wallet.
+  This page displays unique nodes seen in the peers.dat file of the DigiHash mining pool wallet since pool was setup in May, 2024.
   <br />  A blockchain node is simply a computer running the DGB core wallet. The data from peers.dat is parsed to display unique nodes.
 </Typography>
       {!loading && (
         <>
-          <h2 className="centered-text">Unique Nodes Seen In Last Month: {nodesData.length}</h2>
+          <h2 className="centered-text">Unique Nodes Seen Recently: {nodesData.length}</h2>
           <svg width={width} height={height}>
             <rect width={width} height={height} fill="#f3f3f3" />
             <Graticule graticule={() => geoGraticule10()} stroke="#000" />
