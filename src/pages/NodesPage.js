@@ -73,12 +73,12 @@ const NodesPage = () => {
         Active DigiByte Nodes
       </Typography>
       <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}>
-        This page displays unique nodes seen recently by the main DGB seeder. 
-        <br />  This page is still under counting nodes & multiple bugs are being worked out.
+        This page displays unique nodes seen in the last month by the DigiHash pool DigiByte node.
+        <br />  Multiple bugs are being worked out with the node crawler pulling data from peers.dat.
       </Typography>
       {!loading && (
         <>
-          <h2 className="centered-text">Unique Nodes Seen Recently: {nodesData.length}</h2>
+          <h2 className="centered-text">Unique Nodes Seen In Last Month: {nodesData.length}</h2>
           <svg width={width} height={height}>
             <rect width={width} height={height} fill="#f3f3f3" />
             <Graticule graticule={() => geoGraticule10()} stroke="#000" />
@@ -94,22 +94,11 @@ const NodesPage = () => {
                 <g key={`node-${i}`}>
                   <image href={digibyteIcon} x={x - 8} y={y - 8} width={16} height={16} />
                   <text x={x} y={y + 20} textAnchor="middle" fontSize={10}>
-                    {(node.city || 'Unknown') + ', ' + (node.country || '')}
                   </text>
                 </g>
               );
             })}
           </svg>
-          <div className="nodes-by-country">
-            <h3>Nodes by Country</h3>
-            <ul>
-              {Object.entries(nodesByCountry).map(([country, count]) => (
-                <li key={country}>
-                  {country}: {count}
-                </li>
-              ))}
-            </ul>
-          </div>
         </>
       )}
     </div>
