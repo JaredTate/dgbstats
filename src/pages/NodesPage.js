@@ -69,13 +69,13 @@ const NodesPage = () => {
 
   return (
     <div className="page-container">
-      <Typography variant="h4" component="h4" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
-        Active DigiByte Nodes
-      </Typography>
-      <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}>
-        This page displays unique nodes seen in the last month by the DigiHash pool DigiByte node.
-        <br />  Multiple bugs are being worked out with the node crawler pulling data from peers.dat.
-      </Typography>
+<Typography variant="h4" component="h4" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
+  Active DigiByte Nodes
+</Typography>
+<Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}>
+  This page displays unique nodes seen in the peers.dat file by the DigiHash pool DigiByte node.
+  <br />  The node crawler pulling data from peers.dat is being updated to handle unique nodes.
+</Typography>
       {!loading && (
         <>
           <h2 className="centered-text">Unique Nodes Seen In Last Month: {nodesData.length}</h2>
