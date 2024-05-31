@@ -73,8 +73,8 @@ const NodesPage = () => {
   Active DigiByte Nodes
 </Typography>
 <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}>
-  This page displays unique nodes seen in the peers.dat file by the DigiHash pool DigiByte node.
-  <br />  The node crawler pulling data from peers.dat is being updated to handle unique nodes.
+  This page displays unique nodes seen in the peers.dat file of the DigiHash mining pool wallet.
+  <br />  A blockchain node is simply a computer running the DGB core wallet. The data from peers.dat is parsed to display unique nodes.
 </Typography>
       {!loading && (
         <>
