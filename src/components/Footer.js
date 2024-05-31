@@ -38,9 +38,9 @@ const Footer = () => {
     <footer className={styles.footer}>
       <Container maxWidth="lg">
         <Typography variant="body1" className={styles.footerText} sx={{ fontSize: '18px', fontWeight: 'bold' }}>
-          Total DGB Stats Site Visits Last 30 Days: {visitStats.visitsLast30Days.toLocaleString()}
+          Total DGB Stats Site Pageloads Last 30 Days: {visitStats.visitsLast30Days.toLocaleString()}
           <br />
-          Total DGB Stats Site Visits Ever: {visitStats.totalVisits.toLocaleString()}
+          Total DGB Stats Site Pageloads Ever: {visitStats.totalVisits.toLocaleString()}
           <br />
           Total Unique DGB Stats Site Visitors Ever: {visitStats.uniqueVisitors.toLocaleString()}
         </Typography>
