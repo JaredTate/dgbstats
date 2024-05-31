@@ -42,7 +42,7 @@ const Footer = () => {
           <br />
           Total DGB Stats Site Pageloads Ever: {visitStats.totalVisits.toLocaleString()}
           <br />
-          Total Unique DGB Stats Site Visitors Ever: {visitStats.uniqueVisitors.toLocaleString()}
+          //Total Unique DGB Stats Site Visitors Ever: {visitStats.uniqueVisitors.toLocaleString()}
         </Typography>
         <Typography
           variant="body1"
