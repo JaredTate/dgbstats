@@ -70,15 +70,15 @@ const NodesPage = () => {
   return (
     <div className="page-container">
 <Typography variant="h4" component="h4" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
-  Active DigiByte Nodes
+  DigiByte Nodes
 </Typography>
 <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}>
-  This page displays unique nodes seen in the peers.dat file of the DigiHash mining pool wallet since pool was setup in May, 2024.
-  <br />  A blockchain node is simply a computer running the DGB core wallet. The data from peers.dat is parsed to display unique nodes.
+  This page displays unique nodes seen in the peers.dat file of the DigiHash mining pool wallet since the wallet node was setup on May 8th, 2024.
+  <br />  A blockchain node is simply a computer running the DGB core wallet. The data from peers.dat is parsed to display unique node IP's only.
 </Typography>
       {!loading && (
         <>
-          <h2 className="centered-text">Unique Nodes Seen Recently: {nodesData.length}</h2>
+          <h2 className="centered-text">Unique Nodes Seen Since May, 8th 2024: {nodesData.length}</h2>
           <svg width={width} height={height}>
             <rect width={width} height={height} fill="#f3f3f3" />
             <Graticule graticule={() => geoGraticule10()} stroke="#000" />
