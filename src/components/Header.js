@@ -17,6 +17,19 @@ const Header = () => {
     setAnchorEl(null);
   };
 
+  const pages = [
+    { name: 'Home', path: '/' },
+    { name: 'Blocks', path: '/blocks' },
+    { name: 'Supply', path: '/supply' },
+    { name: 'Algos', path: '/algos' },
+    { name: 'Difficulties', path: '/difficulties' },
+    { name: 'Hashrate', path: '/hashrate' },
+    { name: 'Pools', path: '/pools' },
+    { name: 'Nodes', path: '/nodes' },
+    { name: 'Downloads', path: '/downloads' },
+    { name: 'Taproot', path: '/taproot' }  // Add this line
+  ];
+
   return (
     <AppBar position="static" sx={{ backgroundColor: '#0066cc' }}>
       <Toolbar>
@@ -25,33 +38,11 @@ const Header = () => {
         </Typography>
         {!isMobile && (
           <Box sx={{ display: 'flex' }}> {/* Desktop links */}
-            <NavLink to="/" style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
-              Home
-            </NavLink>
-            <NavLink to="/blocks" style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
-              Blocks
-            </NavLink>
-            <NavLink to="/algos" style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
-              Algos
-            </NavLink>
-            <NavLink to="/pools" style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
-              Miners
-            </NavLink>
-            <NavLink to="/difficulties" style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
-              Difficulty
-            </NavLink>
-            <NavLink to="/hashrate" style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
-              Hashrate
-            </NavLink>
-            <NavLink to="/supply" style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
-              Supply
-            </NavLink>
-            <NavLink to="/downloads" style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
-              Downloads
-            </NavLink>
-            <NavLink to="/nodes" style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
-              Nodes
-            </NavLink>
+            {pages.map((page) => (
+              <NavLink key={page.name} to={page.path} style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
+                {page.name}
+              </NavLink>
+            ))}
             <a href="https://digihash.digibyte.io/" target="_blank" rel="noopener noreferrer" style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
               DigiHash
             </a>
@@ -93,33 +84,11 @@ const Header = () => {
                 },
               }}
             >
-              <MenuItem onClick={handleMenuClose} component={NavLink} to="/">
-                Home
-              </MenuItem>
-              <MenuItem onClick={handleMenuClose} component={NavLink} to="/blocks">
-                Blocks
-              </MenuItem>
-              <MenuItem onClick={handleMenuClose} component={NavLink} to="/algos">
-                Algos
-              </MenuItem>
-              <MenuItem onClick={handleMenuClose} component={NavLink} to="/pools">
-                Miners
-              </MenuItem>
-              <MenuItem onClick={handleMenuClose} component={NavLink} to="/difficulties">
-                Difficulty
-              </MenuItem>
-              <MenuItem onClick={handleMenuClose} component={NavLink} to="/hashrate">
-                Hashrate
-              </MenuItem>
-              <MenuItem onClick={handleMenuClose} component={NavLink} to="/supply">
-                Supply
-              </MenuItem>
-              <MenuItem onClick={handleMenuClose} component={NavLink} to="/downloads">
-                Downloads
-              </MenuItem>
-              <MenuItem onClick={handleMenuClose} component={NavLink} to="/nodes">
-                Nodes
-              </MenuItem>
+              {pages.map((page) => (
+                <MenuItem key={page.name} onClick={handleMenuClose} component={NavLink} to={page.path}>
+                  {page.name}
+                </MenuItem>
+              ))}
               <MenuItem onClick={handleMenuClose}>
                 <a href="https://digihash.digibyte.io/" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>
                   DigiHash

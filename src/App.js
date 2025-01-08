@@ -14,6 +14,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import config from './config';
 import HashratePage from './pages/HashratePage';
+import TaprootPage from './pages/TaprootPage';
 
 const App = () => {
   const [blockchainInfo, setBlockchainInfo] = useState(null);
@@ -93,6 +94,7 @@ const App = () => {
               path="/hashrate"
               element={<HashratePage difficultiesData={blockchainInfo?.difficulties} />}
             />
+            <Route path="/taproot" element={<TaprootPage />} />
           </Routes>
         </div>
         <Footer />

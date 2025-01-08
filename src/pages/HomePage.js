@@ -195,7 +195,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
                 Latest Version
               </Typography>
               <Typography variant="h2" className={`${styles.centerText} ${styles.boldText}`}>
-                v8.22.0-RC4
+                v8.22.0-RC5
               </Typography>
               <Typography variant="body1" className={styles.paragraph}>
                 Latest DGB core version.

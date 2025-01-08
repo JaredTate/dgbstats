@@ -13,6 +13,7 @@ import config from '../config';
 
 const useFetchData = () => {
   const [nodesData, setNodesData] = useState([]);
+  const [versionCounts, setVersionCounts] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,7 +27,8 @@ const useFetchData = () => {
       const message = JSON.parse(event.data);
       if (message.type === 'geoData') {
         console.log('Received geo data:', message.data);
-        setNodesData(message.data);
+        setNodesData(message.data.nodes || []);
+        setVersionCounts(message.data.versionCounts || {});
         setLoading(false);
       }
     };
@@ -40,13 +42,17 @@ const useFetchData = () => {
     };
   }, []);
 
-  return { nodesData, loading };
+  return { nodesData, versionCounts, loading };
 };
 
 const NodesPage = () => {
-  const { nodesData, loading } = useFetchData();
+  const { nodesData, versionCounts, loading } = useFetchData();
 
   const nodesByCountry = useMemo(() => {
+    if (!nodesData || nodesData.length === 0) {
+      return {};
+    }
+
     const countryCount = nodesData.reduce((acc, node) => {
       if (node.country) {
         acc[node.country] = (acc[node.country] || 0) + 1;
@@ -69,16 +75,35 @@ const NodesPage = () => {
 
   return (
     <div className="page-container">
-<Typography variant="h4" component="h4" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
-  DigiByte Nodes
-</Typography>
-<Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}>
-  This page displays unique nodes seen in the peers.dat file of the DigiHash mining pool wallet since the wallet node was setup on May 8th, 2024.
-  <br />  A blockchain node is simply a computer running the DGB core wallet. The data from peers.dat is parsed to display unique node IP's only.
-</Typography>
+      <Typography variant="h4" component="h4" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
+        DigiByte Nodes
+      </Typography>
+      <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}>
+        This page displays unique nodes seen in the peers.dat file of the DigiHash mining pool wallet since the wallet node was setup on May 8th, 2024.
+        <br />  A blockchain node is simply a computer running the DGB core wallet. The data from peers.dat is parsed to display unique node IP's only.
+      </Typography>
       {!loading && (
         <>
           <h2 className="centered-text">Unique Nodes Seen Since May, 8th 2024: {nodesData.length}</h2>
+          <div className="version-counts-table">
+            <h3>Node Version Counts</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Version</th>
+                  <th>Count</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(versionCounts).map(([version, count]) => (
+                  <tr key={version}>
+                    <td>{version}</td>
+                    <td>{count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <svg width={width} height={height}>
             <rect width={width} height={height} fill="#f3f3f3" />
             <Graticule graticule={() => geoGraticule10()} stroke="#000" />
