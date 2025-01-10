@@ -1,43 +1,45 @@
-.centered-text .MuiDataGrid-cell {
-    color: black;
-    text-align: center;
-  }
-  
-  .page-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-  }
-  
-  .centered-text {
-    color: black;
-    text-align: center;
-  }
-  
-  .centered-text .MuiDataGrid-cell,
-  .data-grid .MuiDataGrid-columnHeaderTitle { /* Add this selector to target column headers */
-    color: black;
-    text-align: center;
-  }
-  .grid-container {
-    display: flex;
-    justify-content: space-around;
-    margin-bottom: 1rem;
-  }
-  
-  .zoom-controls {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 1rem;
-  }
-  
-  .zoom-controls button {
-    margin: 0 0.5rem;
-  }
-/* ... (existing CSS code) */
+/* Remove fixed height: 100vh so the page can grow with content. */
+.page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* height: 100vh; */  /* Remove this */
+  min-height: 100vh;
+  padding: 20px;
+  overflow-x: hidden;
+  max-width: 1200px;
+  margin: 0 auto;
+}
 
+/* Keep your existing styles for headings, etc. */
+.centered-text {
+  color: black;
+  text-align: center;
+}
+
+.centered-text .MuiDataGrid-cell,
+.data-grid .MuiDataGrid-columnHeaderTitle {
+  color: black;
+  text-align: center;
+}
+
+.grid-container {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 1rem;
+}
+
+.zoom-controls {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.zoom-controls button {
+  margin: 0 0.5rem;
+}
+
+/* Nodes by Country side-panel */
 .nodes-by-country {
   color: black;
   margin-top: 2rem;
@@ -53,6 +55,32 @@
 .nodes-by-country li {
   margin-bottom: 5px;
 }
-  
-  /* ... (rest of the existing CSS code) */
-  
+
+/* A container for the map that can scale responsively. */
+.map-container {
+  width: 100%;
+  margin: 20px auto;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  /* we can show a shadow or border if desired */
+  /* box-shadow: 0 2px 4px rgba(0,0,0,0.1); */
+}
+
+/* Make sure the SVG doesn’t overflow horizontally on small screens. */
+.map-container svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+/* Adjust map container for smaller screens if desired */
+@media (max-width: 768px) {
+  .page-container {
+    padding: 10px;
+  }
+  .map-container {
+    margin: 10px auto;
+  }
+}
