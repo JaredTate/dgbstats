@@ -1,8 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Container, Typography } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import { Typography } from '@mui/material';
 import { Graticule } from '@visx/geo';
-import axios from 'axios';
 import './NodesPage.css';
 import digibyteIcon from './digibyte256.png';
 import { geoMercator, geoPath, geoGraticule10 } from 'd3-geo';
@@ -13,60 +11,55 @@ import config from '../config';
 
 const useFetchData = () => {
   const [nodesData, setNodesData] = useState([]);
-  const [versionCounts, setVersionCounts] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const socket = new WebSocket(config.wsBaseUrl);
 
-    socket.onopen = () => {
-      console.log('WebSocket connection established');
-    };
+    socket.onopen = () => console.log('WebSocket connection established');
 
     socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      if (message.type === 'geoData') {
-        console.log('Received geo data:', message.data);
-        setNodesData(message.data.nodes || []);
-        setVersionCounts(message.data.versionCounts || {});
+      try {
+        const message = JSON.parse(event.data);
+        if (message.type === 'geoData') {
+          console.log('Received geo data:', message.data);
+          setNodesData(message.data || []);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('WebSocket message error:', error);
         setLoading(false);
       }
     };
 
-    socket.onclose = () => {
-      console.log('WebSocket connection closed');
-    };
+    socket.onclose = () => setLoading(true);
+    socket.onerror = () => setLoading(true);
 
-    return () => {
-      socket.close();
-    };
+    return () => socket.readyState === WebSocket.OPEN && socket.close();
   }, []);
 
-  return { nodesData, versionCounts, loading };
+  return { nodesData, loading };
 };
 
 const NodesPage = () => {
-  const { nodesData, versionCounts, loading } = useFetchData();
+  const { nodesData, loading } = useFetchData();
+  const width = useWidth();
+  const height = 800;
+
+  const validNodes = useMemo(() => 
+    nodesData.filter(node => node.lat !== 0 && node.lon !== 0),
+    [nodesData]
+  );
 
   const nodesByCountry = useMemo(() => {
-    if (!nodesData || nodesData.length === 0) {
-      return {};
-    }
-
-    const countryCount = nodesData.reduce((acc, node) => {
+    if (!nodesData || nodesData.length === 0) return {};
+    return nodesData.reduce((acc, node) => {
       if (node.country) {
         acc[node.country] = (acc[node.country] || 0) + 1;
       }
       return acc;
     }, {});
-
-    const sortedCountries = Object.entries(countryCount).sort((a, b) => b[1] - a[1]);
-
-    return Object.fromEntries(sortedCountries);
   }, [nodesData]);
-
-  const width = useWidth();
-  const height = 800;
 
   const projection = geoMercator()
     .scale(width / 9)
@@ -84,46 +77,44 @@ const NodesPage = () => {
       </Typography>
       {!loading && (
         <>
-          <h2 className="centered-text">Unique Nodes Seen Since May, 8th 2024: {nodesData.length}</h2>
-          <div className="version-counts-table">
-            <h3>Node Version Counts</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Version</th>
-                  <th>Count</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(versionCounts).map(([version, count]) => (
-                  <tr key={version}>
-                    <td>{version}</td>
-                    <td>{count}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <h2 className="centered-text">
+            Unique Nodes: {nodesData.length} (Mapped: {validNodes.length})
+          </h2>
+          
           <svg width={width} height={height}>
             <rect width={width} height={height} fill="#f3f3f3" />
-            <Graticule graticule={() => geoGraticule10()} stroke="#000" />
-            {feature(world, world.objects.land).features.map((d, i) => (
-              <path key={i} d={geoPath().projection(projection)(d)} fill="#ccc" stroke="#000" strokeWidth={0.5} />
+            <Graticule graticule={geoGraticule10} stroke="#DDD" />
+            {feature(world, world.objects.countries).features.map((d, i) => (
+              <path
+                key={i}
+                d={geoPath().projection(projection)(d)}
+                fill="#ccc"
+                stroke="#999"
+                strokeWidth={0.5}
+              />
             ))}
-            {nodesData.map((node, i) => {
+            {validNodes.map((node, i) => {
               const [x, y] = projection([node.lon, node.lat]);
-              if (isNaN(x) || isNaN(y)) {
-                return null;
-              }
+              if (isNaN(x) || isNaN(y)) return null;
               return (
-                <g key={`node-${i}`}>
-                  <image href={digibyteIcon} x={x - 8} y={y - 8} width={16} height={16} />
-                  <text x={x} y={y + 20} textAnchor="middle" fontSize={10}>
-                  </text>
+                <g key={`node-${i}`} transform={`translate(${x - 8},${y - 8})`}>
+                  <image href={digibyteIcon} width={16} height={16} />
                 </g>
               );
             })}
           </svg>
+
+          <div className="nodes-by-country">
+            <h3>Nodes by Country</h3>
+            <ul>
+              {Object.entries(nodesByCountry)
+                .filter(([country]) => country !== 'Unknown')
+                .sort(([,a], [,b]) => b - a)
+                .map(([country, count]) => (
+                  <li key={country}>{country}: {count}</li>
+                ))}
+            </ul>
+          </div>
         </>
       )}
     </div>
