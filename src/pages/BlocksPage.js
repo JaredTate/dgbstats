@@ -48,8 +48,8 @@ const BlocksPage = () => {
 
   // Update the displayed blocks based on the current page
   useEffect(() => {
-    const startIndex = currentPage * 10;
-    const endIndex = startIndex + 10;
+    const startIndex = currentPage * 20; // Changed from 10 to 20
+    const endIndex = startIndex + 20;
     setDisplayedBlocks(blocks.slice(startIndex, endIndex)); // Slice the blocks array to get the blocks for the current page
   }, [blocks, currentPage]);
 
@@ -70,7 +70,7 @@ const BlocksPage = () => {
         Realtime DigiByte Blocks
       </Typography>
       <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '20px' }}>
-        This page pre-loads the 10 most recent DGB blocks & will keep incrementing in realtime as long as you leave it open as blocks are mined.
+        This page pre-loads the 20 most recent DGB blocks & will keep incrementing in realtime as long as you leave it open as blocks are mined.
       </Typography>
       {loading ? (
         <Typography variant="h5">Loading...</Typography>
@@ -78,43 +78,60 @@ const BlocksPage = () => {
         <>
           {displayedBlocks.map((block, index) => (
             <Grid
-  container
-  spacing={2}
-  key={index}
-  sx={{
-    backgroundColor: index % 2 === 0 ? '#002352' : '#0066cc',
-    color: 'white',
-    marginBottom: '15px',
-    borderRadius: '4px',
-  }}
->
-  <Grid item xs={3}>
-    <Typography variant="body2" sx={{ fontWeight: 'bold', paddingTop: '3px', paddingBottom: '7px' }}>
-      Height: {block.height}
-    </Typography>
-  </Grid>
-  <Grid item xs={5}>
-    <Typography variant="body2" sx={{ fontWeight: 'bold', paddingTop: '3px', paddingBottom: '7px', }}>
-      Hash: {block.hash}
-    </Typography>
-  </Grid>
-  <Grid item xs={2}>
-    <Typography variant="body2" sx={{ fontWeight: 'bold', paddingTop: '3px', paddingBottom: '7px' }}>
-      Algo: {block.algo}
-    </Typography>
-  </Grid>
-  <Grid item xs={2}>
-    <Typography variant="body2" sx={{ fontWeight: 'bold', paddingTop: '3px', paddingBottom: '7px' }}>
-      TX Count: {block.txCount}
-    </Typography>
-  </Grid>
-</Grid>
+              container
+              spacing={2}
+              key={index}
+              sx={{
+                backgroundColor: index % 2 === 0 ? '#002352' : '#0066cc',
+                color: 'white',
+                marginBottom: '15px',
+                borderRadius: '4px',
+              }}
+            >
+              <Grid item xs={2}>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', padding: '3px 0 7px' }}>
+                  Height: {block.height}
+                </Typography>
+              </Grid>
+              <Grid item xs={3}>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', padding: '3px 0 7px' }}>
+                  Hash: {block.hash.substring(0, 16)}...
+                </Typography>
+              </Grid>
+              <Grid item xs={2}>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', padding: '3px 0 7px' }}>
+                  Algo: {block.algo}
+                </Typography>
+              </Grid>
+              <Grid item xs={2}>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', padding: '3px 0 7px' }}>
+                  Pool: {block.poolIdentifier}
+                </Typography>
+              </Grid>
+              <Grid item xs={2}>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', padding: '3px 0 7px' }}>
+                  TX Count: {block.txCount}
+                </Typography>
+              </Grid>
+              <Grid item xs={1}>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    fontWeight: 'bold',
+                    padding: '3px 0 7px',
+                    color: block.taprootSignaling ? '#90EE90' : '#FF6B6B'
+                  }}
+                >
+                  {block.taprootSignaling ? 'Taproot ✓' : 'No Taproot'}
+                </Typography>
+              </Grid>
+            </Grid>
           ))}
           <Grid container justifyContent="space-between" mt={2}>
             <Button variant="contained" onClick={handlePrevPage} disabled={currentPage === 0}>
               Previous
             </Button>
-            <Button variant="contained" onClick={handleNextPage} disabled={currentPage === Math.floor(blocks.length / 10)}>
+            <Button variant="contained" onClick={handleNextPage} disabled={currentPage === Math.floor(blocks.length / 20)}>
               Next
             </Button>
           </Grid>

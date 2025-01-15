@@ -1,0 +1,15 @@
+.pie-chart-container {
+  max-width: 7800px;  /* Increased from 600px to accommodate larger chart */
+  margin: 0 auto 2rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+@media (max-width: 600px) {
+  .pie-chart-container svg {
+    width: 100%;
+    height: auto;
+  }
+}
