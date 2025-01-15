@@ -118,9 +118,13 @@ const NodesPage = () => {
       <Typography variant="body1" align="center" gutterBottom>
         This page displays unique nodes seen in the peers.dat file of the DigiHash mining pool
         wallet since the wallet node was setup on May 8th, 2024.
-        <br />
+        <br /> 
         A blockchain node is simply a computer running the DGB core wallet. The data from peers.dat
         is parsed to display unique node IP's only.
+        <br /> <br />
+        Not all these nodes should be considered active as they could be shut down now, or might be the same node behind an ever changing VPN or dynamic IP.
+        <br />
+        Mapping the decentralization of the DigiByte network through node count is a difficult task and this map represents one method to do so.
       </Typography>
 
       {!loading && (
