@@ -63,6 +63,11 @@ const BlocksPage = () => {
     setCurrentPage((prevPage) => prevPage + 1);
   };
 
+  // Format number with commas
+  const formatNumber = (num) => {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  };
+
   // Render the component
   return (
     <Container maxWidth="lg">
@@ -77,55 +82,66 @@ const BlocksPage = () => {
       ) : (
         <>
           {displayedBlocks.map((block, index) => (
-            <Grid
-              container
-              spacing={2}
+            <a
+              href={`https://dev.digiexplorer.info/block/${block.hash}`}
               key={index}
-              sx={{
-                backgroundColor: index % 2 === 0 ? '#002352' : '#0066cc',
-                color: 'white',
-                marginBottom: '15px',
-                borderRadius: '4px',
-              }}
+              style={{ textDecoration: 'none' }}
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              <Grid item xs={2}>
-                <Typography variant="body2" sx={{ fontWeight: 'bold', padding: '3px 0 7px' }}>
-                  Height: {block.height}
-                </Typography>
+              <Grid
+                container
+                spacing={2}
+                sx={{
+                  backgroundColor: index % 2 === 0 ? '#002352' : '#0066cc',
+                  color: 'white',
+                  marginBottom: '15px',
+                  borderRadius: '4px',
+                  '&:hover': {
+                    opacity: 0.9,
+                    cursor: 'pointer',
+                  },
+                }}
+              >
+                <Grid item xs={2}>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', padding: '3px 0 7px' }}>
+                    Height: {formatNumber(block.height)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={3}>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', padding: '3px 0 7px' }}>
+                    Hash: {block.hash.substring(0, 16)}...
+                  </Typography>
+                </Grid>
+                <Grid item xs={2}>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', padding: '3px 0 7px' }}>
+                    Algo: {block.algo}
+                  </Typography>
+                </Grid>
+                <Grid item xs={2}>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', padding: '3px 0 7px' }}>
+                    Pool: {block.poolIdentifier}
+                  </Typography>
+                </Grid>
+                <Grid item xs={2}>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', padding: '3px 0 7px' }}>
+                    TX Count: {block.txCount}
+                  </Typography>
+                </Grid>
+                <Grid item xs={1}>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      fontWeight: 'bold',
+                      padding: '3px 0 7px',
+                      color: block.taprootSignaling ? '#90EE90' : '#FF6B6B'
+                    }}
+                  >
+                    {block.taprootSignaling ? 'Taproot ✓' : 'No Taproot'}
+                  </Typography>
+                </Grid>
               </Grid>
-              <Grid item xs={3}>
-                <Typography variant="body2" sx={{ fontWeight: 'bold', padding: '3px 0 7px' }}>
-                  Hash: {block.hash.substring(0, 16)}...
-                </Typography>
-              </Grid>
-              <Grid item xs={2}>
-                <Typography variant="body2" sx={{ fontWeight: 'bold', padding: '3px 0 7px' }}>
-                  Algo: {block.algo}
-                </Typography>
-              </Grid>
-              <Grid item xs={2}>
-                <Typography variant="body2" sx={{ fontWeight: 'bold', padding: '3px 0 7px' }}>
-                  Pool: {block.poolIdentifier}
-                </Typography>
-              </Grid>
-              <Grid item xs={2}>
-                <Typography variant="body2" sx={{ fontWeight: 'bold', padding: '3px 0 7px' }}>
-                  TX Count: {block.txCount}
-                </Typography>
-              </Grid>
-              <Grid item xs={1}>
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    fontWeight: 'bold',
-                    padding: '3px 0 7px',
-                    color: block.taprootSignaling ? '#90EE90' : '#FF6B6B'
-                  }}
-                >
-                  {block.taprootSignaling ? 'Taproot ✓' : 'No Taproot'}
-                </Typography>
-              </Grid>
-            </Grid>
+            </a>
           ))}
           <Grid container justifyContent="space-between" mt={2}>
             <Button variant="contained" onClick={handlePrevPage} disabled={currentPage === 0}>
