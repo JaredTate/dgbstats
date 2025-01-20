@@ -170,6 +170,9 @@ const TaprootPage = () => {
           <Typography variant="body2" sx={{ fontSize: '0.9rem', mt: 1, color: '#666' }}>
             ({recentBlocks.length} blocks analyzed)
           </Typography>
+          <Typography variant="body2" sx={{ fontSize: '0.9rem', color: '#666' }}>
+            ({recentBlocks.filter(block => block.taprootSignaling).length}/{recentBlocks.length} supporting blocks)
+          </Typography>
         </Paper>
 
         <Paper className={styles.paper} sx={{ flex: 2 }}>
