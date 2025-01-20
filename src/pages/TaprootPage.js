@@ -22,6 +22,7 @@ const TaprootPage = () => {
       min_activation_height: 0
     }
   });
+  const [recentBlocks, setRecentBlocks] = useState([]);
 
   const calculateProgress = () => {
     // First log the data to debug
@@ -48,6 +49,12 @@ const TaprootPage = () => {
     return 0;
   };
 
+  const calculateRecentSupport = () => {
+    if (recentBlocks.length === 0) return 0;
+    const supportingBlocks = recentBlocks.filter(block => block.taprootSignaling).length;
+    return (supportingBlocks / recentBlocks.length) * 100;
+  };
+
   const getActivationBlock = () => {
     if (taprootStatus.bip9?.status === 'locked_in' && taprootStatus.bip9?.since) {
       return taprootStatus.bip9.since + 40320; // Add one activation window to the 'since' block
@@ -68,6 +75,16 @@ const TaprootPage = () => {
         const taproot = message.data.blockchainInfo.softforks.taproot;
         console.log('Received Taproot Data:', taproot);
         setTaprootStatus(taproot);
+        // Set initial recent blocks if provided
+        if (message.data.recentBlocks) {
+          setRecentBlocks(message.data.recentBlocks.slice(-240)); // Keep last 240 blocks
+        }
+      } else if (message.type === 'newBlock') {
+        // Update recent blocks when new block arrives
+        setRecentBlocks(prevBlocks => {
+          const updatedBlocks = [...prevBlocks, message.data];
+          return updatedBlocks.slice(-240); // Keep only last 240 blocks
+        });
       }
     };
 
@@ -126,6 +143,25 @@ const TaprootPage = () => {
             fontSize: '2.5rem'
           }}>
             {taprootStatus.active ? 'YES' : 'NO'}
+          </Typography>
+        </Paper>
+
+        <Paper className={styles.paper} sx={{ flex: 1, textAlign: 'center' }}>
+          <Typography variant="h5" gutterBottom sx={{ color: '#002456', fontSize: '1.5rem' }}>
+            Recent Taproot Support
+          </Typography>
+          <Typography variant="h3" sx={{ 
+            color: '#4caf50',
+            fontSize: '2.5rem',
+            fontWeight: 'bold'
+          }}>
+            {calculateRecentSupport().toFixed(1)}%
+          </Typography>
+          <Typography variant="body1" sx={{ fontSize: '1.1rem' }}>
+            Blocks supporting Taproot last 1 hour
+          </Typography>
+          <Typography variant="body2" sx={{ fontSize: '0.9rem', mt: 1, color: '#666' }}>
+            ({recentBlocks.length} blocks analyzed)
           </Typography>
         </Paper>
 
