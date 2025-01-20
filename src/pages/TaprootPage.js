@@ -50,9 +50,13 @@ const TaprootPage = () => {
   };
 
   const calculateRecentSupport = () => {
-    if (recentBlocks.length === 0) return 0;
+    if (!recentBlocks || recentBlocks.length === 0) return 0;
+    
     const supportingBlocks = recentBlocks.filter(block => block.taprootSignaling).length;
-    return (supportingBlocks / recentBlocks.length) * 100;
+    const percentage = (supportingBlocks / recentBlocks.length) * 100;
+    
+    console.log(`Supporting blocks: ${supportingBlocks}/${recentBlocks.length} = ${percentage}%`);
+    return percentage;
   };
 
   const getActivationBlock = () => {
@@ -71,19 +75,22 @@ const TaprootPage = () => {
 
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data);
+      console.log('Received message:', message);
+
       if (message.type === 'initialData') {
         const taproot = message.data.blockchainInfo.softforks.taproot;
-        console.log('Received Taproot Data:', taproot);
         setTaprootStatus(taproot);
-        // Set initial recent blocks if provided
-        if (message.data.recentBlocks) {
-          setRecentBlocks(message.data.recentBlocks.slice(-240)); // Keep last 240 blocks
-        }
-      } else if (message.type === 'newBlock') {
-        // Update recent blocks when new block arrives
+      } 
+      else if (message.type === 'recentBlocks') {
+        // Handle initial block data
+        console.log('Received recent blocks:', message.data);
+        setRecentBlocks(message.data.slice(-240));
+      }
+      else if (message.type === 'newBlock') {
+        console.log('Received new block:', message.data);
         setRecentBlocks(prevBlocks => {
-          const updatedBlocks = [...prevBlocks, message.data];
-          return updatedBlocks.slice(-240); // Keep only last 240 blocks
+          const updatedBlocks = [message.data, ...prevBlocks];
+          return updatedBlocks.slice(0, 240); // Keep only last 240 blocks
         });
       }
     };
