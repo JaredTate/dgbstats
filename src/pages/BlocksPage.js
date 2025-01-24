@@ -83,7 +83,7 @@ const BlocksPage = () => {
         <>
           {displayedBlocks.map((block, index) => (
             <a
-              href={`https://dev.digiexplorer.info/block/${block.hash}`}
+              href={`https://digiexplorer.info/block/${block.hash}`}
               key={index}
               style={{ textDecoration: 'none' }}
               target="_blank"
