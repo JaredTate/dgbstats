@@ -37,7 +37,7 @@ const DownloadsPage = () => {
         DigiByte Core Wallet Downloads
       </Typography>
       <Typography variant="body1" component="p" align="center" className={styles.description}>
-        One useful metric for estimating total blockchain network size is to look at the total amount of core wallets downloaded from GitHub.
+        One useful metric for estimating total blockchain network size is to look at the total amount of DGB core wallets downloaded from GitHub.
       </Typography>
       
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 4 }}>
