@@ -134,10 +134,10 @@ const BlocksPage = () => {
                     sx={{ 
                       fontWeight: 'bold',
                       padding: '3px 0 7px',
-                      color: block.taprootSignaling ? '#90EE90' : '#FF6B6B'
+                      color: block.taprootSignaling ? '#90EE90' : 'white'
                     }}
                   >
-                    {block.taprootSignaling ? 'Taproot ✓' : 'No Taproot'}
+                    {block.taprootSignaling ? 'Taproot ✓' : 'Normal'}
                   </Typography>
                 </Grid>
               </Grid>

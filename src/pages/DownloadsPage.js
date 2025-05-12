@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Box, Container } from '@mui/material';
+import { Typography, Box, Container, Button } from '@mui/material';
 import styles from '../App.module.css';
 
 const DownloadsPage = () => {
@@ -37,8 +37,35 @@ const DownloadsPage = () => {
         DigiByte Core Wallet Downloads
       </Typography>
       <Typography variant="body1" component="p" align="center" className={styles.description}>
-        One useful metric for estimating total blockchain network size is to look at the total amount of core wallets downloaded from GitHub.
+        One useful metric for estimating total blockchain network size is to look at the total amount of DGB core wallets downloaded from GitHub.
       </Typography>
+      
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 4 }}>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          size="large"
+          href="https://github.com/DigiByte-Core/digibyte/releases"
+          target="_blank"
+          rel="noopener noreferrer"
+          sx={{
+            fontWeight: 'bold',
+            px: 4,
+            py: 1.5,
+            borderRadius: 2,
+            fontSize: '1.1rem',
+            boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: '0 6px 12px rgba(0,0,0,0.25)',
+            },
+            transition: 'all 0.2s ease-in-out'
+          }}
+        >
+          Download Latest DGB Core Wallet Here
+        </Button>
+      </Box>
+      
       <Typography variant="h5" className={styles.totalDownloads} style={{ textAlign: 'center' }}>
         Total Github Release Downloads: <strong>{numberWithCommas(totalDownloads)}</strong>
       </Typography>
