@@ -54,13 +54,14 @@ const BlocksPage = () => {
   }, [blocks, currentPage]);
 
   // Event handler for previous page button click
+  const totalPages = Math.ceil(blocks.length / 20);
+
   const handlePrevPage = () => {
-    setCurrentPage((prevPage) => prevPage - 1);
+    setCurrentPage((prevPage) => Math.max(prevPage - 1, 0));
   };
 
-  // Event handler for next page button click
   const handleNextPage = () => {
-    setCurrentPage((prevPage) => prevPage + 1);
+    setCurrentPage((prevPage) => Math.min(prevPage + 1, totalPages - 1));
   };
 
   // Format number with commas
@@ -147,7 +148,11 @@ const BlocksPage = () => {
             <Button variant="contained" onClick={handlePrevPage} disabled={currentPage === 0}>
               Previous
             </Button>
-            <Button variant="contained" onClick={handleNextPage} disabled={currentPage === Math.floor(blocks.length / 20)}>
+            <Button
+              variant="contained"
+              onClick={handleNextPage}
+              disabled={currentPage >= totalPages - 1}
+            >
               Next
             </Button>
           </Grid>
