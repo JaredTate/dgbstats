@@ -211,8 +211,10 @@ const PoolsPage = () => {
     return items.slice(startIndex, startIndex + itemsPerPage);
   };
 
-  const handlePrevPage = () => setCurrentPage(prev => prev - 1);
-  const handleNextPage = () => setCurrentPage(prev => prev + 1);
+  const totalPages = Math.ceil((sortedAddresses.length + singleBlockAddresses.length) / itemsPerPage);
+
+  const handlePrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 0));
+  const handleNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages - 1));
 
   return (
     <Container maxWidth="lg">
@@ -321,10 +323,10 @@ const PoolsPage = () => {
           >
             Previous
           </Button>
-          <Button 
-            variant="contained" 
-            onClick={handleNextPage} 
-            disabled={currentPage >= Math.floor((sortedAddresses.length + singleBlockAddresses.length) / itemsPerPage)}
+          <Button
+            variant="contained"
+            onClick={handleNextPage}
+            disabled={currentPage >= totalPages - 1}
           >
             Next
           </Button>
