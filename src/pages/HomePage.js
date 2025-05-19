@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Typography, Box, Grid, Paper } from '@mui/material';
-import styles from '../App.module.css';
+import { 
+  Container, Typography, Box, Grid, Card, CardContent, 
+  Divider, Avatar
+} from '@mui/material';
+import BlockIcon from '@mui/icons-material/ViewCompact';
+import TransactionIcon from '@mui/icons-material/Sync';
+import StorageIcon from '@mui/icons-material/Storage';
+import TokenIcon from '@mui/icons-material/Token';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import RewardIcon from '@mui/icons-material/EmojiEvents';
+import SpeedIcon from '@mui/icons-material/Speed';
+import UpdateIcon from '@mui/icons-material/Update';
+import DoneAllIcon from '@mui/icons-material/DoneAll';
 import config from '../config';
 
 const HomePage = ({ numberWithCommas, formatNumber }) => {
@@ -39,191 +50,308 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
     };
   }, []);
 
+  const StatCard = ({ title, value, icon, description, loading, color = '#0066cc' }) => (
+    <Card 
+      elevation={3} 
+      sx={{
+        height: '100%',
+        transition: 'transform 0.3s, box-shadow 0.3s',
+        '&:hover': {
+          transform: 'translateY(-5px)',
+          boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
+        },
+        borderTop: `4px solid ${color}`,
+        borderRadius: '8px'
+      }}
+    >
+      <CardContent>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+          <Typography variant="h6" fontWeight="bold" color="text.primary">
+            {title}
+          </Typography>
+          <Avatar sx={{ bgcolor: color }}>
+            {icon}
+          </Avatar>
+        </Box>
+        
+        {loading ? (
+          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+            Loading...
+          </Typography>
+        ) : (
+          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+            {value}
+          </Typography>
+        )}
+        
+        <Typography variant="body2" color="text.secondary">
+          {description}
+        </Typography>
+      </CardContent>
+    </Card>
+  );
+
   return (
-    <main>
-      <Container maxWidth="lg" className={styles.container}>
-        <Typography variant="h4" component="h4" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
-          DigiByte Blockchain Statistics
-        </Typography>
-        <Typography variant="body1" component="p" align="center" gutterBottom>
-          This is a free & open source website to find real time data & information about DigiByte blockchain pulled directly from the chain via digibyted.
+    <Box 
+      sx={{ 
+        py: 4, 
+        backgroundImage: 'linear-gradient(to bottom, #f8f9fa, #ffffff)',
+        minHeight: '100vh'
+      }}
+    >
+      <Container maxWidth="lg">
+        <Card
+          elevation={2}
+          sx={{
+            backgroundColor: '#f2f4f8',
+            borderRadius: '12px',
+            mb: 5,
+            overflow: 'hidden',
+            backgroundImage: 'linear-gradient(135deg, #f8f9fa 0%, #e8eef7 100%)',
+            border: '1px solid rgba(0, 35, 82, 0.1)'
+          }}
+        >
+          <CardContent sx={{ py: 4, textAlign: 'center' }}>
+            <Typography 
+              variant="h2" 
+              component="h1" 
+              fontWeight="800" 
+              gutterBottom
+              sx={{ 
+                color: '#002352',
+                mb: 2,
+                letterSpacing: '0.5px',
+                fontSize: { xs: '1.8rem', sm: '2.3rem', md: '2.8rem' }
+              }}
+            >
+              DigiByte Blockchain Statistics
+            </Typography>
+            
+            <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 3, borderColor: '#0066cc', borderWidth: 2 }} />
+            
+            <Typography 
+              variant="subtitle1" 
+              component="p" 
+              sx={{ 
+                maxWidth: '800px', 
+                mx: 'auto', 
+                mb: 3,
+                color: '#555',
+                fontSize: '1.1rem'
+              }}
+            >
+              This is a free & open source website to find real time data & information about DigiByte blockchain pulled directly from the chain via digibyted.
+            </Typography>
+            
+            <Typography 
+              variant="body1" 
+              component="p" 
+              sx={{ 
+                maxWidth: '800px', 
+                mx: 'auto',
+                color: '#444',
+                lineHeight: 1.6
+              }}
+            >
+              The DigiByte blockchain was launched on January 10th, 2014. There is <strong>NO </strong> 
+              company, centralized group, mass premine, entity or individual who controls DGB. 
+              DGB is truly decentralized and is the best combination of speed, security & decentralization 
+              you will see in any blockchain in the world today.
+            </Typography>
+          </CardContent>
+        </Card>
 
-          <br />  <br />The DigiByte blockchain was launched on January 10th, 2014. There is <strong>NO </strong> company, centralized group, mass premine, entity or individual who controls DGB. 
-          DGB is truly decentralized and is the best combination of speed, security & decentralization you will see in any blockchain in the world today.
-
-          <br /> <br />DGB is a layer 1 UTXO blockchain with 15 second blocks, 5 mining algos & a max supply of 21 Billion DGB. DGB has pioneered several innovations since 2014.
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={6} lg={4}>
-            <Paper className={styles.paper}>
-              <Typography variant="h1" className={styles.centerText}>
-                Total Blocks
-              </Typography>
-              {blockchainInfo && (
-                <Typography variant="h2" className={`${styles.centerText} ${styles.boldText}`}>
-                  {formatNumber(blockchainInfo.blocks)}
-                </Typography>
-              )}
-              <Typography variant="body1" className={styles.paragraph}>
-                Total blocks in the DigiByte blockchain since the chain was started on Jan 10th, 2014.
-              </Typography>
-            </Paper>
+        <Grid container spacing={3}>
+          <Grid item xs={12} sm={6} md={4}>
+            <StatCard 
+              title="Total Blocks" 
+              value={blockchainInfo ? formatNumber(blockchainInfo.blocks) : "Loading..."}
+              icon={<BlockIcon />}
+              description="Total blocks in the DigiByte blockchain since the chain was started on Jan 10th, 2014."
+              loading={!blockchainInfo}
+            />
           </Grid>
-          <Grid item xs={12} md={6} lg={4}>
-            <Paper className={styles.paper}>
-              <Typography variant="h1" className={styles.centerText}>
-                Total Transactions
-              </Typography>
-              {chainTxStats && (
-                <Typography variant="h2" className={`${styles.centerText} ${styles.boldText}`}>
-                  {formatNumber(chainTxStats.txcount)}
-                </Typography>
-              )}
-              <Typography variant="body1" className={styles.paragraph}>
-                Total Transactions sent on the DigiByte blockchain since launch on Jan 10th, 2014.
-              </Typography>
-            </Paper>
+          
+          <Grid item xs={12} sm={6} md={4}>
+            <StatCard 
+              title="Total Transactions" 
+              value={chainTxStats ? formatNumber(chainTxStats.txcount) : "Loading..."}
+              icon={<TransactionIcon />}
+              description="Total Transactions sent on the DigiByte blockchain since launch on Jan 10th, 2014."
+              loading={!chainTxStats}
+              color="#1e88e5"
+            />
           </Grid>
-          <Grid item xs={12} md={6} lg={4}>
-            <Paper className={styles.paper}>
-              <Typography variant="h1" className={styles.centerText}>
-                Total Size
-              </Typography>
-              {blockchainInfo && (
-                <Typography variant="h2" className={`${styles.centerText} ${styles.boldText}`}>
-                  {(blockchainInfo.size_on_disk / (1024 * 1024 * 1024)).toFixed(2)} GB
-                </Typography>
-              )}
-              <Typography variant="body1" className={styles.paragraph}>
-                Total size in GB needed to store the entire DGB blockchain going back to Jan 10th, 2014.
-              </Typography>
-            </Paper>
+          
+          <Grid item xs={12} sm={6} md={4}>
+            <StatCard 
+              title="Total Size" 
+              value={blockchainInfo ? `${(blockchainInfo.size_on_disk / (1024 * 1024 * 1024)).toFixed(2)} GB` : "Loading..."}
+              icon={<StorageIcon />}
+              description="Total size in GB needed to store the entire DGB blockchain going back to Jan 10th, 2014."
+              loading={!blockchainInfo}
+              color="#43a047"
+            />
           </Grid>
-          <Grid item xs={12} md={6} lg={4}>
-            <Paper className={styles.paper}>
-              <Typography variant="h1" className={styles.centerText}>
-                Current Circulating Supply
-              </Typography>
-              {txOutsetInfoLoading ? (
-                <Typography variant="h2" className={`${styles.centerText} ${styles.boldText}`}>
-                  Loading...
-                </Typography>
-              ) : (
-                txOutsetInfo && (
-                  <Typography variant="h2" className={`${styles.centerText} ${styles.boldText}`}>
-                    {txOutsetInfo && numberWithCommas(txOutsetInfo.total_amount.toFixed(2))} DGB
+          
+          <Grid item xs={12} sm={6} md={4}>
+            <StatCard 
+              title="Current Circulating Supply" 
+              value={txOutsetInfo ? `${numberWithCommas(txOutsetInfo.total_amount.toFixed(2))} DGB` : "Loading..."}
+              icon={<TokenIcon />}
+              description="Current circulating supply calculated from all UTXO's as of the latest block."
+              loading={txOutsetInfoLoading}
+              color="#0066cc"
+            />
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={4}>
+            <StatCard 
+              title="Remaining Supply To Be Mined" 
+              value={txOutsetInfo ? `${numberWithCommas((21000000000 - txOutsetInfo.total_amount).toFixed(2))} DGB` : "Loading..."}
+              icon={<HourglassEmptyIcon />}
+              description="Remaining DGB to be mined until the maximum supply of 21 billion DGB is reached."
+              loading={txOutsetInfoLoading}
+              color="#fb8c00"
+            />
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={4}>
+            <StatCard 
+              title="Last Block Reward" 
+              value={blockReward !== null && blockReward !== undefined ? `${blockReward.toFixed(8)} DGB` : "Loading..."}
+              icon={<RewardIcon />}
+              description="The DigiByte mining reward amount for the most recent block on the blockchain."
+              loading={blockReward === null || blockReward === undefined}
+              color="#e53935"
+            />
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={4}>
+            <Card 
+              elevation={3} 
+              sx={{
+                height: '100%',
+                transition: 'transform 0.3s, box-shadow 0.3s',
+                '&:hover': {
+                  transform: 'translateY(-5px)',
+                  boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
+                },
+                borderTop: '4px solid #7b1fa2',
+                borderRadius: '8px'
+              }}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                  <Typography variant="h6" fontWeight="bold" color="text.primary">
+                    Algo Difficulties
                   </Typography>
-                )
-              )}
-              <Typography variant="body1" className={styles.paragraph}>
-                Current circulating supply calculated from all UTXO's as of the latest block.
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={6} lg={4}>
-            <Paper className={styles.paper}>
-              <Typography variant="h1" className={styles.centerText}>
-                Remaining Supply To Be Mined
-              </Typography>
-              {txOutsetInfoLoading ? (
-                <Typography variant="h2" className={`${styles.centerText} ${styles.boldText}`}>
-                  Loading...
-                </Typography>
-              ) : (
-                txOutsetInfo && (
-                  <Typography variant="h2" className={`${styles.centerText} ${styles.boldText}`}>
-                    {txOutsetInfo && numberWithCommas((21000000000 - txOutsetInfo.total_amount).toFixed(2))} DGB
-                  </Typography>
-                )
-              )}
-              <Typography variant="body1" className={styles.paragraph}>
-                Remaining DGB to be mined until the maximum supply of 21 billion DGB is reached.
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={6} lg={4}>
-            <Paper className={styles.paper}>
-              <Typography variant="h1" className={styles.centerText}>
-                Last Block Reward
-              </Typography>
-              {blockReward === null || blockReward === undefined ? (
-                <Typography variant="h2" className={`${styles.centerText} ${styles.boldText}`}>
-                  Loading...
-                </Typography>
-              ) : (
-                <Typography variant="h2" className={`${styles.centerText} ${styles.boldText}`}>
-                  {blockReward.toFixed(8)} DGB
-                </Typography>
-              )}
-              <Typography variant="body1" className={styles.paragraph}>
-                The DigiByte mining reward amount for the most recent block on the blockchain.
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={6} lg={4}>
-            <Paper className={styles.paper}>
-              <Typography variant="h1" className={styles.centerText}>
-                Algo Difficulties
-              </Typography>
-              {blockchainInfo && blockchainInfo.difficulties && (
-                <>
-                  <Box component="p" className={`${styles.boxText} ${styles.boldText}`}>
-                    SHA256d Diff: {parseInt(blockchainInfo.difficulties.sha256d).toLocaleString()}
-                  </Box>
-                  <Box component="p" className={`${styles.boxText} ${styles.boldText}`}>
-                    Scrypt Diff: {parseInt(blockchainInfo.difficulties.scrypt).toLocaleString()}
-                  </Box>
-                  <Box component="p" className={`${styles.boxText} ${styles.boldText}`}>
-                    Skein Diff: {parseInt(blockchainInfo.difficulties.skein).toLocaleString()}
-                  </Box>
-                  <Box component="p" className={`${styles.boxText} ${styles.boldText}`}>
-                    Qubit Diff: {parseInt(blockchainInfo.difficulties.qubit).toLocaleString()}
-                  </Box>
-                  <Box component="p" className={`${styles.boxText} ${styles.boldText}`}>
-                    Odo Difficulty: {parseInt(blockchainInfo.difficulties.odo).toLocaleString()}
-                  </Box>
-                  <Typography variant="body1" className={styles.paragraph}>
-                    The current mining difficulties for each of the 5 DigiByte mining algorithms.
-                  </Typography>
-                </>
-              )}
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={6} lg={4}>
-            <Paper className={styles.paper}>
-              <Typography variant="h1" className={styles.centerText}>
-                Latest Version
-              </Typography>
-              <Typography variant="h2" className={`${styles.centerText} ${styles.boldText}`}>
-                v8.22.1
-              </Typography>
-              <Typography variant="body1" className={styles.paragraph}>
-                Latest DGB core version.
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={6} lg={4}>
-            <Paper className={styles.paper}>
-              <Typography variant="h1" className={styles.centerText}>
-                Active Softforks
-              </Typography>
-              {blockchainInfo && (
-                <Box>
-                  {Object.entries(blockchainInfo.softforks).map(([key, value]) => (
-                    <Typography key={key} variant="h2" className={`${styles.centerText} ${styles.boldText}`}>
-                      {key}: {value.type}
-                    </Typography>
-                  ))}
+                  <Avatar sx={{ bgcolor: '#7b1fa2' }}>
+                    <SpeedIcon />
+                  </Avatar>
                 </Box>
-              )}
-              <Typography variant="body1" className={styles.paragraph}>
-                Active on chain softforks.
-              </Typography>
-            </Paper>
+                
+                {blockchainInfo && blockchainInfo.difficulties ? (
+                  <>
+                    <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                      <span>SHA256d:</span> <span>{parseInt(blockchainInfo.difficulties.sha256d).toLocaleString()}</span>
+                    </Typography>
+                    <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                      <span>Scrypt:</span> <span>{parseInt(blockchainInfo.difficulties.scrypt).toLocaleString()}</span>
+                    </Typography>
+                    <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                      <span>Skein:</span> <span>{parseInt(blockchainInfo.difficulties.skein).toLocaleString()}</span>
+                    </Typography>
+                    <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                      <span>Qubit:</span> <span>{parseInt(blockchainInfo.difficulties.qubit).toLocaleString()}</span>
+                    </Typography>
+                    <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                      <span>Odo:</span> <span>{parseInt(blockchainInfo.difficulties.odo).toLocaleString()}</span>
+                    </Typography>
+                  </>
+                ) : (
+                  <Typography variant="h5">Loading...</Typography>
+                )}
+                
+                <Divider sx={{ my: 1 }} />
+                
+                <Typography variant="body2" color="text.secondary">
+                  The current mining difficulties for each of the 5 DigiByte mining algorithms.
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={4}>
+            <StatCard 
+              title="Latest Version" 
+              value="v8.22.1"
+              icon={<UpdateIcon />}
+              description="Latest DGB core version."
+              loading={false}
+              color="#009688"
+            />
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={4}>
+            <Card 
+              elevation={3} 
+              sx={{
+                height: '100%',
+                transition: 'transform 0.3s, box-shadow 0.3s',
+                '&:hover': {
+                  transform: 'translateY(-5px)',
+                  boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
+                },
+                borderTop: '4px solid #3949ab',
+                borderRadius: '8px'
+              }}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                  <Typography variant="h6" fontWeight="bold" color="text.primary">
+                    Active Softforks
+                  </Typography>
+                  <Avatar sx={{ bgcolor: '#3949ab' }}>
+                    <DoneAllIcon />
+                  </Avatar>
+                </Box>
+                
+                {blockchainInfo ? (
+                  <Box>
+                    {Object.entries(blockchainInfo.softforks).map(([key, value]) => (
+                      <Box 
+                        key={key} 
+                        sx={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between',
+                          mb: 0.5
+                        }}
+                      >
+                        <Typography variant="body2" fontWeight="bold">
+                          {key}:
+                        </Typography>
+                        <Typography variant="body2">
+                          {value.type}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                ) : (
+                  <Typography variant="h5">Loading...</Typography>
+                )}
+                
+                <Divider sx={{ my: 1 }} />
+                
+                <Typography variant="body2" color="text.secondary">
+                  Active on chain softforks.
+                </Typography>
+              </CardContent>
+            </Card>
           </Grid>
         </Grid>
       </Container>
-    </main>
+    </Box>
   );
 };
 

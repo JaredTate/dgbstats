@@ -1,108 +1,253 @@
-import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
-import { AppBar, Toolbar, Typography, IconButton, Menu, MenuItem, Box, useMediaQuery } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { 
+  AppBar, Toolbar, Typography, Box, IconButton, 
+  useMediaQuery, Button, Container, Drawer, List, ListItem, ListItemText,
+  Chip
+} from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
+import { Link as RouterLink } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
+import config from '../config';
 
 const Header = () => {
-  const [anchorEl, setAnchorEl] = useState(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [hashrate, setHashrate] = useState(null);
 
-  const handleMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
+  useEffect(() => {
+    const socket = new WebSocket(config.wsBaseUrl);
+
+    socket.onopen = () => {
+      console.log('WebSocket connection established in Header');
+    };
+
+    socket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      
+      if (message.type === 'networkHashrate') {
+        setHashrate(message.data);
+      }
+    };
+
+    socket.onclose = () => {
+      console.log('WebSocket connection closed in Header');
+    };
+
+    return () => {
+      socket.close();
+    };
+  }, []);
+
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
   };
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
+  // Format hashrate to appropriate unit (TH/s, PH/s, etc)
+  const formatHashrate = (hashrate) => {
+    if (!hashrate) return 'Loading...';
+    
+    const units = ['H/s', 'KH/s', 'MH/s', 'GH/s', 'TH/s', 'PH/s', 'EH/s'];
+    let formattedHashrate = hashrate;
+    let unitIndex = 0;
+    
+    while (formattedHashrate >= 1000 && unitIndex < units.length - 1) {
+      formattedHashrate /= 1000;
+      unitIndex++;
+    }
+    
+    return `${formattedHashrate.toFixed(2)} ${units[unitIndex]}`;
   };
 
-  const pages = [
-    { name: 'Home', path: '/' },
-    { name: 'Blocks', path: '/blocks' },
-    { name: 'Supply', path: '/supply' },
-    { name: 'Algos', path: '/algos' },
-    { name: 'Difficulties', path: '/difficulties' },
-    { name: 'Hashrate', path: '/hashrate' },
-    { name: 'Pools', path: '/pools' },
-    { name: 'Nodes', path: '/nodes' },
-    { name: 'Downloads', path: '/downloads' },
-    { name: 'Taproot', path: '/taproot' }  // Add this line
+  const menuItems = [
+    { text: 'Home', path: '/' },
+    { text: 'Blocks', path: '/blocks' },
+    { text: 'Supply', path: '/supply' },
+    { text: 'Algos', path: '/algos' },
+    { text: 'Difficulties', path: '/difficulties' },
+    { text: 'Hashrate', path: '/hashrate' },
+    { text: 'Pools', path: '/pools' },
+    { text: 'Nodes', path: '/nodes' },
+    { text: 'Downloads', path: '/downloads' },
+    { text: 'DigiHash', path: 'https://digihash.digibyte.io/', external: true },
+    { text: 'DigiByte.org', path: 'https://digibyte.org', external: true },
   ];
 
-  return (
-    <AppBar position="static" sx={{ backgroundColor: '#0066cc' }}>
-      <Toolbar>
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+  const drawer = (
+    <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center' }}>
+      <Box sx={{ 
+        py: 2, 
+        bgcolor: '#002352',
+        color: 'white',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center' 
+      }}>
+        <Box 
+          component="img"
+          src="/logo.png"
+          alt="DigiByte Logo"
+          sx={{ height: 40, mr: 1 }}
+        />
+        <Typography variant="h6" fontWeight="bold">
           DigiByte Stats
         </Typography>
-        {!isMobile && (
-          <Box sx={{ display: 'flex' }}> {/* Desktop links */}
-            {pages.map((page) => (
-              <NavLink key={page.name} to={page.path} style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
-                {page.name}
-              </NavLink>
-            ))}
-            <a href="https://digihash.digibyte.io/" target="_blank" rel="noopener noreferrer" style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
-              DigiHash
-            </a>
-            <a href="https://digibyte.org" target="_blank" rel="noopener noreferrer" style={{ color: 'white', marginRight: '1rem', textDecoration: 'none' }}>
-              DigiByte.org
-            </a>
+      </Box>
+      <List>
+        {menuItems.map((item) => (
+          <ListItem 
+            button 
+            component={item.external ? 'a' : RouterLink} 
+            to={!item.external ? item.path : undefined}
+            href={item.external ? item.path : undefined}
+            target={item.external ? '_blank' : undefined}
+            rel={item.external ? 'noopener noreferrer' : undefined}
+            key={item.text}
+            sx={{ 
+              '&:hover': { 
+                bgcolor: '#e3f2fd'
+              }
+            }}
+          >
+            <ListItemText primary={item.text} />
+          </ListItem>
+        ))}
+      </List>
+    </Box>
+  );
+
+  return (
+    <AppBar 
+      position="sticky" 
+      sx={{ 
+        background: 'linear-gradient(135deg, #002352 0%, #0066cc 100%)',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+      }}
+    >
+      <Container>
+        <Toolbar disableGutters>
+          <Box 
+            component={RouterLink} 
+            to="/"
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              textDecoration: 'none', 
+              color: 'white' 
+            }}
+          >
+            <Box 
+              component="img"
+              src="/logo.png"
+              alt="DigiByte Logo"
+              sx={{ height: 40, mr: 1 }}
+            />
+            <Typography 
+              variant="h6" 
+              noWrap 
+              component="div"
+              sx={{ 
+                fontWeight: 'bold',
+                flexGrow: { xs: 1, md: 0 }
+              }}
+            >
+              DigiByte Stats
+            </Typography>
           </Box>
-        )}
-        {isMobile && (
-          <div>
-            <IconButton
-              size="large"
-              aria-label="open menu"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              onClick={handleMenuOpen}
-              color="inherit"
-            >
-              <MenuIcon />
-            </IconButton>
-            <Menu
-              id="menu-appbar"
-              anchorEl={anchorEl}
-              anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
+
+          {/* Hashrate display */}
+          <Box 
+            sx={{ 
+              ml: 3,
+              display: { xs: 'none', sm: 'flex' },
+              alignItems: 'center' 
+            }}
+          >
+            <Chip
+              label={`Network: ${formatHashrate(hashrate)}`}
+              sx={{ 
+                bgcolor: 'rgba(255, 255, 255, 0.15)', 
+                color: 'white', 
+                fontWeight: 'bold',
+                '& .MuiChip-label': {
+                  px: 1
+                }
               }}
-              keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-              PaperProps={{
-                style: {
-                  backgroundColor: '#0066cc',
+            />
+          </Box>
+
+          <Box sx={{ flexGrow: 1 }} />
+
+          {/* Desktop menu */}
+          <Box 
+            sx={{ 
+              display: { xs: 'none', md: 'flex' }, 
+              overflowX: 'auto',
+              flexWrap: 'nowrap',
+              '&::-webkit-scrollbar': {
+                display: 'none'
+              },
+              msOverflowStyle: 'none',
+              scrollbarWidth: 'none',
+            }}
+          >
+            {menuItems.map((item) => (
+              <Button
+                key={item.text}
+                component={item.external ? 'a' : RouterLink}
+                to={!item.external ? item.path : undefined}
+                href={item.external ? item.path : undefined}
+                target={item.external ? '_blank' : undefined}
+                rel={item.external ? 'noopener noreferrer' : undefined}
+                size="small"
+                sx={{
                   color: 'white',
-                },
-              }}
-            >
-              {pages.map((page) => (
-                <MenuItem key={page.name} onClick={handleMenuClose} component={NavLink} to={page.path}>
-                  {page.name}
-                </MenuItem>
-              ))}
-              <MenuItem onClick={handleMenuClose}>
-                <a href="https://digihash.digibyte.io/" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>
-                  DigiHash
-                </a>
-              </MenuItem>
-              <MenuItem onClick={handleMenuClose}>
-                <a href="https://digibyte.org" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>
-                  DigiByte.org
-                </a>
-              </MenuItem>
-            </Menu>
-          </div>
-        )}
-      </Toolbar>
+                  px: 0.8,
+                  py: 0.5,
+                  minWidth: 'auto',
+                  fontSize: '0.95rem',
+                  textTransform: 'none',
+                  fontWeight: '500',
+                  whiteSpace: 'nowrap',
+                  mx: 0.3,
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)'
+                  },
+                  '&.active': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    fontWeight: 'bold'
+                  }
+                }}
+              >
+                {item.text}
+              </Button>
+            ))}
+          </Box>
+
+          {/* Mobile menu button */}
+          {isMobile && (
+            <div>
+              <IconButton
+                size="large"
+                edge="end"
+                color="inherit"
+                aria-label="menu"
+                onClick={handleDrawerToggle}
+                sx={{ ml: 2 }}
+              >
+                <MenuIcon />
+              </IconButton>
+              <Drawer
+                anchor="right"
+                open={mobileOpen}
+                onClose={handleDrawerToggle}
+              >
+                {drawer}
+              </Drawer>
+            </div>
+          )}
+        </Toolbar>
+      </Container>
     </AppBar>
   );
 };

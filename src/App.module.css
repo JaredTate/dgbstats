@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  padding-bottom: 20px;
 }
 
 .app {
@@ -57,9 +58,18 @@
 }
 
 .paper {
-  padding: 9px; /* Changed from 0.75rem */
-  border: 1px solid #cccccc;
-  background-color: white;
+  padding: 20px;
+  margin: 10px 0;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition:
+    transform 0.3s,
+    box-shadow 0.3s;
+}
+
+.paper:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 .paper .boxHeading {
@@ -70,6 +80,10 @@
 .paper .boxText {
   color: black;
   text-align: center;
+  margin: 5px 0;
+  padding: 5px;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .paper .boldText {
@@ -82,6 +96,7 @@
   margin: 8px 0; /* Changed from 7.5px 0 */
   text-align: center;
   width: 90%;
+  font-weight: bold;
 }
 
 .paper h1 {
@@ -136,4 +151,9 @@
   height: 1px;
   background: #cccccc;
   margin-bottom: 4px; /* Changed from 0.375rem */
+}
+
+.paragraph {
+  margin-top: 15px;
+  text-align: center;
 }
