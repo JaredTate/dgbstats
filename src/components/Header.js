@@ -1,62 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   AppBar, Toolbar, Typography, Box, IconButton, 
-  useMediaQuery, Button, Container, Drawer, List, ListItem, ListItemText,
-  Chip
+  useMediaQuery, Button, Container, Drawer, List, ListItem, ListItemText
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { Link as RouterLink } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
-import config from '../config';
 
 const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [hashrate, setHashrate] = useState(null);
-
-  useEffect(() => {
-    const socket = new WebSocket(config.wsBaseUrl);
-
-    socket.onopen = () => {
-      console.log('WebSocket connection established in Header');
-    };
-
-    socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      
-      if (message.type === 'networkHashrate') {
-        setHashrate(message.data);
-      }
-    };
-
-    socket.onclose = () => {
-      console.log('WebSocket connection closed in Header');
-    };
-
-    return () => {
-      socket.close();
-    };
-  }, []);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
-  };
-
-  // Format hashrate to appropriate unit (TH/s, PH/s, etc)
-  const formatHashrate = (hashrate) => {
-    if (!hashrate) return 'Loading...';
-    
-    const units = ['H/s', 'KH/s', 'MH/s', 'GH/s', 'TH/s', 'PH/s', 'EH/s'];
-    let formattedHashrate = hashrate;
-    let unitIndex = 0;
-    
-    while (formattedHashrate >= 1000 && unitIndex < units.length - 1) {
-      formattedHashrate /= 1000;
-      unitIndex++;
-    }
-    
-    return `${formattedHashrate.toFixed(2)} ${units[unitIndex]}`;
   };
 
   const menuItems = [
