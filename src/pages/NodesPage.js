@@ -323,7 +323,7 @@ const NodesPage = () => {
                         <RouterIcon />
                       </Avatar>
                       <Typography variant="h6" fontWeight="bold" sx={{ color: '#002352' }}>
-                        Total Nodes
+                        Total Nodes Seen
                       </Typography>
                     </Box>
                     <Typography variant="h3" fontWeight="bold" sx={{ 
@@ -361,7 +361,7 @@ const NodesPage = () => {
                         <LocationOnIcon />
                       </Avatar>
                       <Typography variant="h6" fontWeight="bold" sx={{ color: '#002352' }}>
-                        Mapped Nodes
+                        Mapped Active Regions
                       </Typography>
                     </Box>
                     <Typography variant="h3" fontWeight="bold" sx={{ 
@@ -399,7 +399,7 @@ const NodesPage = () => {
                         <FlagIcon />
                       </Avatar>
                       <Typography variant="h6" fontWeight="bold" sx={{ color: '#002352' }}>
-                        Countries
+                        Total Countries
                       </Typography>
                     </Box>
                     <Typography variant="h3" fontWeight="bold" sx={{ 
