@@ -112,20 +112,21 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
           }}
         >
           <CardContent sx={{ py: 4, textAlign: 'center' }}>
-            <Typography 
-              variant="h2" 
-              component="h1" 
-              fontWeight="800" 
-              gutterBottom
-              sx={{ 
-                color: '#002352',
-                mb: 2,
-                letterSpacing: '0.5px',
-                fontSize: { xs: '1.8rem', sm: '2.3rem', md: '2.8rem' }
-              }}
-            >
-              DigiByte Blockchain Statistics
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
+              <StorageIcon sx={{ fontSize: '2.5rem', color: '#002352', mr: 2 }} />
+              <Typography 
+                variant="h2" 
+                component="h1" 
+                fontWeight="800" 
+                sx={{ 
+                  color: '#002352',
+                  letterSpacing: '0.5px',
+                  fontSize: { xs: '1.8rem', sm: '2.3rem', md: '2.8rem' }
+                }}
+              >
+                DigiByte Blockchain Statistics
+              </Typography>
+            </Box>
             
             <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 3, borderColor: '#0066cc', borderWidth: 2 }} />
             
@@ -285,7 +286,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
           <Grid item xs={12} sm={6} md={4}>
             <StatCard 
               title="Latest Version" 
-              value="v8.22.1"
+              value="v8.22.2"
               icon={<UpdateIcon />}
               description="Latest DGB core version."
               loading={false}
