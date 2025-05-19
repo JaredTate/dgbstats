@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Container, Typography, List, ListItem, ListItemText, Box, Button } from '@mui/material';
+import { 
+  Container, Typography, List, ListItem, ListItemText, Box, 
+  Card, CardContent, Divider, useTheme, useMediaQuery,
+  Paper, Chip, CircularProgress, Pagination
+} from '@mui/material';
+import PoolIcon from '@mui/icons-material/LocationCity';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 import * as d3 from 'd3';
 import config from '../config';
 
@@ -9,6 +16,9 @@ const PoolsPage = () => {
   const svgRef = useRef();
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 25;
+  
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Move the data processing useMemo before the chart effect
   const { sortedAddresses, singleBlockAddresses } = useMemo(() => {
@@ -42,24 +52,24 @@ const PoolsPage = () => {
       .sort((a, b) => b.count - a.count)
       .map((data, index) => ({ ...data, rank: index + 1 }));
 
-  // Get single block miners (most recent first)
-  const singleMiners = [...blocks]
-    // Sort so the newest (highest block height) is first
-    .sort((a, b) => b.height - a.height)
-    .filter(block => {
-      const address = block.minerAddress || block.minedTo;
-      return address && !multiAddresses.has(address);
-    })
-    .slice(0, 20)
-    .map((block, index) => ({
-      address: block.minerAddress || block.minedTo,
-      count: 1,
-      poolIdentifier: block.poolIdentifier || 'Unknown',
-      timestamp: block.timestamp,
-      taprootSignaling: block.taprootSignaling,
-      height: block.height,
-      rank: index + 1
-    }));
+    // Get single block miners (most recent first)
+    const singleMiners = [...blocks]
+      // Sort so the newest (highest block height) is first
+      .sort((a, b) => b.height - a.height)
+      .filter(block => {
+        const address = block.minerAddress || block.minedTo;
+        return address && !multiAddresses.has(address);
+      })
+      .slice(0, 20)
+      .map((block, index) => ({
+        address: block.minerAddress || block.minedTo,
+        count: 1,
+        poolIdentifier: block.poolIdentifier || 'Unknown',
+        timestamp: block.timestamp,
+        taprootSignaling: block.taprootSignaling,
+        height: block.height,
+        rank: index + 1
+      }));
 
     return {
       sortedAddresses: multipleMiners,
@@ -77,14 +87,11 @@ const PoolsPage = () => {
 
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data);
-      console.log('Received message from server:', message);
 
       if (message.type === 'recentBlocks') {
-        console.log('Received recent blocks:', message.data);
         setBlocks(message.data);
         setLoading(false);
       } else if (message.type === 'newBlock') {
-        console.log('Received new block:', message.data);
         setBlocks((prevBlocks) => [message.data, ...prevBlocks]);
       }
     };
@@ -100,7 +107,7 @@ const PoolsPage = () => {
 
   // Update pie chart effect
   useEffect(() => {
-    if (!blocks.length || !sortedAddresses.length) return;
+    if (!blocks.length || !sortedAddresses.length || !svgRef.current) return;
 
     // Calculate total blocks for percentage
     const totalBlocks = blocks.length;
@@ -142,31 +149,60 @@ const PoolsPage = () => {
       algo: 'Mixed'
     });
 
-    const svg = d3.select(svgRef.current),
-      width = 600,    // Increased from 500
-      height = 600,   // Increased from 500
-      radius = Math.min(width, height) / 2;
+    // Responsive chart size
+    const chartSize = isMobile ? 300 : 500;
+    const width = chartSize;
+    const height = chartSize;
+    const radius = Math.min(width, height) / 2;
 
+    // Clear existing SVG content
+    const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
+    
+    // Set SVG dimensions
+    svg.attr('width', width)
+       .attr('height', height);
 
     const chart = svg
       .append('g')
       .attr('transform', `translate(${width / 2},${height / 2})`);
 
-    const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+    // Custom color palette that matches the site theme
+    const customColors = [
+      '#0066cc', // Primary blue
+      '#4caf50', // Green
+      '#2196f3', // Light blue
+      '#ff9800', // Orange
+      '#9c27b0', // Purple
+      '#f44336', // Red
+      '#00bcd4', // Cyan
+      '#ff5722', // Deep orange
+      '#673ab7', // Deep purple
+      '#3f51b5'  // Indigo
+    ];
+    
+    const colorScale = d3.scaleOrdinal(customColors);
     const pie = d3.pie().value(d => d.count).sort(null);
-    const arc = d3.arc().innerRadius(0).outerRadius(radius);
+    
+    // Create a donut chart for modern look
+    const arc = d3.arc()
+      .innerRadius(radius * 0.4) // Inner radius for donut hole
+      .outerRadius(radius * 0.8);
+      
     const labelArc = d3.arc()
       .innerRadius(radius * 0.6)
       .outerRadius(radius * 0.6);
 
-    // Add paths (pie slices)
+    // Add paths (pie slices) with animation and styling
     chart.selectAll('path')
       .data(pie(pieChartData.main))
       .enter()
       .append('path')
       .attr('d', arc)
-      .attr('fill', d => colorScale(d.data.blocks));
+      .attr('fill', d => colorScale(d.data.blocks))
+      .attr('stroke', 'white')
+      .attr('stroke-width', 2)
+      .style('filter', 'drop-shadow(0px 3px 3px rgba(0,0,0,0.2))');
 
     // Add text labels
     const labels = chart
@@ -176,7 +212,9 @@ const PoolsPage = () => {
       .append('text')
       .attr('transform', d => `translate(${labelArc.centroid(d)})`)
       .attr('text-anchor', 'middle')
-      .attr('fill', 'white');
+      .attr('fill', 'white')
+      .attr('font-size', isMobile ? '10px' : '12px')
+      .attr('font-weight', 'bold');
 
     // Add multi-line text
     labels.each(function(d) {
@@ -186,7 +224,7 @@ const PoolsPage = () => {
       text.append('tspan')
         .attr('x', 0)
         .attr('dy', '-1.2em')
-        .text(d.data.blocks);  // Show blocks count instead of address
+        .text(d.data.blocks);
 
       text.append('tspan')
         .attr('x', 0)
@@ -203,7 +241,16 @@ const PoolsPage = () => {
         .attr('dy', '1.2em')
         .text(d.data.algo);
     });
-  }, [blocks, sortedAddresses]);
+
+    // Add center text
+    chart.append('text')
+      .attr('text-anchor', 'middle')
+      .attr('font-size', isMobile ? '14px' : '18px')
+      .attr('font-weight', 'bold')
+      .attr('fill', '#002352')
+      .text(`${blocks.length} Total Blocks`);
+      
+  }, [blocks, sortedAddresses, isMobile]);
 
   // Calculate displayed items for current page
   const getPageItems = (items) => {
@@ -213,130 +260,382 @@ const PoolsPage = () => {
 
   const totalPages = Math.ceil((sortedAddresses.length + singleBlockAddresses.length) / itemsPerPage);
 
-  const handlePrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 0));
-  const handleNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages - 1));
+  // Page navigation handlers
+  const handlePageChange = (event, value) => {
+    setCurrentPage(value - 1);
+  };
+
+  // Format address for display (shortening if needed)
+  const formatAddress = (address) => {
+    if (isMobile && address.length > 20) {
+      return `${address.substring(0, 10)}...${address.substring(address.length - 10)}`;
+    }
+    return address;
+  };
 
   return (
-    <Container maxWidth="lg">
-      <Typography variant="h4" component="h4" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
-        Realtime DGB Blocks Mined By Address
-      </Typography>
-      <Typography variant="h7" component="p" align="center" gutterBottom sx={{ paddingBottom: '10px' }}>
-        This page preloads the last 240 DGB blocks (1 hour) & will keep incrementing in realtime as blocks are mined.
-        <br />
-        The pie chart shows the breakdown of blocks mined to an address, and the list displays the addresses sorted by the number of blocks mined.
-      </Typography>
-      
-      {/* Move pie chart to top */}
-      <div className="pie-chart-container" style={{ marginBottom: '2rem', textAlign: 'center' }}>
-        <svg ref={svgRef} width="600" height="600" style={{ margin: '0 auto', display: 'block' }} />
-      </div>
+    <Box 
+      sx={{ 
+        py: 4, 
+        backgroundImage: 'linear-gradient(to bottom, #f8f9fa, #ffffff)',
+        minHeight: '100vh'
+      }}
+    >
+      <Container maxWidth="lg">
+        {/* Header Card */}
+        <Card
+          elevation={2}
+          sx={{
+            backgroundColor: '#f2f4f8',
+            borderRadius: '12px',
+            mb: 4,
+            overflow: 'hidden',
+            backgroundImage: 'linear-gradient(135deg, #f8f9fa 0%, #e8eef7 100%)',
+            border: '1px solid rgba(0, 35, 82, 0.1)'
+          }}
+        >
+          <CardContent sx={{ py: 4, textAlign: 'center' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
+              <PoolIcon sx={{ fontSize: '2.5rem', color: '#002352', mr: 2 }} />
+              <Typography 
+                variant="h2" 
+                component="h1" 
+                fontWeight="800" 
+                sx={{ 
+                  color: '#002352',
+                  letterSpacing: '0.5px',
+                  fontSize: { xs: '1.8rem', sm: '2.3rem', md: '2.8rem' }
+                }}
+              >
+                DigiByte Mining Pools
+              </Typography>
+            </Box>
+            
+            <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 3, borderColor: '#0066cc', borderWidth: 2 }} />
+            
+            <Typography 
+              variant="subtitle1" 
+              component="p" 
+              sx={{ 
+                maxWidth: '800px', 
+                mx: 'auto', 
+                mb: 3,
+                color: '#555',
+                fontSize: '1.1rem'
+              }}
+            >
+              This page preloads the last 240 DGB blocks (1 hour) & updates in realtime as blocks are mined.
+              The distribution shows which mining pools are currently active on the DigiByte network.
+            </Typography>
+          </CardContent>
+        </Card>
 
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <List style={{ display: 'inline-block', maxWidth: '800px', width: '100%' }}>
-          <ListItem sx={{ justifyContent: 'center' }}>
-            <ListItemText 
-              primary={<Typography variant="h6">Recent Multi Block Miners - Same Address</Typography>} 
-            />
-          </ListItem>
-
-          {getPageItems(sortedAddresses).map((item) => (
-            <ListItem key={item.address} sx={{ py: 1 }}>
-              <ListItemText
-                primary={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <span style={{ fontWeight: 'bold' }}>{item.rank}.</span>
-                    <span style={{ wordBreak: 'break-all' }}>{item.address}</span>
-                    <span>({item.count} blocks)</span>
-                    <Box 
-                      component="span" 
-                      sx={{ 
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        color: item.taprootSignaling ? '#90EE90' : '#FF6B6B',
-                        ml: 1
-                      }}
-                    >
-                      <span>Taproot</span>
-                      <span style={{ marginLeft: '4px' }}>
-                        {item.taprootSignaling ? '✓' : '✗'}
-                      </span>
-                    </Box>
-                  </Box>
-                }
-                secondary={
-                  <Box sx={{ mt: 0.5 }}>
-                    Pool: {item.poolIdentifier || 'Unknown'}
-                  </Box>
-                }
-              />
-            </ListItem>
-          ))}
+        {/* Pie Chart Card */}
+        <Card
+          elevation={3}
+          sx={{
+            p: { xs: 2, md: 3 },
+            borderRadius: '12px',
+            mb: 4,
+            textAlign: 'center'
+          }}
+        >
+          <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, color: '#002352' }}>
+            Mining Pool Distribution
+          </Typography>
           
-          <ListItem sx={{ mt: 3, mb: 1, justifyContent: 'center' }}>
-            <ListItemText 
-              primary={<Typography variant="h6">Recent Single Block Miners</Typography>} 
-            />
-          </ListItem>
-          
-          {getPageItems(singleBlockAddresses).map((item) => (
-            <ListItem key={`${item.address}-${item.height}`} sx={{ py: 1 }}>
-              <ListItemText
-                primary={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <span style={{ fontWeight: 'bold' }}>{item.rank}.</span>
-                    <span style={{ wordBreak: 'break-all' }}>{item.address}</span>
-                    <Box 
-                      component="span" 
-                      sx={{ 
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        color: item.taprootSignaling ? '#90EE90' : '#FF6B6B',
-                        ml: 1
-                      }}
-                    >
-                      <span>Taproot</span>
-                      <span style={{ marginLeft: '4px' }}>
-                        {item.taprootSignaling ? '✓' : '✗'}
-                      </span>
-                    </Box>
-                  </Box>
-                }
-                secondary={
-                  <Box sx={{ mt: 0.5 }}>
-                    Pool: {item.poolIdentifier}
-                    <span style={{ marginLeft: '8px' }}>
-                      Block: {item.height}
-                    </span>
-                  </Box>
-                }
-              />
-            </ListItem>
-          ))}
-        </List>
+          {loading ? (
+            <Box sx={{ py: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
+              <CircularProgress size={60} sx={{ color: '#0066cc', mb: 3 }} />
+              <Typography variant="h6" sx={{ color: '#555' }}>
+                Loading block data...
+              </Typography>
+            </Box>
+          ) : (
+            <>
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                position: 'relative',
+                maxWidth: isMobile ? '100%' : '600px',
+                margin: '0 auto'
+              }}>
+                <svg 
+                  ref={svgRef} 
+                  style={{ 
+                    margin: 'auto',
+                    maxWidth: '100%',
+                    height: 'auto'
+                  }}
+                ></svg>
+              </Box>
+              <Typography variant="body1" sx={{ mt: 2, color: '#666', fontStyle: 'italic' }}>
+                Distribution of blocks by mining pool over the last hour.
+              </Typography>
+            </>
+          )}
+        </Card>
 
-        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 2 }}>
-          <Button 
-            variant="contained" 
-            onClick={handlePrevPage} 
-            disabled={currentPage === 0}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleNextPage}
-            disabled={currentPage >= totalPages - 1}
-          >
-            Next
-          </Button>
-        </Box>
-      </div>
+        {/* Mining Pool List Card */}
+        <Card
+          elevation={3}
+          sx={{
+            borderRadius: '12px',
+            mb: 4,
+            overflow: 'hidden'
+          }}
+        >
+          <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+            <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, color: '#002352', textAlign: 'center' }}>
+              Recent Mining Pools
+            </Typography>
 
-      <Typography variant="h4" align="center" sx={{ paddingTop: '10px' }}>
-        Recent blocks: {blocks.length}
-      </Typography>
-    </Container>
+            {loading ? (
+              <Box sx={{ py: 5, display: 'flex', justifyContent: 'center' }}>
+                <CircularProgress size={40} sx={{ color: '#0066cc' }} />
+              </Box>
+            ) : (
+              <>
+                {/* Multi-Block Miners Section */}
+                <Paper elevation={0} sx={{ mb: 4, p: 2, backgroundColor: 'rgba(0, 102, 204, 0.05)', borderRadius: '8px' }}>
+                  <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, textAlign: 'center', color: '#0066cc' }}>
+                    Multi-Block Miners
+                  </Typography>
+                  
+                  <List sx={{ width: '100%' }}>
+                    {getPageItems(sortedAddresses).map((item) => (
+                      <ListItem 
+                        key={item.address} 
+                        sx={{ 
+                          py: 1.5,
+                          px: 2,
+                          mb: 1,
+                          backgroundColor: 'white',
+                          borderRadius: '8px',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                          '&:hover': {
+                            backgroundColor: '#f9f9f9'
+                          }
+                        }}
+                      >
+                        <ListItemText
+                          primary={
+                            <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+                              <Chip 
+                                label={`#${item.rank}`} 
+                                size="small" 
+                                sx={{ 
+                                  fontWeight: 'bold', 
+                                  backgroundColor: '#002352', 
+                                  color: 'white',
+                                  minWidth: '40px'
+                                }} 
+                              />
+                              <Typography 
+                                variant="body1" 
+                                sx={{ 
+                                  fontWeight: 'medium', 
+                                  wordBreak: 'break-all',
+                                  ...(isMobile && { fontSize: '0.85rem' })
+                                }}
+                              >
+                                {formatAddress(item.address)}
+                              </Typography>
+                              
+                              <Chip 
+                                label={`${item.count} blocks`} 
+                                size="small" 
+                                sx={{ 
+                                  backgroundColor: '#e8eef7',
+                                  fontWeight: 'bold',
+                                  ml: 'auto'
+                                }} 
+                              />
+                              
+                              <Chip
+                                icon={item.taprootSignaling ? 
+                                  <CheckCircleIcon sx={{ fontSize: '1rem' }} /> : 
+                                  <CancelIcon sx={{ fontSize: '1rem' }} />
+                                }
+                                label="Taproot"
+                                size="small"
+                                sx={{ 
+                                  backgroundColor: item.taprootSignaling ? '#e8f5e9' : '#ffebee',
+                                  color: item.taprootSignaling ? '#2e7d32' : '#c62828',
+                                  fontWeight: 'medium',
+                                  ...(isMobile && { display: 'none' })
+                                }}
+                              />
+                            </Box>
+                          }
+                          secondary={
+                            <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center' }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Pool: {item.poolIdentifier || 'Unknown'}
+                              </Typography>
+                              
+                              {isMobile && (
+                                <Chip
+                                  icon={item.taprootSignaling ? 
+                                    <CheckCircleIcon sx={{ fontSize: '0.75rem' }} /> : 
+                                    <CancelIcon sx={{ fontSize: '0.75rem' }} />
+                                  }
+                                  label="Taproot"
+                                  size="small"
+                                  sx={{ 
+                                    ml: 'auto',
+                                    height: '24px',
+                                    fontSize: '0.7rem',
+                                    backgroundColor: item.taprootSignaling ? '#e8f5e9' : '#ffebee',
+                                    color: item.taprootSignaling ? '#2e7d32' : '#c62828'
+                                  }}
+                                />
+                              )}
+                            </Box>
+                          }
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Paper>
+                
+                {/* Single Block Miners Section */}
+                <Paper elevation={0} sx={{ p: 2, backgroundColor: 'rgba(0, 35, 82, 0.05)', borderRadius: '8px' }}>
+                  <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, textAlign: 'center', color: '#002352' }}>
+                    Single Block Miners
+                  </Typography>
+                  
+                  <List sx={{ width: '100%' }}>
+                    {getPageItems(singleBlockAddresses).map((item) => (
+                      <ListItem 
+                        key={`${item.address}-${item.height}`} 
+                        sx={{ 
+                          py: 1.5,
+                          px: 2,
+                          mb: 1,
+                          backgroundColor: 'white',
+                          borderRadius: '8px',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                          '&:hover': {
+                            backgroundColor: '#f9f9f9'
+                          }
+                        }}
+                      >
+                        <ListItemText
+                          primary={
+                            <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+                              <Chip 
+                                label={`#${item.rank}`} 
+                                size="small" 
+                                sx={{ 
+                                  fontWeight: 'bold', 
+                                  backgroundColor: '#002352', 
+                                  color: 'white',
+                                  minWidth: '40px'
+                                }} 
+                              />
+                              <Typography 
+                                variant="body1" 
+                                sx={{ 
+                                  fontWeight: 'medium', 
+                                  wordBreak: 'break-all',
+                                  ...(isMobile && { fontSize: '0.85rem' })
+                                }}
+                              >
+                                {formatAddress(item.address)}
+                              </Typography>
+                              
+                              <Chip
+                                icon={item.taprootSignaling ? 
+                                  <CheckCircleIcon sx={{ fontSize: '1rem' }} /> : 
+                                  <CancelIcon sx={{ fontSize: '1rem' }} />
+                                }
+                                label="Taproot"
+                                size="small"
+                                sx={{ 
+                                  backgroundColor: item.taprootSignaling ? '#e8f5e9' : '#ffebee',
+                                  color: item.taprootSignaling ? '#2e7d32' : '#c62828',
+                                  ml: 'auto',
+                                  fontWeight: 'medium',
+                                  ...(isMobile && { display: 'none' })
+                                }}
+                              />
+                            </Box>
+                          }
+                          secondary={
+                            <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center' }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Pool: {item.poolIdentifier || 'Unknown'}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+                                Block: {item.height}
+                              </Typography>
+                              
+                              {isMobile && (
+                                <Chip
+                                  icon={item.taprootSignaling ? 
+                                    <CheckCircleIcon sx={{ fontSize: '0.75rem' }} /> : 
+                                    <CancelIcon sx={{ fontSize: '0.75rem' }} />
+                                  }
+                                  label="Taproot"
+                                  size="small"
+                                  sx={{ 
+                                    ml: 'auto',
+                                    height: '24px',
+                                    fontSize: '0.7rem',
+                                    backgroundColor: item.taprootSignaling ? '#e8f5e9' : '#ffebee',
+                                    color: item.taprootSignaling ? '#2e7d32' : '#c62828'
+                                  }}
+                                />
+                              )}
+                            </Box>
+                          }
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Paper>
+
+                {/* Pagination */}
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                  <Pagination 
+                    count={totalPages} 
+                    page={currentPage + 1}
+                    onChange={handlePageChange}
+                    color="primary"
+                    size={isMobile ? "small" : "medium"}
+                    showFirstButton
+                    showLastButton
+                  />
+                </Box>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Stats Summary Card */}
+        <Card 
+          elevation={2}
+          sx={{
+            backgroundColor: '#f2f4f8',
+            borderRadius: '12px',
+            mb: 4,
+            backgroundImage: 'linear-gradient(135deg, #f8f9fa 0%, #e8eef7 100%)',
+            border: '1px solid rgba(0, 35, 82, 0.1)'
+          }}
+        >
+          <CardContent sx={{ p: 3, textAlign: 'center' }}>
+            <Typography variant="h5" fontWeight="bold" color="#002352">
+              Total Blocks Analyzed: {blocks.length}
+            </Typography>
+            <Typography variant="body1" color="#666" sx={{ mt: 1 }}>
+              Data refreshes in real-time as new blocks are mined on the DigiByte network
+            </Typography>
+          </CardContent>
+        </Card>
+      </Container>
+    </Box>
   );
 };
 
