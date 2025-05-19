@@ -1,10 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Box, Container, Button } from '@mui/material';
-import styles from '../App.module.css';
+import { 
+  Typography, Box, Container, Button, Card, CardContent, 
+  Divider, useTheme, useMediaQuery, Grid, Paper, Chip,
+  CircularProgress, Avatar
+} from '@mui/material';
+import DownloadIcon from '@mui/icons-material/CloudDownload';
+import GitHubIcon from '@mui/icons-material/GitHub';
+import PhoneAndroidIcon from '@mui/icons-material/PhoneAndroid';
+import ComputerIcon from '@mui/icons-material/Computer';
+import CheckIcon from '@mui/icons-material/Check';
+import UpdateIcon from '@mui/icons-material/Update';
 
 const DownloadsPage = () => {
   const [releases, setReleases] = useState([]);
   const [loading, setLoading] = useState(true);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     const fetchData = async () => {
@@ -31,69 +42,405 @@ const DownloadsPage = () => {
     return acc + release.assets.reduce((a, asset) => a + asset.download_count, 0);
   }, 0);
 
+  // Get platform based on asset name
+  const getPlatform = (assetName) => {
+    const lowerName = assetName.toLowerCase();
+    if (lowerName.includes('win') || lowerName.includes('windows') || lowerName.includes('.exe')) {
+      return 'Windows';
+    } else if (lowerName.includes('osx') || lowerName.includes('mac') || lowerName.includes('darwin') || lowerName.includes('.dmg')) {
+      return 'macOS';
+    } else if (lowerName.includes('linux') || lowerName.includes('.deb') || lowerName.includes('.tar.gz')) {
+      return 'Linux';
+    } else if (lowerName.includes('arm') || lowerName.includes('raspberry')) {
+      return 'ARM / Raspberry Pi';
+    } else if (lowerName.includes('android')) {
+      return 'Android';
+    } else {
+      return 'Other';
+    }
+  };
+
+  // Get icon based on platform
+  const getPlatformIcon = (platform) => {
+    switch (platform) {
+      case 'Windows':
+      case 'macOS':
+      case 'Linux':
+        return <ComputerIcon />;
+      case 'ARM / Raspberry Pi':
+        return <GitHubIcon />;
+      case 'Android':
+        return <PhoneAndroidIcon />;
+      default:
+        return <DownloadIcon />;
+    }
+  };
+
+  // Get color based on platform
+  const getPlatformColor = (platform) => {
+    switch (platform) {
+      case 'Windows':
+        return '#0078d7';
+      case 'macOS':
+        return '#5f5f5f';
+      case 'Linux':
+        return '#f57c00';
+      case 'ARM / Raspberry Pi':
+        return '#bc1142';
+      case 'Android':
+        return '#3ddc84';
+      default:
+        return '#0066cc';
+    }
+  };
+
   return (
-    <Container maxWidth="lg" className={styles.container}>
-      <Typography variant="h4" component="h4" align="center" fontWeight="bold" gutterBottom sx={{ paddingTop: '10px' }}>
-        DigiByte Core Wallet Downloads
-      </Typography>
-      <Typography variant="body1" component="p" align="center" className={styles.description}>
-        One useful metric for estimating total blockchain network size is to look at the total amount of DGB core wallets downloaded from GitHub.
-      </Typography>
-      
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 4 }}>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          size="large"
-          href="https://github.com/DigiByte-Core/digibyte/releases"
-          target="_blank"
-          rel="noopener noreferrer"
+    <Box 
+      sx={{ 
+        py: 4, 
+        backgroundImage: 'linear-gradient(to bottom, #f8f9fa, #ffffff)',
+        minHeight: '100vh'
+      }}
+    >
+      <Container maxWidth="lg">
+        {/* Header Card */}
+        <Card
+          elevation={2}
           sx={{
-            fontWeight: 'bold',
-            px: 4,
-            py: 1.5,
-            borderRadius: 2,
-            fontSize: '1.1rem',
-            boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
-            '&:hover': {
-              transform: 'translateY(-2px)',
-              boxShadow: '0 6px 12px rgba(0,0,0,0.25)',
-            },
-            transition: 'all 0.2s ease-in-out'
+            backgroundColor: '#f2f4f8',
+            borderRadius: '12px',
+            mb: 4,
+            overflow: 'hidden',
+            backgroundImage: 'linear-gradient(135deg, #f8f9fa 0%, #e8eef7 100%)',
+            border: '1px solid rgba(0, 35, 82, 0.1)'
           }}
         >
-          Download Latest DGB Core Wallet Here
-        </Button>
-      </Box>
-      
-      <Typography variant="h5" className={styles.totalDownloads} style={{ textAlign: 'center' }}>
-        Total Github Release Downloads: <strong>{numberWithCommas(totalDownloads)}</strong>
-      </Typography>
-      <Box className={styles.nodesList}>
-        {loading ? (
-          <Typography variant="h5" className={styles.loading}>
-            Loading...
-          </Typography>
-        ) : (
-          releases.map((release) => {
-            const releaseDownloads = release.assets.reduce((a, asset) => a + asset.download_count, 0);
-            return (
-              <Box key={release.id} className={styles.release}>
-                <Typography variant="h5" className={styles.releaseVersion} style={{ backgroundColor: '#0066cc', padding: '10px', textAlign: 'center', color: 'white', fontSize: '24px' }}>
-  {release.name} - <strong>{numberWithCommas(releaseDownloads)}</strong> downloads
-</Typography>
+          <CardContent sx={{ py: 4, textAlign: 'center' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
+              <DownloadIcon sx={{ fontSize: '2.5rem', color: '#002352', mr: 2 }} />
+              <Typography 
+                variant="h2" 
+                component="h1" 
+                fontWeight="800" 
+                sx={{ 
+                  color: '#002352',
+                  letterSpacing: '0.5px',
+                  fontSize: { xs: '1.8rem', sm: '2.3rem', md: '2.8rem' }
+                }}
+              >
+                DigiByte Core Wallet Downloads
+              </Typography>
+            </Box>
+            
+            <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 3, borderColor: '#0066cc', borderWidth: 2 }} />
+            
+            <Typography 
+              variant="subtitle1" 
+              component="p" 
+              sx={{ 
+                maxWidth: '800px', 
+                mx: 'auto', 
+                mb: 3,
+                color: '#555',
+                fontSize: '1.1rem'
+              }}
+            >
+              One way to estimate network size is total amount of DGB core wallets downloaded from GitHub. <br></br> 
+              <br></br> A core wallet is an application that lets you securely store, send, & receive DigiByte's while also maintaining a full copy of the blockchain, helping to keep the network decentralized and secure.
+            </Typography>
+          </CardContent>
+        </Card>
 
-                {release.assets.map((asset, index) => (
-                  <Typography key={asset.id} variant="body1" className={styles.assetInfo} style={{ textAlign: 'center', paddingBottom: index === release.assets.length - 1 ? '20px' : '0' }}>
-                    {asset.name}: <strong>{numberWithCommas(asset.download_count)}</strong> downloads
-                  </Typography>
-                ))}
+        {/* Download Button Card */}
+        <Card
+          elevation={3}
+          sx={{
+            p: { xs: 2, md: 3 },
+            borderRadius: '12px',
+            mb: 4,
+            textAlign: 'center',
+            backgroundImage: 'linear-gradient(135deg, #e8eef7 0%, #f2f4f8 100%)',
+          }}
+        >
+          <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, color: '#002352' }}>
+            Get the Official DigiByte Core Wallet
+          </Typography>
+          
+          <Button 
+            variant="contained" 
+            color="primary" 
+            size="large"
+            href="https://github.com/DigiByte-Core/digibyte/releases"
+            target="_blank"
+            rel="noopener noreferrer"
+            startIcon={<GitHubIcon />}
+            sx={{
+              fontWeight: 'bold',
+              px: 4,
+              py: 1.5,
+              borderRadius: 2,
+              fontSize: '1.1rem',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+              backgroundColor: '#002352',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 6px 12px rgba(0,0,0,0.25)',
+                backgroundColor: '#0066cc',
+              },
+              transition: 'all 0.2s ease-in-out'
+            }}
+          >
+            Download Latest Release on GitHub
+          </Button>
+          
+          <Box sx={{ 
+            mt: 3, 
+            p: 2, 
+            backgroundColor: 'rgba(0, 102, 204, 0.1)', 
+            borderRadius: '8px',
+            display: 'inline-block'
+          }}>
+            <Typography variant="h4" fontWeight="bold" sx={{ color: '#002352' }}>
+              {loading ? (
+                <CircularProgress size={24} sx={{ color: '#0066cc', mr: 1 }} />
+              ) : (
+                <>
+                  {numberWithCommas(totalDownloads)} <Typography component="span" variant="h6" color="#666">Total Downloads</Typography>
+                </>
+              )}
+            </Typography>
+          </Box>
+        </Card>
+
+        {/* Releases Card */}
+        <Card
+          elevation={3}
+          sx={{
+            borderRadius: '12px',
+            mb: 4,
+            overflow: 'hidden'
+          }}
+        >
+          <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+            <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, textAlign: 'center', color: '#002352' }}>
+              Release History & Statistics
+            </Typography>
+            
+            {loading ? (
+              <Box sx={{ py: 5, display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
+                <CircularProgress size={60} sx={{ color: '#0066cc', mb: 3 }} />
+                <Typography variant="h6" sx={{ color: '#555' }}>
+                  Loading releases data...
+                </Typography>
               </Box>
-            );
-          })
-        )}
-      </Box>
-    </Container>
+            ) : (
+              <Box>
+                {releases.map((release, index) => {
+                  const releaseDownloads = release.assets.reduce((a, asset) => a + asset.download_count, 0);
+                  const isLatest = index === 0;
+                  
+                  // Group assets by platform
+                  const platformAssets = {};
+                  release.assets.forEach(asset => {
+                    const platform = getPlatform(asset.name);
+                    if (!platformAssets[platform]) {
+                      platformAssets[platform] = [];
+                    }
+                    platformAssets[platform].push(asset);
+                  });
+                  
+                  return (
+                    <Paper
+                      key={release.id}
+                      elevation={1}
+                      sx={{
+                        mb: 4,
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        border: isLatest ? '2px solid #0066cc' : '1px solid #e0e0e0'
+                      }}
+                    >
+                      {/* Release Header */}
+                      <Box sx={{ 
+                        backgroundColor: isLatest ? '#0066cc' : '#002352',
+                        p: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap'
+                      }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <UpdateIcon sx={{ color: 'white', mr: 1 }} />
+                          <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>
+                            {release.name}
+                          </Typography>
+                          {isLatest && (
+                            <Chip 
+                              icon={<CheckIcon />}
+                              label="Latest"
+                              size="small"
+                              sx={{ 
+                                ml: 2, 
+                                backgroundColor: 'white', 
+                                color: '#0066cc',
+                                fontWeight: 'bold'
+                              }} 
+                            />
+                          )}
+                        </Box>
+                        
+                        <Typography variant="body1" sx={{ color: 'white', fontWeight: 'medium' }}>
+                          {numberWithCommas(releaseDownloads)} Downloads
+                        </Typography>
+                      </Box>
+                      
+                      {/* Release Content */}
+                      <Box sx={{ p: 2 }}>
+                        <Grid container spacing={2}>
+                          {Object.keys(platformAssets).map(platform => (
+                            <Grid item xs={12} sm={6} md={4} key={`${release.id}-${platform}`}>
+                              <Paper
+                                elevation={1}
+                                sx={{
+                                  p: 1.5,
+                                  borderLeft: `4px solid ${getPlatformColor(platform)}`,
+                                  height: '100%'
+                                }}
+                              >
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                  <Avatar
+                                    sx={{
+                                      width: 36,
+                                      height: 36,
+                                      backgroundColor: getPlatformColor(platform),
+                                      mr: 1
+                                    }}
+                                  >
+                                    {getPlatformIcon(platform)}
+                                  </Avatar>
+                                  <Typography variant="subtitle1" fontWeight="bold">
+                                    {platform}
+                                  </Typography>
+                                </Box>
+                                
+                                {platformAssets[platform].map(asset => (
+                                  <Box key={asset.id} sx={{ mt: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Typography variant="body2" noWrap sx={{ maxWidth: isMobile ? '120px' : '180px' }}>
+                                      {asset.name}
+                                    </Typography>
+                                    <Button
+                                      variant="outlined"
+                                      size="small"
+                                      href={asset.browser_download_url}
+                                      target="_blank"
+                                      startIcon={<DownloadIcon sx={{ fontSize: '1rem' }} />}
+                                      sx={{ 
+                                        ml: 1, 
+                                        fontSize: '0.7rem',
+                                        color: getPlatformColor(platform),
+                                        borderColor: getPlatformColor(platform),
+                                        '&:hover': {
+                                          borderColor: getPlatformColor(platform),
+                                          backgroundColor: `${getPlatformColor(platform)}10`
+                                        }
+                                      }}
+                                    >
+                                      {numberWithCommas(asset.download_count)}
+                                    </Button>
+                                  </Box>
+                                ))}
+                              </Paper>
+                            </Grid>
+                          ))}
+                        </Grid>
+                        
+                        {release.body && (
+                          <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #eee' }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                              Release Notes:
+                            </Typography>
+                            <Typography variant="body2" sx={{ whiteSpace: 'pre-line', color: '#555' }}>
+                              {release.body.length > 300 
+                                ? `${release.body.substring(0, 300)}...` 
+                                : release.body
+                              }
+                            </Typography>
+                            {release.body.length > 300 && (
+                              <Button 
+                                href={release.html_url} 
+                                target="_blank"
+                                size="small"
+                                sx={{ mt: 1 }}
+                              >
+                                Read More
+                              </Button>
+                            )}
+                          </Box>
+                        )}
+                      </Box>
+                    </Paper>
+                  );
+                })}
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+        
+        {/* Info Card */}
+        <Card
+          elevation={2}
+          sx={{
+            p: { xs: 2, md: 3 },
+            borderRadius: '12px',
+            mb: 4,
+            backgroundColor: '#f2f4f8',
+            backgroundImage: 'linear-gradient(135deg, #f8f9fa 0%, #e8eef7 100%)',
+            border: '1px solid rgba(0, 35, 82, 0.1)'
+          }}
+        >
+          <CardContent>
+            <Typography variant="h5" fontWeight="bold" sx={{ mb: 2, textAlign: 'center', color: '#002352' }}>
+              About DigiByte Wallets
+            </Typography>
+            
+            <Divider sx={{ maxWidth: '100px', mx: 'auto', mb: 3 }} />
+            
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <Box>
+                  <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
+                    Core Wallet
+                  </Typography>
+                  <Typography variant="body2" paragraph>
+                    The DigiByte Core wallet is the full node implementation that downloads and verifies the entire blockchain.
+                    It provides maximum security and helps support network decentralization.
+                  </Typography>
+                  <Typography variant="body2" paragraph>
+                    Core wallet users can participate in voting for network upgrades and run DigiAssets nodes.
+                  </Typography>
+                </Box>
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <Box>
+                  <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
+                    Other Wallet Options
+                  </Typography>
+                  <Typography variant="body2" paragraph>
+                    For more lightweight solutions, you can try DigiByte mobile wallets available on iOS and Android,
+                    or use one of the various supported hardware wallets like Ledger, Trezor, or KeepKey.
+                  </Typography>
+                  <Typography variant="body2">
+                    Visit the <a href="https://digibyte.org/en-us/#download" target="_blank" rel="noopener noreferrer" style={{ color: '#0066cc' }}>official DigiByte website</a> for 
+                    more information about all wallet options.
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      </Container>
+    </Box>
   );
 };
 
