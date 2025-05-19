@@ -56,72 +56,84 @@ const AlgosPage = () => {
     return algoColors[algo.toLowerCase()] || '#0066cc';
   };
 
+  // Memoize algorithm counts to improve performance
+  const prepareChartData = () => {
+    if (blocks.length === 0) return [];
+    const algoCounts = {};
+    blocks.forEach((block) => (algoCounts[block.algo] = (algoCounts[block.algo] || 0) + 1));
+    return Object.entries(algoCounts).map(([algo, count]) => ({ algo, count }));
+  };
+
   // Update the pie chart whenever the blocks state changes
   useEffect(() => {
     if (blocks.length === 0 || !svgRef.current) return;
     
-    // Count the number of blocks for each algorithm
-    const algoCounts = {};
-    blocks.forEach((block) => (algoCounts[block.algo] = (algoCounts[block.algo] || 0) + 1));
-
-    // Prepare the data for the pie chart
-    const data = Object.entries(algoCounts).map(([algo, count]) => ({ algo, count }));
-
-    // Responsive dimensions
-    const svgWidth = isMobile ? 300 : 500;
-    const svgHeight = isMobile ? 300 : 500;
-    const width = svgWidth;
-    const height = svgHeight;
-    const radius = Math.min(width, height) / 2;
-
-    // Set up the pie chart using D3.js
-    const svg = d3.select(svgRef.current)
-      .attr('width', svgWidth)
-      .attr('height', svgHeight);
-
-    // Use our consistent color scheme
-    const colorScale = d => getAlgoColor(d.data.algo);
+    // Prepare the data for the pie chart - calculate once
+    const data = prepareChartData();
     
-    const pie = d3.pie()
-      .value((d) => d.count)
-      .sort(null);
+    // Use requestAnimationFrame for smoother rendering
+    requestAnimationFrame(() => {
+      // Responsive dimensions
+      const svgWidth = isMobile ? 300 : 500;
+      const svgHeight = isMobile ? 300 : 500;
+      const width = svgWidth;
+      const height = svgHeight;
+      const radius = Math.min(width, height) / 2;
+  
+      // Set up the pie chart using D3.js - minimize DOM updates
+      const svg = d3.select(svgRef.current)
+        .attr('width', svgWidth)
+        .attr('height', svgHeight);
+  
+      // Use our consistent color scheme - simple function, not object created each time
+      const colorScale = d => getAlgoColor(d.data.algo);
       
-    const arc = d3.arc()
-      .innerRadius(radius * 0.3) // Add inner radius for donut chart
-      .outerRadius(radius * 0.8);
-      
-    const labelArc = d3.arc()
-      .innerRadius(radius * 0.6)
-      .outerRadius(radius * 0.6);
+      const pie = d3.pie()
+        .value((d) => d.count)
+        .sort(null);
+        
+      const arc = d3.arc()
+        .innerRadius(radius * 0.3) // Add inner radius for donut chart
+        .outerRadius(radius * 0.8);
+        
+      const labelArc = d3.arc()
+        .innerRadius(radius * 0.6)
+        .outerRadius(radius * 0.6);
+  
+      svg.selectAll('*').remove(); // Remove any existing chart elements
+  
+      const chart = svg.append('g')
+        .attr('transform', `translate(${width / 2},${height / 2})`);
 
-    svg.selectAll('*').remove(); // Remove any existing chart elements
-
-    const chart = svg.append('g')
-      .attr('transform', `translate(${width / 2},${height / 2})`);
-
-    // Create the pie slices with animation
-    chart.selectAll('path')
+    // Create the pie slices without expensive shadow filter
+    const slices = chart.selectAll('path')
       .data(pie(data))
       .enter()
       .append('path')
       .attr('d', arc)
       .attr('fill', colorScale)
       .attr('stroke', 'white')
-      .attr('stroke-width', 2)
-      .style('filter', 'drop-shadow(0px 3px 3px rgba(0,0,0,0.2))');
+      .attr('stroke-width', 2);
+      
+    // Only add subtle shadow to improve performance
+    if (!isMobile) {
+      slices.style('filter', 'drop-shadow(0px 1px 1px rgba(0,0,0,0.1))');
+    }
 
     const totalBlocks = blocks.length;
 
-    // Add labels to the pie slices
-    chart.selectAll('text')
+    // Add labels to the pie slices with better performance
+    chart.selectAll('text.label')
       .data(pie(data))
       .enter()
       .append('text')
+      .attr('class', 'label')
       .attr('transform', (d) => `translate(${labelArc.centroid(d)})`)
       .attr('text-anchor', 'middle')
-      .attr('font-size', isMobile ? '14px' : '18px')
+      .attr('font-size', isMobile ? '12px' : '16px')
       .attr('font-weight', 'bold')
       .attr('fill', '#fff')
+      .attr('pointer-events', 'none') // Improves performance by removing mouse events
       .html((d) => {
         const percentage = ((d.data.count / totalBlocks) * 100).toFixed(1);
         return `${d.data.algo}<tspan x="0" dy="1.2em">${percentage}%</tspan>`;
@@ -134,7 +146,8 @@ const AlgosPage = () => {
       .attr('font-weight', 'bold')
       .text(`${totalBlocks} Blocks`);
       
-  }, [blocks, svgRef, isMobile]);
+    });
+  }, [blocks.length, isMobile]); // Only re-render on actual data changes, not on every block reference change
 
   // Render the component
   return (
@@ -213,11 +226,17 @@ const AlgosPage = () => {
               <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>
                 Mining Algorithm Distribution
               </Typography>
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                position: 'relative',
+                width: '100%',
+                height: isMobile ? 300 : 500,
+                '& svg': { maxWidth: '100%' } // Make SVG responsive without recreating it
+              }}>
                 <svg 
                   ref={svgRef} 
-                  width={isMobile ? 300 : 500} 
-                  height={isMobile ? 300 : 500} 
                   style={{ margin: 'auto' }}
                 ></svg>
               </Box>
