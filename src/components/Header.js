@@ -124,7 +124,7 @@ const Header = () => {
         boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
       }}
     >
-      <Container>
+      <Container maxWidth="lg">
         <Toolbar disableGutters>
           <Box 
             component={RouterLink} 
@@ -155,27 +155,7 @@ const Header = () => {
             </Typography>
           </Box>
 
-          {/* Hashrate display */}
-          <Box 
-            sx={{ 
-              ml: 3,
-              display: { xs: 'none', sm: 'flex' },
-              alignItems: 'center' 
-            }}
-          >
-            <Chip
-              label={`Network: ${formatHashrate(hashrate)}`}
-              sx={{ 
-                bgcolor: 'rgba(255, 255, 255, 0.15)', 
-                color: 'white', 
-                fontWeight: 'bold',
-                '& .MuiChip-label': {
-                  px: 1
-                }
-              }}
-            />
-          </Box>
-
+          {/* Spacer to push items to opposite ends */}
           <Box sx={{ flexGrow: 1 }} />
 
           {/* Desktop menu */}
@@ -189,6 +169,9 @@ const Header = () => {
               },
               msOverflowStyle: 'none',
               scrollbarWidth: 'none',
+              mr: 3, // Increased margin to prevent last item from getting cut off
+              flexGrow: 1, // Allow the menu to take available space
+              justifyContent: 'flex-end', // Push menu items to the right
             }}
           >
             {menuItems.map((item) => (
@@ -202,14 +185,14 @@ const Header = () => {
                 size="small"
                 sx={{
                   color: 'white',
-                  px: 0.8,
+                  px: 1,
                   py: 0.5,
                   minWidth: 'auto',
                   fontSize: '0.95rem',
                   textTransform: 'none',
                   fontWeight: '500',
                   whiteSpace: 'nowrap',
-                  mx: 0.3,
+                  mx: 0.5,
                   '&:hover': {
                     backgroundColor: 'rgba(255, 255, 255, 0.2)'
                   },
