@@ -141,7 +141,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
                 fontSize: '1.1rem'
               }}
             >
-              This is a free & open source website to find real time data & information about DigiByte blockchain pulled directly from the chain via digibyted.
+              This is a free & open source website to find real time data & information about DigiByte blockchain pulled directly from the blockchain via digibyted.
             </Typography>
             
             <Typography 
