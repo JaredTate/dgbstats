@@ -14,16 +14,32 @@ import UpdateIcon from '@mui/icons-material/Update';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import config from '../config';
 
+/**
+ * HomePage Component - Main dashboard displaying DigiByte blockchain statistics
+ * 
+ * This is the main landing page that shows real-time blockchain data including:
+ * - Block count, transactions, and blockchain size
+ * - Circulating supply and mining rewards
+ * - Algorithm difficulties and active softforks
+ * 
+ * Data is received via WebSocket connection for real-time updates
+ */
 const HomePage = ({ numberWithCommas, formatNumber }) => {
+  // State management for blockchain data
   const [blockchainInfo, setBlockchainInfo] = useState(null);
   const [chainTxStats, setChainTxStats] = useState(null);
   const [txOutsetInfo, setTxOutsetInfo] = useState(null);
   const [blockReward, setBlockReward] = useState(null);
   const [txOutsetInfoLoading, setTxOutsetInfoLoading] = useState(true);
 
+  /**
+   * WebSocket connection setup for real-time data updates
+   * Establishes connection on component mount and handles incoming data
+   */
   useEffect(() => {
     const socket = new WebSocket(config.wsBaseUrl);
 
+    // WebSocket event handlers
     socket.onopen = () => {
       console.log('WebSocket connection established');
     };
@@ -32,6 +48,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
       const message = JSON.parse(event.data);
       console.log('Received message from server:', message);
 
+      // Handle initial data payload from server
       if (message.type === 'initialData') {
         setBlockchainInfo(message.data.blockchainInfo);
         setChainTxStats(message.data.chainTxStats);
@@ -45,11 +62,22 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
       console.log('WebSocket connection closed');
     };
 
+    // Cleanup WebSocket connection on component unmount
     return () => {
       socket.close();
     };
   }, []);
 
+  /**
+   * Reusable StatCard component for displaying blockchain statistics
+   * 
+   * @param {string} title - Card title
+   * @param {string|number} value - Main statistical value to display
+   * @param {React.Element} icon - Material-UI icon component
+   * @param {string} description - Explanatory text for the statistic
+   * @param {boolean} loading - Loading state indicator
+   * @param {string} color - Theme color for the card accent
+   */
   const StatCard = ({ title, value, icon, description, loading, color = '#0066cc' }) => (
     <Card 
       elevation={3} 
@@ -65,6 +93,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
       }}
     >
       <CardContent>
+        {/* Card header with title and icon */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
           <Typography variant="h6" fontWeight="bold" color="text.primary">
             {title}
@@ -74,6 +103,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
           </Avatar>
         </Box>
         
+        {/* Main value display with loading state */}
         {loading ? (
           <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
             Loading...
@@ -84,6 +114,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
           </Typography>
         )}
         
+        {/* Descriptive text */}
         <Typography variant="body2" color="text.secondary">
           {description}
         </Typography>
@@ -91,6 +122,202 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
     </Card>
   );
 
+  /**
+   * AlgorithmDifficultiesCard - Specialized card for displaying mining algorithm difficulties
+   * Shows current difficulty values for all 5 DigiByte mining algorithms
+   */
+  const AlgorithmDifficultiesCard = () => (
+    <Card 
+      elevation={3} 
+      sx={{
+        height: '100%',
+        transition: 'transform 0.3s, box-shadow 0.3s',
+        '&:hover': {
+          transform: 'translateY(-5px)',
+          boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
+        },
+        borderTop: '4px solid #7b1fa2',
+        borderRadius: '8px'
+      }}
+    >
+      <CardContent>
+        {/* Card header */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+          <Typography variant="h6" fontWeight="bold" color="text.primary">
+            Algo Difficulties
+          </Typography>
+          <Avatar sx={{ bgcolor: '#7b1fa2' }}>
+            <SpeedIcon />
+          </Avatar>
+        </Box>
+        
+        {/* Algorithm difficulty list */}
+        {blockchainInfo && blockchainInfo.difficulties ? (
+          <>
+            <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+              <span>SHA256d:</span> <span>{parseInt(blockchainInfo.difficulties.sha256d).toLocaleString()}</span>
+            </Typography>
+            <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+              <span>Scrypt:</span> <span>{parseInt(blockchainInfo.difficulties.scrypt).toLocaleString()}</span>
+            </Typography>
+            <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+              <span>Skein:</span> <span>{parseInt(blockchainInfo.difficulties.skein).toLocaleString()}</span>
+            </Typography>
+            <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+              <span>Qubit:</span> <span>{parseInt(blockchainInfo.difficulties.qubit).toLocaleString()}</span>
+            </Typography>
+            <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+              <span>Odo:</span> <span>{parseInt(blockchainInfo.difficulties.odo).toLocaleString()}</span>
+            </Typography>
+          </>
+        ) : (
+          <Typography variant="h5">Loading...</Typography>
+        )}
+        
+        <Divider sx={{ my: 1 }} />
+        
+        <Typography variant="body2" color="text.secondary">
+          The current mining difficulties for each of the 5 DigiByte mining algorithms.
+        </Typography>
+      </CardContent>
+    </Card>
+  );
+
+  /**
+   * SoftforksCard - Specialized card for displaying active blockchain softforks
+   * Shows all currently active softforks and their implementation status
+   */
+  const SoftforksCard = () => (
+    <Card 
+      elevation={3} 
+      sx={{
+        height: '100%',
+        transition: 'transform 0.3s, box-shadow 0.3s',
+        '&:hover': {
+          transform: 'translateY(-5px)',
+          boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
+        },
+        borderTop: '4px solid #3949ab',
+        borderRadius: '8px'
+      }}
+    >
+      <CardContent>
+        {/* Card header */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+          <Typography variant="h6" fontWeight="bold" color="text.primary">
+            Active Softforks
+          </Typography>
+          <Avatar sx={{ bgcolor: '#3949ab' }}>
+            <DoneAllIcon />
+          </Avatar>
+        </Box>
+        
+        {/* Softforks list */}
+        {blockchainInfo ? (
+          <Box>
+            {Object.entries(blockchainInfo.softforks).map(([key, value]) => (
+              <Box 
+                key={key} 
+                sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between',
+                  mb: 0.5
+                }}
+              >
+                <Typography variant="body2" fontWeight="bold">
+                  {key}:
+                </Typography>
+                <Typography variant="body2">
+                  {value.type}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        ) : (
+          <Typography variant="h5">Loading...</Typography>
+        )}
+        
+        <Divider sx={{ my: 1 }} />
+        
+        <Typography variant="body2" color="text.secondary">
+          Active on chain softforks.
+        </Typography>
+      </CardContent>
+    </Card>
+  );
+
+  /**
+   * HeroSection - Top banner with main title and description
+   * Provides introduction to the DigiByte blockchain and website purpose
+   */
+  const HeroSection = () => (
+    <Card
+      elevation={2}
+      sx={{
+        backgroundColor: '#f2f4f8',
+        borderRadius: '12px',
+        mb: 5,
+        overflow: 'hidden',
+        backgroundImage: 'linear-gradient(135deg, #f8f9fa 0%, #e8eef7 100%)',
+        border: '1px solid rgba(0, 35, 82, 0.1)'
+      }}
+    >
+      <CardContent sx={{ py: 4, textAlign: 'center' }}>
+        {/* Main title with icon */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
+          <StorageIcon sx={{ fontSize: '2.5rem', color: '#002352', mr: 2 }} />
+          <Typography 
+            variant="h2" 
+            component="h1" 
+            fontWeight="800" 
+            sx={{ 
+              color: '#002352',
+              letterSpacing: '0.5px',
+              fontSize: { xs: '1.8rem', sm: '2.3rem', md: '2.8rem' }
+            }}
+          >
+            DigiByte Blockchain Statistics
+          </Typography>
+        </Box>
+        
+        <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 3, borderColor: '#0066cc', borderWidth: 2 }} />
+        
+        {/* Website description */}
+        <Typography 
+          variant="subtitle1" 
+          component="p" 
+          sx={{ 
+            maxWidth: '800px', 
+            mx: 'auto', 
+            mb: 3,
+            color: '#555',
+            fontSize: '1.1rem'
+          }}
+        >
+          This is a free & open source website to find real time data & information about DigiByte blockchain pulled directly from the blockchain via digibyted.
+        </Typography>
+        
+        {/* DigiByte blockchain description */}
+        <Typography 
+          variant="body1" 
+          component="p" 
+          sx={{ 
+            maxWidth: '800px', 
+            mx: 'auto',
+            color: '#444',
+            lineHeight: 1.6
+          }}
+        >
+          The DigiByte blockchain was launched on January 10th, 2014. There is <strong>NO </strong> 
+          company, centralized group, mass premine, entity or individual who controls DGB. 
+          DGB is truly decentralized and is the best combination of speed, security & decentralization 
+          you will see in any blockchain in the world today.
+        </Typography>
+      </CardContent>
+    </Card>
+  );
+
+  // Main component render
   return (
     <Box 
       sx={{ 
@@ -100,69 +327,12 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
       }}
     >
       <Container maxWidth="lg">
-        <Card
-          elevation={2}
-          sx={{
-            backgroundColor: '#f2f4f8',
-            borderRadius: '12px',
-            mb: 5,
-            overflow: 'hidden',
-            backgroundImage: 'linear-gradient(135deg, #f8f9fa 0%, #e8eef7 100%)',
-            border: '1px solid rgba(0, 35, 82, 0.1)'
-          }}
-        >
-          <CardContent sx={{ py: 4, textAlign: 'center' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
-              <StorageIcon sx={{ fontSize: '2.5rem', color: '#002352', mr: 2 }} />
-              <Typography 
-                variant="h2" 
-                component="h1" 
-                fontWeight="800" 
-                sx={{ 
-                  color: '#002352',
-                  letterSpacing: '0.5px',
-                  fontSize: { xs: '1.8rem', sm: '2.3rem', md: '2.8rem' }
-                }}
-              >
-                DigiByte Blockchain Statistics
-              </Typography>
-            </Box>
-            
-            <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 3, borderColor: '#0066cc', borderWidth: 2 }} />
-            
-            <Typography 
-              variant="subtitle1" 
-              component="p" 
-              sx={{ 
-                maxWidth: '800px', 
-                mx: 'auto', 
-                mb: 3,
-                color: '#555',
-                fontSize: '1.1rem'
-              }}
-            >
-              This is a free & open source website to find real time data & information about DigiByte blockchain pulled directly from the blockchain via digibyted.
-            </Typography>
-            
-            <Typography 
-              variant="body1" 
-              component="p" 
-              sx={{ 
-                maxWidth: '800px', 
-                mx: 'auto',
-                color: '#444',
-                lineHeight: 1.6
-              }}
-            >
-              The DigiByte blockchain was launched on January 10th, 2014. There is <strong>NO </strong> 
-              company, centralized group, mass premine, entity or individual who controls DGB. 
-              DGB is truly decentralized and is the best combination of speed, security & decentralization 
-              you will see in any blockchain in the world today.
-            </Typography>
-          </CardContent>
-        </Card>
+        {/* Hero section with main title and description */}
+        <HeroSection />
 
+        {/* Statistics grid layout */}
         <Grid container spacing={3}>
+          {/* Basic blockchain statistics */}
           <Grid item xs={12} sm={6} md={4}>
             <StatCard 
               title="Total Blocks" 
@@ -195,6 +365,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
             />
           </Grid>
           
+          {/* Supply and mining statistics */}
           <Grid item xs={12} sm={6} md={4}>
             <StatCard 
               title="Current Circulating Supply" 
@@ -228,59 +399,9 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
             />
           </Grid>
           
+          {/* Advanced blockchain information */}
           <Grid item xs={12} sm={6} md={4}>
-            <Card 
-              elevation={3} 
-              sx={{
-                height: '100%',
-                transition: 'transform 0.3s, box-shadow 0.3s',
-                '&:hover': {
-                  transform: 'translateY(-5px)',
-                  boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
-                },
-                borderTop: '4px solid #7b1fa2',
-                borderRadius: '8px'
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                  <Typography variant="h6" fontWeight="bold" color="text.primary">
-                    Algo Difficulties
-                  </Typography>
-                  <Avatar sx={{ bgcolor: '#7b1fa2' }}>
-                    <SpeedIcon />
-                  </Avatar>
-                </Box>
-                
-                {blockchainInfo && blockchainInfo.difficulties ? (
-                  <>
-                    <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                      <span>SHA256d:</span> <span>{parseInt(blockchainInfo.difficulties.sha256d).toLocaleString()}</span>
-                    </Typography>
-                    <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                      <span>Scrypt:</span> <span>{parseInt(blockchainInfo.difficulties.scrypt).toLocaleString()}</span>
-                    </Typography>
-                    <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                      <span>Skein:</span> <span>{parseInt(blockchainInfo.difficulties.skein).toLocaleString()}</span>
-                    </Typography>
-                    <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                      <span>Qubit:</span> <span>{parseInt(blockchainInfo.difficulties.qubit).toLocaleString()}</span>
-                    </Typography>
-                    <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                      <span>Odo:</span> <span>{parseInt(blockchainInfo.difficulties.odo).toLocaleString()}</span>
-                    </Typography>
-                  </>
-                ) : (
-                  <Typography variant="h5">Loading...</Typography>
-                )}
-                
-                <Divider sx={{ my: 1 }} />
-                
-                <Typography variant="body2" color="text.secondary">
-                  The current mining difficulties for each of the 5 DigiByte mining algorithms.
-                </Typography>
-              </CardContent>
-            </Card>
+            <AlgorithmDifficultiesCard />
           </Grid>
           
           <Grid item xs={12} sm={6} md={4}>
@@ -295,60 +416,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
           </Grid>
           
           <Grid item xs={12} sm={6} md={4}>
-            <Card 
-              elevation={3} 
-              sx={{
-                height: '100%',
-                transition: 'transform 0.3s, box-shadow 0.3s',
-                '&:hover': {
-                  transform: 'translateY(-5px)',
-                  boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
-                },
-                borderTop: '4px solid #3949ab',
-                borderRadius: '8px'
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                  <Typography variant="h6" fontWeight="bold" color="text.primary">
-                    Active Softforks
-                  </Typography>
-                  <Avatar sx={{ bgcolor: '#3949ab' }}>
-                    <DoneAllIcon />
-                  </Avatar>
-                </Box>
-                
-                {blockchainInfo ? (
-                  <Box>
-                    {Object.entries(blockchainInfo.softforks).map(([key, value]) => (
-                      <Box 
-                        key={key} 
-                        sx={{ 
-                          display: 'flex', 
-                          justifyContent: 'space-between',
-                          mb: 0.5
-                        }}
-                      >
-                        <Typography variant="body2" fontWeight="bold">
-                          {key}:
-                        </Typography>
-                        <Typography variant="body2">
-                          {value.type}
-                        </Typography>
-                      </Box>
-                    ))}
-                  </Box>
-                ) : (
-                  <Typography variant="h5">Loading...</Typography>
-                )}
-                
-                <Divider sx={{ my: 1 }} />
-                
-                <Typography variant="body2" color="text.secondary">
-                  Active on chain softforks.
-                </Typography>
-              </CardContent>
-            </Card>
+            <SoftforksCard />
           </Grid>
         </Grid>
       </Container>
