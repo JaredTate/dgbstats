@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm run test:run:*)",
+      "Bash(find:*)",
+      "Bash(chmod:*)",
+      "Bash(./fix-tests.sh:*)",
+      "Bash(./clean-tests.sh:*)",
+      "Bash(npm test)",
+      "Bash(grep:*)",
+      "Bash(node fix-all-tests.js)",
+      "Bash(node:*)",
+      "Bash(./fix-test-imports.sh:*)",
+      "Bash(npx eslint:*)",
+      "Bash(rm:*)",
+      "Bash(npx vitest run:*)",
+      "Bash(npm test:*)",
+      "Bash(sed:*)",
+      "Bash(rg:*)"
+    ],
+    "deny": []
+  }
+}

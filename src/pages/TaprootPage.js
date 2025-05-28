@@ -435,10 +435,11 @@ const TaprootPage = () => {
      * @param {MessageEvent} event - WebSocket message event
      */
     socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      console.log('Received message:', message);
+      try {
+        const message = JSON.parse(event.data);
+        console.log('Received message:', message);
 
-      if (message.type === 'initialData') {
+        if (message.type === 'initialData') {
         /**
          * Process initial blockchain data including Taproot status
          * Extracts Taproot soft fork information from blockchain info
@@ -462,6 +463,9 @@ const TaprootPage = () => {
           const updatedBlocks = [message.data, ...prevBlocks];
           return updatedBlocks.slice(0, 240);
         });
+      }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
       }
     };
 

@@ -213,7 +213,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
         </Box>
         
         {/* Softforks list */}
-        {blockchainInfo ? (
+        {blockchainInfo && blockchainInfo.softforks ? (
           <Box>
             {Object.entries(blockchainInfo.softforks).map(([key, value]) => (
               <Box 
