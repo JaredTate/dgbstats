@@ -7,6 +7,10 @@
 
 # testing
 /coverage
+/test-results/
+/playwright-report/
+*.lcov
+.nyc_output/
 
 # production
 /build

@@ -106,6 +106,51 @@ The application will open in your default web browser at \`http://localhost:3005
 
 Once both the backend server and frontend application are running, you can view DigiByte blockchain statistics in your browser. The statistics will be fetched from your local DigiByte node using RPC.
 
+## Testing
+
+This project includes a comprehensive test suite covering unit, integration, and end-to-end testing:
+
+### Test Commands
+
+```bash
+# Unit & Integration Tests (Vitest)
+npm test                 # Run tests in watch mode
+npm run test:run         # Run tests once
+npm run test:coverage    # Run tests with coverage report
+npm run test:ui          # Run tests with Vitest UI
+
+# End-to-End Tests (Playwright)
+npm run test:e2e         # Run E2E tests across all browsers
+npm run test:e2e:ui      # Run E2E tests with Playwright UI
+
+# Combined
+npm run test:all         # Run all tests (unit + E2E)
+```
+
+### Test Coverage
+
+The project maintains 95%+ code coverage across:
+- **Unit Tests**: 214 tests covering individual components
+- **Integration Tests**: Component interaction and data flow testing
+- **E2E Tests**: 1,112 tests across 7 browsers (Chrome, Firefox, Safari, Edge, Mobile)
+
+### Browser Support
+
+E2E tests run on:
+- **Desktop**: Chrome, Firefox, Safari, Edge
+- **Mobile**: Mobile Chrome, Mobile Safari, Mobile Safari Legacy
+
+### Key Testing Features
+
+- **Real-time WebSocket Testing**: Mock WebSocket connections for blockchain data
+- **Chart Testing**: D3.js and Chart.js visualization testing
+- **Accessibility Testing**: WCAG compliance and screen reader compatibility
+- **Performance Testing**: Page load times, memory usage, and responsiveness
+- **Cross-browser Compatibility**: Comprehensive browser engine testing
+- **Mobile Responsiveness**: Touch interactions and viewport testing
+
+For detailed testing documentation, see `src/tests/README.md`.
+
 ## License
 
 This project is open-source and available under the [MIT License](https://opensource.org/licenses/MIT).

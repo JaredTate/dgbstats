@@ -17,8 +17,18 @@
       "Bash(npx vitest run:*)",
       "Bash(npm test:*)",
       "Bash(sed:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "Bash(ls:*)",
+      "Bash(npm run test:e2e:*)",
+      "Bash(npx playwright:*)",
+      "Bash(timeout:*)",
+      "Bash(curl:*)",
+      "Bash(npm run:*)",
+      "Bash(./scripts/clean-test-data.sh:*)"
     ],
     "deny": []
-  }
+  },
+  "enableAllProjectMcpServers": false
 }

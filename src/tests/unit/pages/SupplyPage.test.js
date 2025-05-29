@@ -12,36 +12,15 @@ vi.mock('../../../config', () => ({
   }
 }));
 
-// Mock Chart.js
-vi.mock('chart.js', () => {
-  const Chart = vi.fn().mockImplementation(() => ({
-    destroy: vi.fn(),
-    update: vi.fn(),
-    render: vi.fn(),
-    resize: vi.fn(),
-    clear: vi.fn(),
-    stop: vi.fn(),
-    data: {},
-    options: {}
-  }));
-  Chart.register = vi.fn();
-  return {
-    Chart,
-    registerables: []
-  };
-});
-
 // Mock chartjs-adapter-luxon
 vi.mock('chartjs-adapter-luxon', () => ({}));
-
-// Get the mocked Chart constructor
-const { Chart } = await import('chart.js');
 
 describe('SupplyPage', () => {
   let wsSetup;
   let mockWebSocket;
   let webSocketInstances;
   let mockChartInstance;
+  let mockChart;
 
   beforeEach(() => {
     // Setup WebSocket mock
@@ -50,6 +29,9 @@ describe('SupplyPage', () => {
     webSocketInstances = wsSetup.instances;
     global.WebSocket = mockWebSocket;
 
+    // Get the global Chart mock from setup.js
+    mockChart = global._mockChart;
+    
     // Get reference to the mock chart instance that will be created
     mockChartInstance = {
       destroy: vi.fn(),
@@ -61,9 +43,6 @@ describe('SupplyPage', () => {
       data: {},
       options: {},
     };
-    
-    // Override the Chart mock implementation for this test
-    vi.mocked(Chart).mockImplementation(() => mockChartInstance);
   });
 
   afterEach(() => {
@@ -130,22 +109,29 @@ describe('SupplyPage', () => {
       expect(ws.readyState).toBe(WebSocket.CLOSED);
     });
 
-    it.skip('should handle WebSocket reconnection', async () => {
-      // SKIPPED: WebSocket instances from other tests interfere with this test
+    it('should handle WebSocket reconnection', async () => {
       const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       
       renderWithProviders(<SupplyPage />);
       
       await waitForAsync();
-      const ws = webSocketInstances[0];
       
-      // Simulate connection close
-      ws.onclose({ type: 'close' });
+      // Get the initial count of WebSocket instances
+      const initialCount = webSocketInstances.length;
+      const ws = webSocketInstances[initialCount - 1]; // Get the last (most recent) WebSocket
       
-      // Wait for reconnection attempt (2 seconds delay)
+      // Simulate connection close with error code (not normal closure)
+      ws.onclose({ type: 'close', code: 1006, reason: 'Connection lost' });
+      
+      // Wait for reconnection attempt (2 seconds delay as per component)
       await waitFor(() => {
-        expect(webSocketInstances.length).toBe(2);
+        // Should have created one more WebSocket instance
+        expect(webSocketInstances.length).toBeGreaterThan(initialCount);
       }, { timeout: 3000 });
+      
+      // Verify reconnection was logged
+      expect(consoleLogSpy).toHaveBeenCalledWith('Supply WebSocket connection closed', 1006, 'Connection lost');
+      expect(consoleLogSpy).toHaveBeenCalledWith('Attempting to reconnect (1/3)...');
       
       consoleLogSpy.mockRestore();
     });
@@ -247,14 +233,16 @@ describe('SupplyPage', () => {
   });
 
   describe('Chart Functionality', () => {
-    it.skip('should initialize Chart.js on mount', async () => {
-      // SKIPPED: Chart.js is mocked and timing is complex
+    it('should initialize Chart.js on mount', async () => {
       renderWithProviders(<SupplyPage />);
       
-      await waitForAsync();
+      // Wait for the component to mount and the useEffect to run
+      await waitFor(() => {
+        expect(mockChart).toHaveBeenCalled();
+      });
       
-      expect(Chart).toHaveBeenCalledWith(
-        expect.any(HTMLCanvasElement),
+      expect(mockChart).toHaveBeenCalledWith(
+        expect.any(Object), // Canvas context, not HTMLCanvasElement directly
         expect.objectContaining({
           type: 'line',
           data: expect.any(Object),
@@ -266,15 +254,31 @@ describe('SupplyPage', () => {
     it('should destroy chart on unmount to prevent memory leaks', async () => {
       const { unmount } = renderWithProviders(<SupplyPage />);
       
-      await waitForAsync();
+      // Wait for chart to be created
+      await waitFor(() => {
+        expect(mockChart).toHaveBeenCalled();
+      });
+      
+      // Get the created chart instance
+      const chartInstances = global._chartInstances;
+      const chartInstance = chartInstances[chartInstances.length - 1];
       
       unmount();
       
-      expect(mockChartInstance.destroy).toHaveBeenCalled();
+      expect(chartInstance.destroy).toHaveBeenCalled();
     });
 
     it('should update chart when receiving timeline data', async () => {
       renderWithProviders(<SupplyPage />);
+      
+      // Wait for initial chart to be created
+      await waitFor(() => {
+        expect(mockChart).toHaveBeenCalled();
+      });
+      
+      const initialCallCount = mockChart.mock.calls.length;
+      const chartInstances = global._chartInstances;
+      const firstChartInstance = chartInstances[chartInstances.length - 1];
       
       await waitForAsync();
       const ws = webSocketInstances[0];
@@ -294,16 +298,15 @@ describe('SupplyPage', () => {
       
       await waitFor(() => {
         // Chart is destroyed and recreated when data changes
-        expect(mockChartInstance.destroy).toHaveBeenCalled();
-        expect(Chart).toHaveBeenCalledTimes(2); // Initial + update
+        expect(firstChartInstance.destroy).toHaveBeenCalled();
+        expect(mockChart).toHaveBeenCalledTimes(initialCallCount + 1); // Initial + update
       });
     });
 
   });
 
   describe('Error Handling', () => {
-    it.skip('should handle WebSocket errors gracefully', async () => {
-      // SKIPPED: SupplyPage doesn't implement WebSocket error handling
+    it('should handle WebSocket errors gracefully', async () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       
       renderWithProviders(<SupplyPage />);
@@ -313,7 +316,10 @@ describe('SupplyPage', () => {
       
       ws.triggerError(new Error('Connection failed'));
       
-      expect(consoleErrorSpy).toHaveBeenCalledWith('WebSocket error:', expect.any(Error));
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Supply WebSocket connection error:', expect.objectContaining({
+        type: 'error',
+        error: expect.any(Error)
+      }));
       
       // Page should still render
       expect(screen.getByText('DigiByte Supply Statistics')).toBeInTheDocument();

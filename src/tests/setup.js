@@ -2,15 +2,36 @@ import '@testing-library/jest-dom';
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeAll, afterAll, vi } from 'vitest';
 import { server } from './mocks/server';
+import 'vitest-canvas-mock';
 
 // Mock Chart.js before any imports
-const mockChart = vi.fn().mockImplementation(() => ({
+const createMockChartInstance = () => ({
   destroy: vi.fn(),
   update: vi.fn(),
+  render: vi.fn(),
+  resize: vi.fn(),
+  clear: vi.fn(),
+  stop: vi.fn(),
   options: {},
   data: {}
-}));
+});
+
+// Store all created instances for testing
+const chartInstances = [];
+
+const mockChart = vi.fn().mockImplementation(() => {
+  const instance = createMockChartInstance();
+  chartInstances.push(instance);
+  return instance;
+});
+
 mockChart.register = vi.fn();
+mockChart.defaults = {};
+mockChart.instances = chartInstances;
+
+// Make the mock available globally for tests
+global._mockChart = mockChart;
+global._chartInstances = chartInstances;
 
 vi.mock('chart.js', () => ({
   Chart: mockChart,
@@ -33,6 +54,12 @@ vi.mock('chartjs-adapter-luxon', () => ({}));
 // Establish API mocking before all tests.
 beforeAll(() => {
   server.listen({ onUnhandledRequest: 'error' });
+});
+
+// Clear Chart instances before each test
+beforeEach(() => {
+  chartInstances.length = 0;
+  mockChart.mockClear();
 });
 
 // Reset any request handlers that we may add during the tests,
@@ -75,33 +102,49 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
 }));
 
-// Mock canvas getContext for Chart.js
-HTMLCanvasElement.prototype.getContext = vi.fn().mockImplementation(() => ({
-  fillRect: vi.fn(),
-  clearRect: vi.fn(),
-  getImageData: vi.fn(),
-  putImageData: vi.fn(),
-  createImageData: vi.fn(),
-  setTransform: vi.fn(),
-  drawImage: vi.fn(),
-  save: vi.fn(),
-  fillText: vi.fn(),
-  restore: vi.fn(),
-  beginPath: vi.fn(),
-  moveTo: vi.fn(),
-  lineTo: vi.fn(),
-  closePath: vi.fn(),
-  stroke: vi.fn(),
-  translate: vi.fn(),
-  scale: vi.fn(),
-  rotate: vi.fn(),
-  arc: vi.fn(),
-  fill: vi.fn(),
-  measureText: vi.fn().mockReturnValue({ width: 0 }),
-  transform: vi.fn(),
-  rect: vi.fn(),
-  clip: vi.fn(),
-}));
+// vitest-canvas-mock now handles canvas mocking
+// If needed, we can extend specific canvas methods here
+
+// Ensure canvas getContext is properly mocked
+if (typeof HTMLCanvasElement !== 'undefined') {
+  HTMLCanvasElement.prototype.getContext = vi.fn().mockImplementation((type) => {
+    if (type === '2d') {
+      return {
+        fillRect: vi.fn(),
+        clearRect: vi.fn(),
+        getImageData: vi.fn(),
+        putImageData: vi.fn(),
+        createImageData: vi.fn(),
+        setTransform: vi.fn(),
+        drawImage: vi.fn(),
+        save: vi.fn(),
+        fillText: vi.fn(),
+        restore: vi.fn(),
+        beginPath: vi.fn(),
+        moveTo: vi.fn(),
+        lineTo: vi.fn(),
+        closePath: vi.fn(),
+        stroke: vi.fn(),
+        translate: vi.fn(),
+        scale: vi.fn(),
+        rotate: vi.fn(),
+        arc: vi.fn(),
+        fill: vi.fn(),
+        measureText: vi.fn(() => ({ width: 0 })),
+        transform: vi.fn(),
+        rect: vi.fn(),
+        clip: vi.fn(),
+        createLinearGradient: vi.fn().mockReturnValue({
+          addColorStop: vi.fn()
+        }),
+        createRadialGradient: vi.fn().mockReturnValue({
+          addColorStop: vi.fn()
+        })
+      };
+    }
+    return null;
+  });
+}
 
 // Mock IntersectionObserver
 global.IntersectionObserver = vi.fn().mockImplementation(() => ({

@@ -191,10 +191,10 @@ const PoolsPage = () => {
    * Optimized for performance with simplified rendering approach
    */
   useEffect(() => {
-    console.log('Pools chart useEffect running, blocks:', blocks.length);
+    console.log('Pools chart useEffect running, blocks:', blocks.length, 'sortedAddresses:', sortedAddresses.length, 'svgRef:', !!svgRef.current);
     
     if (!blocks.length || !sortedAddresses.length || !svgRef.current) {
-      console.log('No blocks, sorted addresses, or SVG ref, skipping chart render');
+      console.log('Chart render conditions not met - blocks:', blocks.length, 'sortedAddresses:', sortedAddresses.length, 'svgRef:', !!svgRef.current);
       return;
     }
     
@@ -279,7 +279,7 @@ const PoolsPage = () => {
         .outerRadius(radius * 0.6);
 
       // Render pie slices
-      chart.selectAll('path')
+      const paths = chart.selectAll('path')
         .data(pie(pieChartData.main))
         .enter()
         .append('path')
@@ -287,6 +287,8 @@ const PoolsPage = () => {
         .attr('fill', d => colorScale(d.data.blocks))
         .attr('stroke', 'white')
         .attr('stroke-width', 2);
+      
+      console.log('Created', paths.size(), 'pie chart paths');
 
       // Add percentage labels to each slice
       chart.selectAll('text')

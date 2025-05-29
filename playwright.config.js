@@ -54,27 +54,77 @@ export default defineConfig({
 
     {
       name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      use: { 
+        ...devices['Desktop Safari'],
+        // WebKit-specific settings for better compatibility
+        hasTouch: true,
+        actionTimeout: 15000,
+        navigationTimeout: 45000,
+      },
     },
 
-    /* Test against mobile viewports. */
+    /* Test against mobile viewports with enhanced WebKit support. */
     {
       name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
+      use: { 
+        ...devices['Pixel 5'],
+        // Enhanced mobile Chrome settings
+        hasTouch: true,
+        isMobile: true,
+        // Mobile-specific timeouts
+        actionTimeout: 12000,
+        navigationTimeout: 30000,
+        // Viewport override for consistency
+        viewport: { width: 375, height: 667 },
+      },
     },
     {
       name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
+      use: { 
+        ...devices['iPhone 12'],
+        // Enhanced WebKit/Safari settings for better compatibility
+        hasTouch: true,
+        isMobile: true,
+        // Longer timeouts for WebKit rendering
+        actionTimeout: 20000,
+        navigationTimeout: 60000,
+        // Specific viewport for testing
+        viewport: { width: 375, height: 812 },
+        // WebKit-specific user agent
+        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+      },
+    },
+    {
+      name: 'Mobile Safari Legacy',
+      use: { 
+        ...devices['iPhone 8'],
+        // Test older iOS WebKit versions
+        hasTouch: true,
+        isMobile: true,
+        actionTimeout: 18000,
+        navigationTimeout: 45000,
+        viewport: { width: 375, height: 667 },
+      },
     },
 
     /* Test against branded browsers. */
     {
       name: 'Microsoft Edge',
-      use: { ...devices['Desktop Edge'], channel: 'msedge' },
+      use: { 
+        ...devices['Desktop Edge'], 
+        channel: 'msedge',
+        // Edge-specific settings
+        actionTimeout: 12000,
+      },
     },
     {
       name: 'Google Chrome',
-      use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+      use: { 
+        ...devices['Desktop Chrome'], 
+        channel: 'chrome',
+        // Chrome-specific settings
+        actionTimeout: 10000,
+      },
     },
   ],
 
@@ -86,11 +136,11 @@ export default defineConfig({
     timeout: 120000,
   },
 
-  /* Global timeout */
-  timeout: 60000,
+  /* Global timeout - extended for mobile testing */
+  timeout: 90000,
 
-  /* Global test timeout */
+  /* Global test timeout - extended for mobile compatibility */
   expect: {
-    timeout: 10000,
+    timeout: 15000,
   },
 });

@@ -21,9 +21,18 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/tests/setup.js', './src/setupTests.js'],
     css: true,
+    deps: {
+      inline: ['vitest-canvas-mock'],
+    },
+    environmentOptions: {
+      jsdom: {
+        resources: 'usable',
+      },
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
+      reportsDirectory: './coverage',
       exclude: [
         'node_modules/',
         'src/tests/',
