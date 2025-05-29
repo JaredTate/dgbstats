@@ -91,7 +91,8 @@ const Header = () => {
               display: 'flex', 
               alignItems: 'center',
               textDecoration: 'none', 
-              color: 'white' 
+              color: 'white',
+              mr: { xs: 1, md: 2 } // Reduced right margin
             }}
           >
             <Box 
@@ -106,17 +107,18 @@ const Header = () => {
               component="div"
               sx={{ 
                 fontWeight: 'bold',
-                flexGrow: { xs: 1, md: 0 }
+                flexGrow: { xs: 1, md: 0 },
+                fontSize: { xs: '1.1rem', md: '1.25rem' } // Slightly smaller on mobile for space
               }}
             >
               DigiByte Stats
             </Typography>
           </Box>
 
-          {/* Spacer to push items to opposite ends */}
+          {/* Spacer to push menu items to the right */}
           <Box sx={{ flexGrow: 1 }} />
 
-          {/* Desktop menu */}
+          {/* Desktop menu - right aligned with proper spacing */}
           <Box 
             sx={{ 
               display: { xs: 'none', md: 'flex' }, 
@@ -127,9 +129,8 @@ const Header = () => {
               },
               msOverflowStyle: 'none',
               scrollbarWidth: 'none',
-              mr: 3, // Increased margin to prevent last item from getting cut off
-              flexGrow: 1, // Allow the menu to take available space
-              justifyContent: 'flex-end', // Push menu items to the right
+              justifyContent: 'flex-end', // Right align menu items
+              alignItems: 'center',
             }}
           >
             {menuItems.map((item) => (
@@ -143,14 +144,14 @@ const Header = () => {
                 size="small"
                 sx={{
                   color: 'white',
-                  px: 1,
+                  px: 0.75, // Reduce horizontal padding for more compact layout
                   py: 0.5,
                   minWidth: 'auto',
-                  fontSize: '0.95rem',
+                  fontSize: '0.9rem', // Slightly smaller font
                   textTransform: 'none',
                   fontWeight: '500',
                   whiteSpace: 'nowrap',
-                  mx: 0.5,
+                  mx: 0.1, // Very minimal margin between items
                   '&:hover': {
                     backgroundColor: 'rgba(255, 255, 255, 0.2)'
                   },
@@ -174,7 +175,7 @@ const Header = () => {
                 color="inherit"
                 aria-label="menu"
                 onClick={handleDrawerToggle}
-                sx={{ ml: 2 }}
+                sx={{ ml: 2 }} // Moderate left margin for mobile menu button
               >
                 <MenuIcon />
               </IconButton>
