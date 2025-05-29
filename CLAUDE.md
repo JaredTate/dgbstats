@@ -1646,4 +1646,219 @@ npm run test:all:clean   # Run all tests + auto cleanup
 - ✅ Maintains full test functionality while eliminating bloat
 
 *This implementation ensures that the comprehensive test suite (214 unit + 1,112 E2E tests) can run without creating persistent repository artifacts.*
+
+## TxsPage Enhancement - Transaction Explorer Revamp (May 2025)
+
+### Overview
+Enhanced the TxsPage.js component to provide a comprehensive, real-time transaction explorer for DigiByte with mempool visualization and detailed transaction information.
+
+### Backend API Requirements
+Since this is a frontend-only application connecting to a remote WebSocket server, the following backend enhancements would be needed:
+
+#### WebSocket Message Types Required
+
+1. **Enhanced Mempool Data**
+```javascript
+{
+  type: 'mempool',
+  data: {
+    stats: {
+      size: 1234,              // Number of transactions
+      bytes: 2450000,          // Total size in bytes
+      usage: 3450000,          // Memory usage
+      maxmempool: 300000000,   // Max mempool size
+      minfee: 0.00001,         // Minimum fee
+      avgfee: 0.0001,          // Average fee
+      totalfee: 1.234,         // Total fees in mempool
+      feeDistribution: {       // NEW: Fee distribution for chart
+        '0-10': 123,           // Transactions with 0-10 sat/byte
+        '10-50': 456,          // Transactions with 10-50 sat/byte
+        '50-100': 234,         // Transactions with 50-100 sat/byte
+        '100-500': 89,         // Transactions with 100-500 sat/byte
+        '500+': 12             // Transactions with 500+ sat/byte
+      }
+    },
+    transactions: [
+      {
+        txid: 'abc123...',
+        size: 250,                    // Size in bytes
+        vsize: 250,                   // Virtual size
+        fee: 0.0001,                  // Fee in DGB
+        value: 123.45678901,          // NEW: Total value transferred
+        time: 1622505600,             // Unix timestamp
+        inputs: [
+          {
+            address: 'DGB1...',
+            amount: 100,
+            txid: 'prev1...',         // NEW: Previous tx reference
+            vout: 0                   // NEW: Output index
+          }
+        ],
+        outputs: [
+          {
+            address: 'DGB2...',
+            amount: 99.9999,
+            type: 'pubkeyhash'        // NEW: Output type
+          }
+        ],
+        fee_rate: 40,                 // Satoshis per byte
+        priority: 'medium',           // high/medium/low
+        confirmations: 0,             // NEW: Always 0 for mempool
+        descendantcount: 0,           // NEW: Descendant tx count
+        descendantsize: 0,            // NEW: Total descendant size
+        ancestorcount: 0,             // NEW: Ancestor tx count
+        ancestorsize: 0               // NEW: Total ancestor size
+      }
+    ]
+  }
+}
+```
+
+2. **Recent Confirmed Transactions**
+```javascript
+{
+  type: 'recentTransactions',  // NEW message type
+  data: [
+    {
+      txid: 'def456...',
+      blockhash: 'block123...',
+      blockheight: 20123456,
+      blocktime: 1622505600,
+      confirmations: 6,
+      size: 225,
+      vsize: 225,
+      fee: 0.00005,
+      value: 50.12345678,
+      inputs: [...],
+      outputs: [...],
+      fee_rate: 22
+    }
+  ]
+}
+```
+
+3. **Real-time Updates**
+```javascript
+// New transaction enters mempool
+{
+  type: 'newTransaction',
+  data: { /* full transaction object */ }
+}
+
+// Transaction confirmed (removed from mempool)
+{
+  type: 'confirmedTransaction',
+  data: {
+    txid: 'abc123...',
+    blockhash: 'block456...',
+    blockheight: 20123457,
+    confirmations: 1
+  }
+}
+```
+
+#### RPC Commands Implementation (Backend)
+
+```javascript
+// Backend implementation would use these RPC commands:
+
+// Get mempool info
+const mempoolInfo = await rpc.getmempoolinfo();
+
+// Get raw mempool with detailed info
+const rawMempool = await rpc.getrawmempool(true);
+
+// For each transaction in mempool
+for (const [txid, info] of Object.entries(rawMempool)) {
+  // Get full transaction details
+  const rawTx = await rpc.getrawtransaction(txid, true);
+  
+  // Calculate total value
+  const value = rawTx.vout.reduce((sum, out) => sum + out.value, 0);
+  
+  // Get mempool entry for additional info
+  const mempoolEntry = await rpc.getmempoolentry(txid);
+  
+  // Combine data for frontend
+  transactions.push({
+    txid,
+    size: info.size,
+    vsize: info.vsize,
+    fee: info.fee,
+    value,
+    time: info.time,
+    fee_rate: (info.fee * 100000000) / info.vsize,
+    priority: calculatePriority(fee_rate),
+    inputs: rawTx.vin.map(processInput),
+    outputs: rawTx.vout.map(processOutput),
+    ...mempoolEntry
+  });
+}
+```
+
+### Frontend Enhancements Implemented
+
+#### 1. Enhanced Transaction Display
+- **Value Display**: Shows total DGB value being transferred (not just fees)
+- **Enhanced Details**: Size, vsize, fee rate, confirmations
+- **Input/Output Details**: Expandable sections showing addresses and amounts
+- **Visual Priority**: Color-coded cards and priority badges
+
+#### 2. Mempool Visualization
+- **Fee Distribution Chart**: Visual chart showing fee ranges
+- **Real-time Stats**: Live updating mempool metrics
+- **Memory Usage Bar**: Visual indicator of mempool capacity
+
+#### 3. Confirmed Transactions Section
+- **Recent Confirmations**: Shows individual transactions (not just blocks)
+- **Confirmation Count**: Visual badges showing confirmation status
+- **Block Integration**: Links to block explorer for each transaction
+
+#### 4. UI/UX Improvements
+- **Responsive Design**: Optimized for mobile, tablet, and desktop
+- **Real-time Updates**: Smooth animations for new/confirmed transactions
+- **Performance**: Virtual scrolling for large transaction lists
+- **Accessibility**: ARIA labels, keyboard navigation, screen reader support
+
+### Key Features Added
+
+1. **Transaction Value Display**
+   - Total value transferred prominently displayed
+   - Formatted with proper decimal places and commas
+
+2. **Enhanced Transaction Cards**
+   - Cleaner layout with better information hierarchy
+   - Expandable details for inputs/outputs
+   - Visual indicators for transaction size and priority
+
+3. **Mempool Statistics Dashboard**
+   - Visual charts for fee distribution
+   - Memory usage indicators
+   - Average wait time estimates
+
+4. **Confirmed Transactions List**
+   - Individual transaction display (not just block summaries)
+   - Confirmation count badges
+   - Time since confirmation
+
+5. **Search and Filter**
+   - Search by transaction ID
+   - Filter by fee range, priority, or value
+   - Sort by various criteria
+
+### Performance Optimizations
+
+1. **Virtual Scrolling**: Only renders visible transactions
+2. **Memoization**: Prevents unnecessary re-renders
+3. **Debounced Updates**: Batches rapid WebSocket messages
+4. **Lazy Loading**: Loads transaction details on demand
+
+### Accessibility Enhancements
+
+1. **ARIA Live Regions**: Announces new transactions
+2. **Keyboard Navigation**: Full keyboard support
+3. **Focus Management**: Proper focus handling for dynamic content
+4. **Screen Reader Support**: Descriptive labels and announcements
+
+*This enhancement transforms the TxsPage into a comprehensive transaction explorer rivaling professional blockchain explorers.*
 EOF < /dev/null

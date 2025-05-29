@@ -253,6 +253,51 @@ export const mockApiResponses = {
     }
   },
 
+  // Transaction/Mempool data
+  mempoolData: {
+    stats: {
+      size: 1234,
+      bytes: 2456789,
+      usage: 3456789,
+      maxmempool: 300000000,
+      minfee: 0.00001,
+      avgfee: 0.0001
+    },
+    transactions: Array.from({ length: 50 }, (_, i) => ({
+      txid: `${i.toString(16).padStart(64, '0')}abcdef1234567890`,
+      size: 250 + Math.floor(Math.random() * 500),
+      vsize: 250 + Math.floor(Math.random() * 500),
+      weight: 1000 + Math.floor(Math.random() * 2000),
+      fee: 0.0001 + Math.random() * 0.001,
+      time: Date.now() / 1000 - i * 30,
+      height: -1,
+      descendantcount: 1,
+      descendantsize: 250,
+      ancestorcount: 1,
+      ancestorsize: 250,
+      inputs: [
+        {
+          txid: `input${i}def4567890abcdef1234567890abcdef1234567890abcdef1234567890`,
+          vout: 0,
+          address: `DGB${Math.random().toString(36).substring(2, 15)}...`,
+          amount: 10 + Math.random() * 100
+        }
+      ],
+      outputs: [
+        {
+          address: `DGB${Math.random().toString(36).substring(2, 15)}...`,
+          amount: 9.9 + Math.random() * 99,
+          scriptPubKey: {}
+        }
+      ],
+      confirmations: 0,
+      blockhash: null,
+      blocktime: null,
+      fee_rate: 40 + Math.floor(Math.random() * 100),
+      priority: i % 3 === 0 ? 'high' : i % 3 === 1 ? 'medium' : 'low'
+    }))
+  },
+
   // Algos data
   algosData: {
     distribution: {
