@@ -24,6 +24,9 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import SortIcon from '@mui/icons-material/Sort';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import MemoryIcon from '@mui/icons-material/Memory';
+import InfoIcon from '@mui/icons-material/Info';
+import QueryBuilderIcon from '@mui/icons-material/QueryBuilder';
+import SecurityIcon from '@mui/icons-material/Security';
 import config from '../config';
 
 /**
@@ -351,6 +354,80 @@ const MempoolStats = ({ stats, transactions }) => {
     </>
   );
 };
+
+/**
+ * Educational content component explaining mempool and transaction concepts
+ * Provides clear, concise explanations to help users understand the data
+ */
+const EducationalContent = () => (
+  <Card elevation={2} sx={{ mb: 3 }}>
+    <CardContent sx={{ py: 3 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        <InfoIcon sx={{ mr: 2, color: '#0066cc', fontSize: '1.5rem' }} />
+        <Typography variant="h6" fontWeight="600" color="primary">
+          Understanding the DigiByte Mempool
+        </Typography>
+      </Box>
+      
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={4}>
+          <Box sx={{ display: 'flex', mb: 2 }}>
+            <PoolIcon sx={{ mr: 1.5, color: '#0066cc', mt: 0.2 }} />
+            <Box>
+              <Typography variant="subtitle2" fontWeight="600" gutterBottom>
+                What is the Mempool?
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                The mempool (memory pool) is a waiting room for unconfirmed transactions. When you send DigiByte, 
+                it first enters the mempool before miners include it in a block and add it to the blockchain permanently.
+              </Typography>
+            </Box>
+          </Box>
+        </Grid>
+        
+        <Grid item xs={12} md={4}>
+          <Box sx={{ display: 'flex', mb: 2 }}>
+            <SpeedIcon sx={{ mr: 1.5, color: '#ff9800', mt: 0.2 }} />
+            <Box>
+              <Typography variant="subtitle2" fontWeight="600" gutterBottom>
+                Transaction Priority
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Priority is determined by fee rate (satoshis per byte). <strong>High priority</strong> (100+ sat/byte) 
+                gets confirmed fastest, <strong>medium</strong> (50-100 sat/byte) for normal speed, 
+                <strong>low priority</strong> (&lt;50 sat/byte) takes longer but costs less.
+              </Typography>
+            </Box>
+          </Box>
+        </Grid>
+        
+        <Grid item xs={12} md={4}>
+          <Box sx={{ display: 'flex', mb: 2 }}>
+            <QueryBuilderIcon sx={{ mr: 1.5, color: '#4caf50', mt: 0.2 }} />
+            <Box>
+              <Typography variant="subtitle2" fontWeight="600" gutterBottom>
+                Confirmation Process
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                DigiByte blocks are mined every ~15 seconds. Once your transaction is included in a block, 
+                it receives its first confirmation. Most exchanges consider 6 confirmations (~90 seconds) as final.
+              </Typography>
+            </Box>
+          </Box>
+        </Grid>
+        
+        <Grid item xs={12}>
+          <Box sx={{ bgcolor: '#f8f9fa', p: 2, borderRadius: 1, border: '1px solid #e9ecef' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+              <strong>💡 Pro Tip:</strong> DigiByte processes transactions 40x faster than Bitcoin with much lower fees. 
+              An empty mempool means the network is efficiently processing all transactions in real-time!
+            </Typography>
+          </Box>
+        </Grid>
+      </Grid>
+    </CardContent>
+  </Card>
+);
 
 /**
  * Search and filter controls
@@ -698,9 +775,9 @@ const TransactionCard = ({ transaction, index, isMobile, isConfirmed = false }) 
 };
 
 /**
- * Section header component
+ * Section header component with educational explanations
  */
-const SectionHeader = ({ title, subtitle, icon: Icon }) => (
+const SectionHeader = ({ title, subtitle, icon: Icon, explanation }) => (
   <Box sx={{ mb: 3 }}>
     <Typography 
       variant="h4" 
@@ -721,10 +798,24 @@ const SectionHeader = ({ title, subtitle, icon: Icon }) => (
       <Typography 
         variant="body1" 
         color="text.secondary"
-        sx={{ ml: Icon ? 6 : 0 }}
+        sx={{ ml: Icon ? 6 : 0, mb: explanation ? 1 : 0 }}
       >
         {subtitle}
       </Typography>
+    )}
+    {explanation && (
+      <Box sx={{ 
+        ml: Icon ? 6 : 0, 
+        p: 2, 
+        bgcolor: '#f8f9fa', 
+        borderRadius: 1, 
+        border: '1px solid #e9ecef',
+        mt: 1
+      }}>
+        <Typography variant="body2" color="text.secondary">
+          {explanation}
+        </Typography>
+      </Box>
     )}
   </Box>
 );
@@ -987,8 +1078,9 @@ const TxsPage = () => {
   const [mempoolPage, setMempoolPage] = useState(0);
   const [confirmedPage, setConfirmedPage] = useState(0);
   
-  // Loading state
+  // Loading states
   const [loading, setLoading] = useState(true);
+  const [confirmedLoading, setConfirmedLoading] = useState(true);
   
   // WebSocket ref and reconnection state
   const wsRef = useRef(null);
@@ -1118,7 +1210,16 @@ const TxsPage = () => {
              * Process recent confirmed transactions
              * Shows individual transactions with confirmation counts
              */
+            console.log('✅ Received recent confirmed transactions:', message.data?.length || 0);
             setConfirmedTransactions(message.data || []);
+            setConfirmedLoading(false);
+            
+            // Log transaction details for debugging
+            if (message.data && message.data.length > 0) {
+              console.log(`   Latest confirmed tx: ${message.data[0].txid?.substring(0, 16)}...`);
+              console.log(`   Block height: ${message.data[0].blockHeight}`);
+              console.log(`   Confirmations: ${message.data[0].confirmations}`);
+            }
           } else if (message.type === 'newTransaction') {
             /**
              * Handle real-time new transaction
@@ -1158,29 +1259,47 @@ const TxsPage = () => {
              * Fallback for basic block data
              * Extract transactions from recent blocks if detailed tx data not available
              */
-            console.log('Recent blocks received:', message.data);
+            console.log('Recent blocks received:', message.data?.length || 0);
             setLoading(false); // Stop loading when we get any data
             
-            if (!confirmedTransactions.length && message.data) {
+            // Only use block fallback if we haven't received confirmed transactions yet
+            if (confirmedLoading && !confirmedTransactions.length && message.data) {
+              console.log('⚠️  Using block data fallback for confirmed transactions');
               const blockTxs = [];
-              message.data.forEach(block => {
-                if (block.txCount > 0) {
-                  // Create placeholder entries for blocks
-                  // In production, backend should send full transaction data
+              message.data.slice(0, 3).forEach(block => {
+                if (block.txCount > 1) { // Only include blocks with non-coinbase transactions
                   blockTxs.push({
+                    txid: `fallback-block-${block.height}`,
                     blockHeight: block.height,
                     blockHash: block.hash,
                     txCount: block.txCount,
                     timestamp: block.timestamp,
+                    blocktime: block.timestamp,
+                    time: block.timestamp,
                     miner: block.poolIdentifier || 'Unknown',
-                    confirmations: 1,
+                    confirmations: message.data[0] ? (message.data[0].height - block.height + 1) : 1,
+                    value: 0,
+                    size: 250,
+                    fee: 0.0001,
+                    priority: 'unknown',
                     placeholder: true
                   });
                 }
               });
-              if (blockTxs.length) {
+              
+              if (blockTxs.length > 0) {
+                console.log(`   Created ${blockTxs.length} placeholder transactions from block data`);
                 setConfirmedTransactions(blockTxs);
+                setConfirmedLoading(false);
               }
+              
+              // Set a timeout to stop loading even if no transactions found
+              setTimeout(() => {
+                if (confirmedLoading) {
+                  console.log('⚠️  Timeout: Setting confirmedLoading to false');
+                  setConfirmedLoading(false);
+                }
+              }, 5000);
             }
           }
         } catch (error) {
@@ -1321,6 +1440,9 @@ const TxsPage = () => {
               
               <MempoolStats stats={mempoolStats} transactions={mempoolTransactions} />
               
+              {/* Educational Content */}
+              <EducationalContent />
+              
               <SearchAndFilter
                 searchTerm={searchTerm}
                 onSearchChange={handleSearchChange}
@@ -1336,6 +1458,7 @@ const TxsPage = () => {
                   title="Mempool Transactions" 
                   subtitle={`${filteredMempool.length} unconfirmed transactions waiting to be included in a block`}
                   icon={PoolIcon}
+                  explanation="These are live transactions that have been broadcast to the DigiByte network but haven't been confirmed yet. Higher fee rates get priority for inclusion in the next block. DigiByte's fast 15-second block times mean most transactions confirm quickly."
                 />
                 
                 {displayedMempool.length === 0 ? (
@@ -1370,53 +1493,85 @@ const TxsPage = () => {
               </Box>
               
               {/* Confirmed Transactions Section */}
-              {confirmedTransactions.length > 0 && (
-                <Box>
-                  <Divider sx={{ my: 4 }} />
-                  <SectionHeader 
-                    title="Recent Confirmed Transactions" 
-                    subtitle="Transactions recently included in DigiByte blocks"
-                    icon={CheckCircleIcon}
-                  />
-                  
-                  <Grid container spacing={2}>
-                    {displayedConfirmed.map((transaction, index) => (
-                      transaction.placeholder ? (
-                        // Placeholder for block summary when full tx data not available
-                        <Grid item xs={12} key={`block-${transaction.blockHeight}`}>
-                          <Card elevation={2} sx={{ p: 2 }}>
-                            <Typography variant="body2" color="text.secondary">
-                              Block {formatNumber(transaction.blockHeight)} contains {transaction.txCount} transactions
-                              {' • '}Mined by {transaction.miner}
-                              {' • '}{formatRelativeTime(transaction.timestamp)}
-                            </Typography>
-                          </Card>
-                        </Grid>
-                      ) : (
-                        <TransactionCard
-                          key={transaction.txid}
-                          transaction={transaction}
-                          index={index}
-                          isMobile={isMobile}
-                          isConfirmed={true}
-                        />
-                      )
-                    ))}
-                  </Grid>
+              <Box>
+                <Divider sx={{ my: 4 }} />
+                <SectionHeader 
+                  title="Recent Confirmed Transactions" 
+                  subtitle={confirmedLoading ? "Loading recent confirmed transactions..." : 
+                           confirmedTransactions.length > 0 ? "Transactions recently included in DigiByte blocks" :
+                           "No recent confirmed transactions available"}
+                  icon={CheckCircleIcon}
+                  explanation="These transactions have been successfully included in mined blocks and are now permanently recorded on the DigiByte blockchain. Each confirmation represents an additional block mined on top, making the transaction more secure. 6 confirmations (~90 seconds) is considered final by most services."
+                />
+                
+                {confirmedLoading ? (
+                  <Card elevation={3} sx={{ p: 4, textAlign: 'center', borderRadius: '12px' }}>
+                    <Typography variant="h6" sx={{ mb: 2, color: 'text.secondary' }}>
+                      Fetching recent confirmed transactions...
+                    </Typography>
+                    <LinearProgress sx={{ maxWidth: 300, mx: 'auto' }} />
+                  </Card>
+                ) : confirmedTransactions.length > 0 ? (
+                  <>
+                    <Grid container spacing={2}>
+                      {displayedConfirmed.map((transaction, index) => (
+                        transaction.placeholder ? (
+                          // Placeholder for block summary when full tx data not available
+                          <Grid item xs={12} key={`block-${transaction.blockHeight}`}>
+                            <Card elevation={2} sx={{ p: 2, bgcolor: '#fff3cd', border: '1px solid #ffeeba' }}>
+                              <Typography variant="body2" color="#856404">
+                                <strong>Placeholder:</strong> Block {formatNumber(transaction.blockHeight)} data - Backend processing limitations
+                                {transaction.miner && ` • Mined by ${transaction.miner}`}
+                                {transaction.timestamp && ` • ${formatRelativeTime(transaction.timestamp)}`}
+                              </Typography>
+                            </Card>
+                          </Grid>
+                        ) : (
+                          <TransactionCard
+                            key={transaction.txid}
+                            transaction={transaction}
+                            index={index}
+                            isMobile={isMobile}
+                            isConfirmed={true}
+                          />
+                        )
+                      ))}
+                    </Grid>
 
-                  {confirmedTotalPages > 1 && (
-                    <PaginationControls
-                      currentPage={confirmedPage}
-                      totalPages={confirmedTotalPages}
-                      onPrevPage={handleConfirmedPrevPage}
-                      onNextPage={handleConfirmedNextPage}
-                      onPageChange={handleConfirmedPageChange}
-                      isMobile={isMobile}
-                      isTablet={isTablet}
-                    />
-                  )}
-                </Box>
-              )}
+                    {confirmedTotalPages > 1 && (
+                      <PaginationControls
+                        currentPage={confirmedPage}
+                        totalPages={confirmedTotalPages}
+                        onPrevPage={handleConfirmedPrevPage}
+                        onNextPage={handleConfirmedNextPage}
+                        onPageChange={handleConfirmedPageChange}
+                        isMobile={isMobile}
+                        isTablet={isTablet}
+                      />
+                    )}
+                  </>
+                ) : (
+                  <Card elevation={3} sx={{ p: 4, textAlign: 'center', borderRadius: '12px' }}>
+                    <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+                      No confirmed transactions available
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      This could be due to:
+                    </Typography>
+                    <Box component="ul" sx={{ textAlign: 'left', maxWidth: 400, mx: 'auto', mt: 2 }}>
+                      <Typography component="li" variant="body2" color="text.secondary">
+                        Recent blocks contain only coinbase transactions
+                      </Typography>
+                      <Typography component="li" variant="body2" color="text.secondary">
+                        Backend server connectivity issues
+                      </Typography>
+                      <Typography component="li" variant="body2" color="text.secondary">
+                        DigiByte node configuration (may need txindex=1)
+                      </Typography>
+                    </Box>
+                  </Card>
+                )}
+              </Box>
             </Box>
           </Fade>
         )}
