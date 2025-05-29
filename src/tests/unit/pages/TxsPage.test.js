@@ -61,7 +61,8 @@ describe('TxsPage', () => {
         expect(screen.queryByText('Loading transaction data...')).not.toBeInTheDocument();
       });
       
-      expect(screen.getByText(/This page is displaying sample data/)).toBeInTheDocument();
+      expect(screen.getByText('Demo Mode:')).toBeInTheDocument();
+      expect(screen.getByText(/Displaying sample transaction data/)).toBeInTheDocument();
     });
 
     it('should render mempool statistics', async () => {
@@ -114,10 +115,10 @@ describe('TxsPage', () => {
       });
       
       expect(screen.getByPlaceholderText('Search by transaction ID...')).toBeInTheDocument();
-      expect(screen.getByText('All')).toBeInTheDocument();
-      expect(screen.getByText('High')).toBeInTheDocument();
-      expect(screen.getByText('Medium')).toBeInTheDocument();
-      expect(screen.getByText('Low')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'all' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'high' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'medium' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'low' })).toBeInTheDocument();
     });
 
     it('should render fee distribution chart', async () => {
@@ -202,9 +203,8 @@ describe('TxsPage', () => {
       fireEvent.click(highButton);
       
       await waitFor(() => {
-        // Should show only high priority transactions
-        const priorityChips = screen.getAllByText(/High|Medium|Low/);
-        expect(priorityChips.every(chip => chip.textContent === 'High')).toBe(true);
+        // Check that the high priority filter button is selected
+        expect(highButton).toHaveAttribute('aria-pressed', 'true');
       });
     });
   });

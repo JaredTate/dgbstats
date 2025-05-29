@@ -1052,15 +1052,13 @@ const TxsPage = () => {
   );
 
   /**
-   * Load sample data on mount (temporary until backend is implemented)
+   * Initialize with sample data but allow WebSocket to override
    */
   useEffect(() => {
-    // Simulate loading delay
-    setTimeout(() => {
-      setMempoolStats(sampleMempoolData.stats);
-      setMempoolTransactions(sampleMempoolData.transactions);
-      setLoading(false);
-    }, 1000);
+    // Set sample data initially, but let WebSocket override it
+    setMempoolStats(sampleMempoolData.stats);
+    setMempoolTransactions(sampleMempoolData.transactions);
+    setLoading(false);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /**
@@ -1100,10 +1098,21 @@ const TxsPage = () => {
              * Process enhanced mempool data
              * Includes fee distribution and total value
              */
-            console.log('Mempool data received:', message.data);
+            console.log('Live mempool data received:', message.data);
             setMempoolStats(message.data.stats || {});
             setMempoolTransactions(message.data.transactions || []);
             setLoading(false);
+            
+            // Hide demo notice when real mempool data is received (even if empty)
+            const demoCard = document.querySelector('.demo-notice');
+            if (demoCard && message.data.stats) {
+              demoCard.style.display = 'none';
+              // Add a live data indicator
+              const liveIndicator = document.createElement('div');
+              liveIndicator.innerHTML = '🟢 <strong>Live Data:</strong> Connected to DigiByte mempool';
+              liveIndicator.style.cssText = 'background: #d4edda; color: #155724; padding: 8px; margin-bottom: 16px; border-radius: 4px; text-align: center; border: 1px solid #c3e6cb;';
+              demoCard.parentNode?.insertBefore(liveIndicator, demoCard.nextSibling);
+            }
           } else if (message.type === 'recentTransactions') {
             /**
              * Process recent confirmed transactions
@@ -1298,8 +1307,8 @@ const TxsPage = () => {
         ) : (
           <Fade in={true}>
             <Box>
-              {/* Demo data notice - remove when backend is implemented */}
-              <Card elevation={1} sx={{ mb: 3, bgcolor: '#fff3cd', border: '1px solid #ffeeba' }}>
+              {/* Demo data notice - hidden when real data is received */}
+              <Card elevation={1} sx={{ mb: 3, bgcolor: '#fff3cd', border: '1px solid #ffeeba' }} className="demo-notice">
                 <CardContent sx={{ py: 2 }}>
                   <Typography variant="body2" sx={{ color: '#856404', textAlign: 'center' }}>
                     <strong>Demo Mode:</strong> Displaying sample transaction data. Real-time mempool monitoring requires backend WebSocket implementation with DigiByte node RPC access.
