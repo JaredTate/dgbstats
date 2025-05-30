@@ -513,6 +513,7 @@ const SearchAndFilter = ({ searchTerm, onSearchChange, filterPriority, onFilterC
 const TransactionCard = ({ transaction, index, isMobile, isConfirmed = false }) => {
   const [expanded, setExpanded] = useState(false);
   const totalValue = transaction.value || calculateTotalValue(transaction.outputs);
+  const hasLeftMempool = transaction.removedAt && !isConfirmed;
   
   return (
     <Zoom in={true} style={{ transitionDelay: `${index * 50}ms` }}>
@@ -528,6 +529,8 @@ const TransactionCard = ({ transaction, index, isMobile, isConfirmed = false }) 
             },
             overflow: 'hidden',
             borderLeft: `5px solid ${isConfirmed ? getConfirmationColor(transaction.confirmations || 0) : getPriorityColor(transaction.priority)}`,
+            opacity: hasLeftMempool ? 0.7 : 1,
+            backgroundColor: hasLeftMempool ? 'rgba(0, 0, 0, 0.02)' : 'white',
           }}
         >
           <CardContent sx={{ p: { xs: 2, md: 3 } }}>
@@ -645,6 +648,18 @@ const TransactionCard = ({ transaction, index, isMobile, isConfirmed = false }) 
                             sx={{ fontWeight: 'medium', fontSize: '0.75rem' }} 
                           />
                         </Badge>
+                      ) : hasLeftMempool ? (
+                        <Chip 
+                          icon={<AccessTimeIcon />}
+                          label={`Left Mempool ${formatRelativeTime(transaction.removedAt / 1000)}`} 
+                          size="small" 
+                          sx={{ 
+                            bgcolor: 'rgba(0, 0, 0, 0.12)',
+                            color: 'text.secondary',
+                            fontWeight: 'medium',
+                            fontSize: '0.75rem'
+                          }} 
+                        />
                       ) : (
                         <Chip 
                           icon={<SpeedIcon />}
@@ -922,136 +937,6 @@ const PaginationControls = ({
  * @returns {JSX.Element} Complete transaction explorer with real-time updates
  */
 const TxsPage = () => {
-  // Sample data for demonstration (remove when backend is implemented)
-  const sampleMempoolData = {
-    stats: {
-      size: 234,
-      bytes: 485672,
-      usage: 685672,
-      maxmempool: 300000000,
-      minfee: 0.00001,
-      avgfee: 0.00015,
-      totalfee: 0.0351,
-      feeDistribution: {
-        '0-10': 23,
-        '10-50': 89,
-        '50-100': 67,
-        '100-500': 45,
-        '500+': 10
-      }
-    },
-    transactions: [
-      {
-        txid: 'demo-e928e6daa81b93e2c7d072054b8a24aa27fc154d43df3d53cb920b0ffed09bce',
-        size: 256,
-        vsize: 256,
-        fee: 0.00012345,
-        value: 123.45678901,
-        time: Date.now() / 1000 - 120,
-        inputs: [
-          { address: 'DSXnZTQABeBrJEU5b2vpnysoGiiZwjKKDY', amount: 125.0 }
-        ],
-        outputs: [
-          { address: 'DTm8KnykGLXQaYJuJnJEzfrrkVVGdsE5k3', amount: 123.45678901 },
-          { address: 'DSXnZTQABeBrJEU5b2vpnysoGiiZwjKKDY', amount: 1.54308754 }
-        ],
-        fee_rate: 48,
-        priority: 'medium',
-        confirmations: 0,
-        descendantcount: 0,
-        descendantsize: 0,
-        ancestorcount: 0,
-        ancestorsize: 0
-      },
-      {
-        txid: 'demo-37f81a5ccddd8a2aefaa8d9d0053dc13a287f13b84fde83a9060478d28dbc111',
-        size: 373,
-        vsize: 373,
-        fee: 0.00055950,
-        value: 304.25060757,
-        time: Date.now() / 1000 - 240,
-        inputs: [
-          { address: 'DPgY7z5Wdgz5QjQmfKWrFxHe3EULZ9Xfec', amount: 150.0 },
-          { address: 'DTzBdW6s8kHKhkTZMmJfXHjCnhxnWq3CXx', amount: 154.25116707 }
-        ],
-        outputs: [
-          { address: 'DGB7JqRudxccSxQ4vSiM1L16mdBx5VXQxv', amount: 304.25060757 }
-        ],
-        fee_rate: 150,
-        priority: 'high',
-        confirmations: 0,
-        descendantcount: 1,
-        descendantsize: 256,
-        ancestorcount: 2,
-        ancestorsize: 512
-      },
-      {
-        txid: 'demo-72402be8b135dee84d0756ebd55e127236c5534889e5ec8dbf965705c741d84a',
-        size: 191,
-        vsize: 191,
-        fee: 0.00001910,
-        value: 15000.00000000,
-        time: Date.now() / 1000 - 360,
-        inputs: [
-          { address: 'DKq4BTWY9dTioHp1DoHMvvTxPmFZy8wVZx', amount: 15000.00001910 }
-        ],
-        outputs: [
-          { address: 'D5cYyPRsDpGcnNX2xt9wrGkcmRL6xT2pZz', amount: 15000.00000000 }
-        ],
-        fee_rate: 10,
-        priority: 'low',
-        confirmations: 0,
-        descendantcount: 0,
-        descendantsize: 0,
-        ancestorcount: 0,
-        ancestorsize: 0
-      },
-      {
-        txid: 'demo-5051239b657785950ea4c6df203c6651837e110fa7c0967fde8988830666bdbb',
-        size: 225,
-        vsize: 225,
-        fee: 0.00022500,
-        value: 40160.36678283,
-        time: Date.now() / 1000 - 480,
-        inputs: [
-          { address: 'DNLE4xyqfLaHqHbQuq2qRdtJGiHiwx7m1E', amount: 40160.36700783 }
-        ],
-        outputs: [
-          { address: 'DDM8aVhanNqcg41LEaepK1wHdRRoWXbogX', amount: 40160.36678283 }
-        ],
-        fee_rate: 100,
-        priority: 'high',
-        confirmations: 0,
-        descendantcount: 0,
-        descendantsize: 0,
-        ancestorcount: 0,
-        ancestorsize: 0
-      },
-      {
-        txid: 'demo-c375dab11b6b1066f982e8c2b7730fd9ab3d44228d8349afade426a459f97f14',
-        size: 1522,
-        vsize: 1522,
-        fee: 0.00152200,
-        value: 111.45505089,
-        time: Date.now() / 1000 - 600,
-        inputs: [
-          { address: 'DB5MEeyRrHnS7CN5kVQ7vC5VKnQakLFJAZ', amount: 50.0 },
-          { address: 'DCr8dAbqw8XGAr6UYtDeVvmwdzenhcZJqB', amount: 30.0 },
-          { address: 'DJxQ5bN8D2vCa2EiVYBnjakVJT2VgCJAx7', amount: 31.45657289 }
-        ],
-        outputs: [
-          { address: 'DLGX8h86c2VLjkty8Hyp5NPGJ3DYsvBQvC', amount: 111.45505089 }
-        ],
-        fee_rate: 100,
-        priority: 'medium',
-        confirmations: 0,
-        descendantcount: 0,
-        descendantsize: 0,
-        ancestorcount: 3,
-        ancestorsize: 1856
-      }
-    ]
-  };
 
   // Transaction data state management
   const [mempoolTransactions, setMempoolTransactions] = useState([]);
@@ -1086,6 +971,9 @@ const TxsPage = () => {
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const reconnectAttemptsRef = useRef(0);
+  
+  // Connection state
+  const [isConnected, setIsConnected] = useState(false);
   
   // Responsive design hooks
   const theme = useTheme();
@@ -1143,15 +1031,7 @@ const TxsPage = () => {
     [confirmedTransactions, filterAndSortTransactions]
   );
 
-  /**
-   * Initialize with sample data but allow WebSocket to override
-   */
-  useEffect(() => {
-    // Set sample data initially, but let WebSocket override it
-    setMempoolStats(sampleMempoolData.stats);
-    setMempoolTransactions(sampleMempoolData.transactions);
-    setLoading(false);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // No fallback to demo data - only show real blockchain data
 
   /**
    * WebSocket connection setup with automatic reconnection
@@ -1172,9 +1052,19 @@ const TxsPage = () => {
       socket.onopen = () => {
         console.log('WebSocket connection established for transactions page');
         reconnectAttemptsRef.current = 0;
+        setIsConnected(true);
         
-        // Note: Current WebSocket server doesn't support mempool data
-        // This is a placeholder for future backend implementation
+        // Server will immediately send cached data (mempool & confirmed transactions)
+        // If no data arrives within 2 seconds, show empty state
+        setTimeout(() => {
+          if (loading) {
+            console.log('No initial data received, showing empty state');
+            setLoading(false);
+          }
+          if (confirmedLoading) {
+            setConfirmedLoading(false);
+          }
+        }, 2000);
       };
 
       /**
@@ -1194,17 +1084,6 @@ const TxsPage = () => {
             setMempoolStats(message.data.stats || {});
             setMempoolTransactions(message.data.transactions || []);
             setLoading(false);
-            
-            // Hide demo notice when real mempool data is received (even if empty)
-            const demoCard = document.querySelector('.demo-notice');
-            if (demoCard && message.data.stats) {
-              demoCard.style.display = 'none';
-              // Add a live data indicator
-              const liveIndicator = document.createElement('div');
-              liveIndicator.innerHTML = '🟢 <strong>Live Data:</strong> Connected to DigiByte mempool';
-              liveIndicator.style.cssText = 'background: #d4edda; color: #155724; padding: 8px; margin-bottom: 16px; border-radius: 4px; text-align: center; border: 1px solid #c3e6cb;';
-              demoCard.parentNode?.insertBefore(liveIndicator, demoCard.nextSibling);
-            }
           } else if (message.type === 'recentTransactions') {
             /**
              * Process recent confirmed transactions
@@ -1233,9 +1112,33 @@ const TxsPage = () => {
               bytes: prevStats.bytes + (message.data.vsize || message.data.size || 0),
               totalfee: prevStats.totalfee + (message.data.fee || 0)
             }));
+          } else if (message.type === 'transactionConfirmed') {
+            /**
+             * Handle bulk transaction confirmations from new block
+             * Moves multiple transactions from mempool to confirmed list
+             */
+            const { transactions: confirmedTxs, blockHeight, blockHash } = message.data;
+            console.log(`🔄 Moving ${confirmedTxs.length} transactions from mempool to confirmed (block ${blockHeight})`);
+            
+            // Remove confirmed transactions from mempool
+            const confirmedTxIds = confirmedTxs.map(tx => tx.txid);
+            setMempoolTransactions((prevTxs) => 
+              prevTxs.filter(tx => !confirmedTxIds.includes(tx.txid))
+            );
+            
+            // Add to confirmed transactions list
+            setConfirmedTransactions((prevTxs) => [...confirmedTxs, ...prevTxs.slice(0, 10 - confirmedTxs.length)]);
+            
+            // Update mempool stats
+            setMempoolStats((prevStats) => ({
+              ...prevStats,
+              size: Math.max(0, prevStats.size - confirmedTxs.length),
+              totalfee: Math.max(0, prevStats.totalfee - confirmedTxs.reduce((sum, tx) => sum + (tx.fee || 0), 0))
+            }));
+            
           } else if (message.type === 'confirmedTransaction') {
             /**
-             * Handle transaction confirmation
+             * Handle single transaction confirmation (legacy support)
              * Moves from mempool to confirmed list
              */
             const confirmedTx = message.data;
@@ -1260,47 +1163,7 @@ const TxsPage = () => {
              * Extract transactions from recent blocks if detailed tx data not available
              */
             console.log('Recent blocks received:', message.data?.length || 0);
-            setLoading(false); // Stop loading when we get any data
-            
-            // Only use block fallback if we haven't received confirmed transactions yet
-            if (confirmedLoading && !confirmedTransactions.length && message.data) {
-              console.log('⚠️  Using block data fallback for confirmed transactions');
-              const blockTxs = [];
-              message.data.slice(0, 3).forEach(block => {
-                if (block.txCount > 1) { // Only include blocks with non-coinbase transactions
-                  blockTxs.push({
-                    txid: `fallback-block-${block.height}`,
-                    blockHeight: block.height,
-                    blockHash: block.hash,
-                    txCount: block.txCount,
-                    timestamp: block.timestamp,
-                    blocktime: block.timestamp,
-                    time: block.timestamp,
-                    miner: block.poolIdentifier || 'Unknown',
-                    confirmations: message.data[0] ? (message.data[0].height - block.height + 1) : 1,
-                    value: 0,
-                    size: 250,
-                    fee: 0.0001,
-                    priority: 'unknown',
-                    placeholder: true
-                  });
-                }
-              });
-              
-              if (blockTxs.length > 0) {
-                console.log(`   Created ${blockTxs.length} placeholder transactions from block data`);
-                setConfirmedTransactions(blockTxs);
-                setConfirmedLoading(false);
-              }
-              
-              // Set a timeout to stop loading even if no transactions found
-              setTimeout(() => {
-                if (confirmedLoading) {
-                  console.log('⚠️  Timeout: Setting confirmedLoading to false');
-                  setConfirmedLoading(false);
-                }
-              }, 5000);
-            }
+            // Don't use blocks as fallback for transactions
           }
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);
@@ -1320,6 +1183,7 @@ const TxsPage = () => {
       socket.onclose = () => {
         console.log('WebSocket disconnected - attempting reconnection...');
         wsRef.current = null;
+        setIsConnected(false);
 
         if (isMounted) {
           // Exponential backoff for reconnection
@@ -1421,27 +1285,29 @@ const TxsPage = () => {
       <Container maxWidth="lg">
         <HeroSection />
 
+        {/* Connection status indicator */}
+        <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>
+          <Chip
+            icon={isConnected ? <CheckCircleIcon /> : <AccessTimeIcon />}
+            label={isConnected ? 'Live Data Connected' : 'Connecting...'}
+            color={isConnected ? 'success' : 'warning'}
+            size="small"
+            sx={{ fontSize: '0.85rem' }}
+          />
+        </Box>
+
         {loading ? (
           <LoadingCard />
         ) : (
           <Fade in={true}>
             <Box>
-              {/* Demo data notice - hidden when real data is received */}
-              <Card elevation={1} sx={{ mb: 3, bgcolor: '#fff3cd', border: '1px solid #ffeeba' }} className="demo-notice">
-                <CardContent sx={{ py: 2 }}>
-                  <Typography variant="body2" sx={{ color: '#856404', textAlign: 'center' }}>
-                    <strong>Demo Mode:</strong> Displaying sample transaction data. Real-time mempool monitoring requires backend WebSocket implementation with DigiByte node RPC access.
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#856404', textAlign: 'center', display: 'block', mt: 1 }}>
-                    Backend requirements: DigiByte node with txindex=1, WebSocket server with mempool RPC endpoints
-                  </Typography>
-                </CardContent>
-              </Card>
-              
-              <MempoolStats stats={mempoolStats} transactions={mempoolTransactions} />
-              
-              {/* Educational Content */}
+              {/* Educational Content - moved above stats */}
               <EducationalContent />
+              
+              {/* Only show stats if we have data */}
+              {(mempoolStats.size > 0 || mempoolTransactions.length > 0) && (
+                <MempoolStats stats={mempoolStats} transactions={mempoolTransactions} />
+              )}
               
               <SearchAndFilter
                 searchTerm={searchTerm}
@@ -1515,26 +1381,13 @@ const TxsPage = () => {
                   <>
                     <Grid container spacing={2}>
                       {displayedConfirmed.map((transaction, index) => (
-                        transaction.placeholder ? (
-                          // Placeholder for block summary when full tx data not available
-                          <Grid item xs={12} key={`block-${transaction.blockHeight}`}>
-                            <Card elevation={2} sx={{ p: 2, bgcolor: '#fff3cd', border: '1px solid #ffeeba' }}>
-                              <Typography variant="body2" color="#856404">
-                                <strong>Placeholder:</strong> Block {formatNumber(transaction.blockHeight)} data - Backend processing limitations
-                                {transaction.miner && ` • Mined by ${transaction.miner}`}
-                                {transaction.timestamp && ` • ${formatRelativeTime(transaction.timestamp)}`}
-                              </Typography>
-                            </Card>
-                          </Grid>
-                        ) : (
-                          <TransactionCard
-                            key={transaction.txid}
-                            transaction={transaction}
-                            index={index}
-                            isMobile={isMobile}
-                            isConfirmed={true}
-                          />
-                        )
+                        <TransactionCard
+                          key={transaction.txid}
+                          transaction={transaction}
+                          index={index}
+                          isMobile={isMobile}
+                          isConfirmed={true}
+                        />
                       ))}
                     </Grid>
 
@@ -1553,22 +1406,25 @@ const TxsPage = () => {
                 ) : (
                   <Card elevation={3} sx={{ p: 4, textAlign: 'center', borderRadius: '12px' }}>
                     <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
-                      No confirmed transactions available
+                      No recent confirmed transactions found
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      This could be due to:
+                      This could indicate:
                     </Typography>
-                    <Box component="ul" sx={{ textAlign: 'left', maxWidth: 400, mx: 'auto', mt: 2 }}>
+                    <Box component="ul" sx={{ textAlign: 'left', maxWidth: 500, mx: 'auto', mt: 2 }}>
                       <Typography component="li" variant="body2" color="text.secondary">
-                        Recent blocks contain only coinbase transactions
+                        <strong>Low network activity</strong> - Recent blocks may only contain coinbase rewards
                       </Typography>
                       <Typography component="li" variant="body2" color="text.secondary">
-                        Backend server connectivity issues
+                        <strong>Timing</strong> - Transactions in mempool haven't been mined into blocks yet
                       </Typography>
                       <Typography component="li" variant="body2" color="text.secondary">
-                        DigiByte node configuration (may need txindex=1)
+                        <strong>Configuration</strong> - Backend server may need to search more historical blocks
                       </Typography>
                     </Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 3, display: 'block' }}>
+                      💡 The mempool above shows current unconfirmed transactions. Once mined into blocks, they'll appear here.
+                    </Typography>
                   </Card>
                 )}
               </Box>
