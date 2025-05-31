@@ -747,6 +747,9 @@ const NodesPage = () => {
     const [hoveredCountry, setHoveredCountry] = useState(null);
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
     
+    // Store the transform in a ref to persist across re-renders
+    const transformRef = useRef(zoomIdentity);
+    
     // Calculate visible bounds for viewport culling
     const visibleBounds = useMemo(() => {
       const padding = 50; // Extra padding to ensure smooth transitions
@@ -858,6 +861,7 @@ const NodesPage = () => {
           }
           animationFrame = requestAnimationFrame(() => {
             setCurrentTransform(event.transform);
+            transformRef.current = event.transform;
           });
         })
         .on('end', () => {
@@ -866,6 +870,11 @@ const NodesPage = () => {
       
       // Apply zoom behavior to SVG
       svg.call(zoomBehavior);
+      
+      // Restore previous zoom transform if it exists
+      if (transformRef.current && transformRef.current !== zoomIdentity) {
+        svg.call(zoomBehavior.transform, transformRef.current);
+      }
       
       // Add zoom controls handlers with memoization
       const handleZoomIn = () => {
@@ -878,6 +887,7 @@ const NodesPage = () => {
       
       const handleResetZoom = () => {
         svg.transition().duration(300).call(zoomBehavior.transform, zoomIdentity);
+        transformRef.current = zoomIdentity;
       };
       
       // Attach to window for button access
@@ -1115,9 +1125,10 @@ const NodesPage = () => {
                 const [x, y] = coords;
                 if (isNaN(x) || isNaN(y)) return null;
                 
-                // Scale node icons inversely with zoom to maintain consistent size
-                const nodeScale = Math.min(1, 1 / Math.sqrt(currentTransform.k));
-                const nodeSize = 16 * nodeScale;
+                // Keep node icons at constant size regardless of zoom level
+                const baseNodeSize = 16;
+                const nodeScale = 1 / currentTransform.k;
+                const nodeSize = baseNodeSize * nodeScale;
                 const offset = nodeSize / 2;
                 
                 return (
@@ -1142,8 +1153,7 @@ const NodesPage = () => {
                   const [x, y] = coords;
                   if (isNaN(x) || isNaN(y)) return null;
                   
-                  // Inverted font scaling - larger at lower zoom, smaller at higher zoom
-                  // At zoom 1-2: larger text, at zoom 8: smaller text
+                  // Keep city labels at constant size regardless of zoom level
                   const baseFontSize = {
                     1: 12,  // State/provincial capitals
                     2: 14,  // Regional capitals
@@ -1154,12 +1164,12 @@ const NodesPage = () => {
                   const importance = city.importance || 2;
                   const base = baseFontSize[importance] || baseFontSize[2];
                   
-                  // Scale inversely with zoom - text gets smaller as you zoom in
-                  const zoomFactor = Math.max(0.4, Math.min(1.2, 2 / currentTransform.k));
-                  const fontSize = base * zoomFactor;
+                  // Scale inversely with zoom to maintain constant visual size
+                  const fontSize = base / currentTransform.k;
                   
-                  // Calculate dot size based on importance
-                  const dotRadius = importance === 3 ? 3 : importance === 2 ? 2.5 : 2;
+                  // Calculate dot size based on importance and scale inversely with zoom
+                  const baseDotRadius = importance === 3 ? 3 : importance === 2 ? 2.5 : 2;
+                  const dotRadius = baseDotRadius / currentTransform.k;
                   
                   return (
                     <g key={`city-${i}`} transform={`translate(${x}, ${y})`}>
