@@ -27,6 +27,7 @@ const Header = () => {
     { text: 'Pools', path: '/pools' },
     { text: 'Nodes', path: '/nodes' },
     { text: 'Downloads', path: '/downloads' },
+    { text: 'Roadmap', path: '/roadmap' },
     { text: 'DigiHash', path: 'https://digihash.digibyte.io/', external: true },
     { text: 'DigiByte.org', path: 'https://digibyte.org', external: true },
   ];

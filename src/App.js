@@ -17,6 +17,7 @@ import config from './config';
 import HashratePage from './pages/HashratePage';
 import TaprootPage from './pages/TaprootPage';
 import TxsPage from './pages/TxsPage';
+import RoadmapPage from './pages/RoadmapPage';
 
 // Create a custom theme with DigiByte colors
 const theme = createTheme({
@@ -142,6 +143,7 @@ const App = () => {
             <Route path="/blocks" element={<BlocksPage />} />
             <Route path="/txs" element={<TxsPage />} />
             <Route path="/downloads" element={<DownloadsPage />} />
+            <Route path="/roadmap" element={<RoadmapPage />} />
             <Route path="/nodes" element={<NodesPage />} />
             <Route path="/pools" element={<PoolsPage />} />
             <Route
