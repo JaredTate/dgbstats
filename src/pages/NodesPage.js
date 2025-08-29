@@ -600,7 +600,7 @@ const NodesPage = () => {
           }}
         >
           This page displays unique nodes seen in the peers.dat file of the DigiHash mining pool
-          wallet since the wallet node was setup on May 8th, 2024.
+          wallet since the wallet node was upgraded to v8.26 on Aug 29th, 2025.
         </Typography>
         
         {/* Important disclaimers about the data */}
