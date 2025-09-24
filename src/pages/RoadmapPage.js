@@ -173,7 +173,7 @@ const RoadmapPage = () => {
           {
             id: 'p2tr-contract-design',
             title: 'P2TR Contract Structure Design',
-            date: '2025-10-01',
+            date: '2025-10-15',
             status: 'pending',
             description: 'Design Pay-to-Taproot contract structure for DigiDollar minting/redemption'
           },
