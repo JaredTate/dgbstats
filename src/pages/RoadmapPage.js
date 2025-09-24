@@ -141,7 +141,7 @@ const RoadmapPage = () => {
         id: 'phase2',
         title: 'DigiDollar Implementation Specs',
         subtitle: 'Initial Design Phase',
-        timeRange: 'June - November 2025',
+        timeRange: 'June - October 2025',
         startDate: '2025-06-01',
         endDate: '2025-11-30',
         status: 'in-progress',
@@ -173,63 +173,63 @@ const RoadmapPage = () => {
           {
             id: 'p2tr-contract-design',
             title: 'P2TR Contract Structure Design',
-            date: '2025-07-15',
+            date: '2025-10-01',
             status: 'pending',
             description: 'Design Pay-to-Taproot contract structure for DigiDollar minting/redemption'
           },
           {
             id: 'define-collateral-ratios',
             title: 'Define Collateral Ratio System',
-            date: '2025-08-01',
+            date: '2025-10-05',
             status: 'pending',
             description: 'Define sliding collateral ratios (400% at 1 month to 100% at 10 years)'
           },
           {
             id: 'digidollar-opcodes-spec',
             title: 'DigiDollar Opcodes Specification',
-            date: '2025-08-15',
+            date: '2025-10-08',
             status: 'pending',
             description: 'Define new opcodes: OP_CHECKDOLLAR, OP_BURNDOLLAR, OP_MINTDOLLAR'
           },
           {
             id: 'design-oracle-infrastructure',
             title: 'Oracle Network Architecture',
-            date: '2025-09-01',
+            date: '2025-10-12',
             status: 'pending',
             description: 'Design 15-oracle system with 8-of-15 Schnorr threshold signatures'
           },
           {
             id: 'oracle-price-feed-spec',
             title: 'Oracle Price Feed Specification',
-            date: '2025-09-10',
+            date: '2025-10-15',
             status: 'pending',
             description: 'Define oracle price aggregation, update frequency, and failsafe mechanisms'
           },
           {
             id: 'mast-redemption-design',
             title: 'MAST Redemption Tree Design',
-            date: '2025-09-20',
+            date: '2025-10-18',
             status: 'pending',
             description: 'Design Merkle tree structure for multiple redemption paths and conditions'
           },
           {
             id: 'security-analysis',
             title: 'Security Analysis & Threat Modeling',
-            date: '2025-10-15',
+            date: '2025-10-22',
             status: 'pending',
             description: 'Comprehensive security analysis of DigiDollar attack vectors'
           },
           {
             id: 'economic-model-validation',
             title: 'Economic Model Validation',
-            date: '2025-11-01',
+            date: '2025-10-25',
             status: 'pending',
             description: 'Validate DigiDollar economics with simulations and stress tests'
           },
           {
             id: 'taproot-integration-spec',
             title: 'Taproot Integration Requirements',
-            date: '2025-11-15',
+            date: '2025-10-28',
             status: 'pending',
             description: 'Document all Taproot features required for DigiDollar functionality'
           },
@@ -264,21 +264,21 @@ const RoadmapPage = () => {
           {
             id: 'op-digidollar-implementation',
             title: 'OP_DIGIDOLLAR (0xbb) Implementation',
-            date: '2025-10-01',
+            date: '2025-11-01',
             status: 'pending',
             description: 'Implement core OP_DIGIDOLLAR opcode for marking DigiDollar outputs'
           },
           {
             id: 'collateral-time-lock',
             title: 'Time-Locked Collateral Mechanism',
-            date: '2025-10-15',
+            date: '2025-11-05',
             status: 'pending',
             description: 'Implement sliding collateral ratios: 400% (30 days) to 100% (10 years)'
           },
           {
             id: 'redemption-mechanism',
             title: 'Redemption Mechanism',
-            date: '2025-11-01',
+            date: '2025-11-10',
             status: 'pending',
             description: 'P2TR output creation, Schnorr signatures, OP_CHECKSIGADD implementation'
           },
