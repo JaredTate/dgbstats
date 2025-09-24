@@ -63,7 +63,7 @@ const RoadmapPage = () => {
         startDate: '2025-08-01',
         endDate: '2025-10-31',
         status: 'in-progress',
-        progress: 25,
+        progress: 87,
         icon: <UpdateIcon />,
         color: '#ff9800',
         description: 'Merging Bitcoin Core v26.2 into DigiByte v8.22.2 to create DigiByte v8.26 with Taproot support and enhanced features.',
@@ -92,36 +92,41 @@ const RoadmapPage = () => {
             id: 'functional-tests',
             title: 'Fix All Functional Tests',
             date: '2025-08-25',
-            status: 'pending',
-            description: 'Completion of all functional tests'
+            status: 'completed',
+            description: 'Completion of all functional tests',
+            completionDate: '2025-08-31'
           },
           {
             id: 'confirm-feebug-fix',
             title: 'Confirm Feebug Fix',
             date: '2025-09-01',
-            status: 'pending',
-            description: 'Verify and confirm the fee calculation bug has been resolved'
+            status: 'completed',
+            description: 'Verify and confirm the fee calculation bug has been resolved',
+            completionDate: '2025-08-31'
           },
           {
             id: 'test-mining',
             title: 'Test Multi-Algo Mining',
             date: '2025-09-05',
-            status: 'pending',
-            description: 'Complete multi-algorithm test mining across all 5 algorithms'
+            status: 'completed',
+            description: 'Complete multi-algorithm test mining across all 5 algorithms',
+            completionDate: '2025-09-30'
           },
           {
             id: 'test-taproot',
             title: 'Test Taproot Transactions',
             date: '2025-09-10',
-            status: 'pending',
-            description: 'Test and verify Taproot transaction functionality'
+            status: 'completed',
+            description: 'Test and verify Taproot transaction functionality',
+            completionDate: '2025-08-31'
           },
           {
             id: 'test-wallet-imports',
             title: 'Test Legacy Wallet Imports',
             date: '2025-09-15',
-            status: 'pending',
-            description: 'Test legacy wallet import functionality and compatibility'
+            status: 'completed',
+            description: 'Test legacy wallet import functionality and compatibility',
+            completionDate: '2025-08-31'
           },
           {
             id: 'v8.26-release',
