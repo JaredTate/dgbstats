@@ -53,7 +53,7 @@ const RoadmapPage = () => {
   // Roadmap data structure for the next three years
   const initialRoadmapData = {
     lastUpdated: new Date().toISOString(),
-    overallProgress: 40, // 40% overall progress as of August 2025
+    overallProgress: 45, // 45% overall progress as of September 2025
     phases: [
       {
         id: 'phase1',
@@ -62,8 +62,8 @@ const RoadmapPage = () => {
         timeRange: 'June - October 2025',
         startDate: '2025-08-01',
         endDate: '2025-10-31',
-        status: 'in-progress',
-        progress: 87,
+        status: 'completed',
+        progress: 100,
         icon: <UpdateIcon />,
         color: '#ff9800',
         description: 'Merging Bitcoin Core v26.2 into DigiByte v8.22.2 to create DigiByte v8.26 with Taproot support and enhanced features.',
@@ -132,8 +132,9 @@ const RoadmapPage = () => {
             id: 'v8.26-release',
             title: 'Release Initial v8.26',
             date: '2025-10-31',
-            status: 'pending',
-            description: 'First official release of DigiByte v8.26'
+            status: 'completed',
+            description: 'First official release of DigiByte v8.26',
+            completionDate: '2025-09-01'
           }
         ]
       },
