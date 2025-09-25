@@ -81,13 +81,14 @@ const DownloadsPage = () => {
    */
   const getPlatform = (assetName) => {
     const lowerName = assetName.toLowerCase();
-    
+
     // Platform detection based on common filename patterns
-    if (lowerName.includes('win') || lowerName.includes('windows') || lowerName.includes('.exe')) {
-      return 'Windows';
-    } else if (lowerName.includes('osx') || lowerName.includes('mac') || lowerName.includes('darwin') || lowerName.includes('.dmg')) {
+    // Check for macOS/Darwin first (before ARM check since macOS can have ARM)
+    if (lowerName.includes('darwin') || lowerName.includes('apple') || lowerName.includes('osx') || lowerName.includes('mac') || lowerName.includes('.dmg')) {
       return 'macOS';
-    } else if (lowerName.includes('linux') || lowerName.includes('.deb') || lowerName.includes('.tar.gz')) {
+    } else if (lowerName.includes('win') || lowerName.includes('windows') || lowerName.includes('.exe')) {
+      return 'Windows';
+    } else if (lowerName.includes('linux') || lowerName.includes('.deb')) {
       return 'Linux';
     } else if (lowerName.includes('arm') || lowerName.includes('raspberry')) {
       return 'ARM / Raspberry Pi';
