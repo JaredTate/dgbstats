@@ -955,42 +955,88 @@ const DigiDollarPage = () => {
               Initial Design Phase - 25% Complete
             </Typography>
 
-            <Box sx={{ mb: 3 }}>
+            <Box sx={{ mb: 3, maxHeight: '400px', overflowY: 'auto' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <CheckCircleIcon sx={{ color: '#4caf50', mr: 1, fontSize: '1.2rem' }} />
                 <Typography variant="body2">
-                  <strong>DigiDollar White Paper Release</strong> - May 2025
+                  <strong>DigiDollar White Paper Release</strong> - Jun 2025
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <CheckCircleIcon sx={{ color: '#4caf50', mr: 1, fontSize: '1.2rem' }} />
                 <Typography variant="body2">
-                  <strong>DigiDollar Technical Blueprint Released</strong> - Jun 2025
+                  <strong>DigiDollar Technical Blueprint</strong> - Jul 2025
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <ConstructionIcon sx={{ color: '#666', mr: 1, fontSize: '1.2rem' }} />
                 <Typography variant="body2" color="text.secondary">
-                  P2TR Contract Structure Design - Oct 2025
+                  Define Collateral Ratio System - Oct 5
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <ConstructionIcon sx={{ color: '#666', mr: 1, fontSize: '1.2rem' }} />
                 <Typography variant="body2" color="text.secondary">
-                  Define Collateral Ratio System - Oct 2025
+                  DigiDollar Opcodes Specification - Oct 8
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <ConstructionIcon sx={{ color: '#666', mr: 1, fontSize: '1.2rem' }} />
+                <Typography variant="body2" color="text.secondary">
+                  Oracle Network Architecture - Oct 12
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <ConstructionIcon sx={{ color: '#666', mr: 1, fontSize: '1.2rem' }} />
+                <Typography variant="body2" color="text.secondary">
+                  P2TR Contract Structure Design - Oct 15
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <ConstructionIcon sx={{ color: '#666', mr: 1, fontSize: '1.2rem' }} />
+                <Typography variant="body2" color="text.secondary">
+                  Oracle Price Feed Specification - Oct 15
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <ConstructionIcon sx={{ color: '#666', mr: 1, fontSize: '1.2rem' }} />
+                <Typography variant="body2" color="text.secondary">
+                  MAST Redemption Tree Design - Oct 18
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <ConstructionIcon sx={{ color: '#666', mr: 1, fontSize: '1.2rem' }} />
+                <Typography variant="body2" color="text.secondary">
+                  Security Analysis & Threat Modeling - Oct 22
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <ConstructionIcon sx={{ color: '#666', mr: 1, fontSize: '1.2rem' }} />
+                <Typography variant="body2" color="text.secondary">
+                  Economic Model Validation - Oct 25
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <ConstructionIcon sx={{ color: '#666', mr: 1, fontSize: '1.2rem' }} />
+                <Typography variant="body2" color="text.secondary">
+                  Taproot Integration Requirements - Oct 28
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <ConstructionIcon sx={{ color: '#666', mr: 1, fontSize: '1.2rem' }} />
                 <Typography variant="body2" color="text.secondary">
-                  DigiDollar Opcodes Specification - Oct 2025
+                  Finalize Technical Specification - Nov 30
                 </Typography>
               </Box>
             </Box>
 
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+              2/12 milestones completed
+            </Typography>
+
             <Alert severity="info" sx={{ mt: 2 }}>
               <Typography variant="caption">
-                <strong>NEXT:</strong> P2TR Contract Structure Design
+                <strong>NEXT:</strong> Define Collateral Ratio System
               </Typography>
             </Alert>
           </Paper>
@@ -1026,61 +1072,75 @@ const DigiDollarPage = () => {
               Development & Implementation - 0% Complete
             </Typography>
 
-            <List dense sx={{ pl: 0 }}>
+            <List dense sx={{ pl: 0, maxHeight: '400px', overflowY: 'auto' }}>
               <ListItem sx={{ pl: 0 }}>
                 <ListItemIcon><CodeIcon sx={{ color: '#666', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
                   primary="OP_DIGIDOLLAR (0xbb) Implementation"
-                  secondary="Oct 2025"
+                  secondary="Nov 1 - Core opcode for DigiDollar outputs"
                 />
               </ListItem>
               <ListItem sx={{ pl: 0 }}>
                 <ListItemIcon><LockIcon sx={{ color: '#666', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
                   primary="Time-Locked Collateral Mechanism"
-                  secondary="Nov 2025"
+                  secondary="Nov 5 - Sliding ratios: 500% (30d) to 200% (10y)"
                 />
               </ListItem>
               <ListItem sx={{ pl: 0 }}>
                 <ListItemIcon><SwapHorizIcon sx={{ color: '#666', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
                   primary="Redemption Mechanism"
-                  secondary="Nov 2025"
+                  secondary="Nov 10 - P2TR outputs, Schnorr sigs, OP_CHECKSIGADD"
                 />
               </ListItem>
               <ListItem sx={{ pl: 0 }}>
                 <ListItemIcon><SecurityIcon sx={{ color: '#666', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
                   primary="Oracle Price Feed Implementation"
-                  secondary="Nov 2025"
+                  secondary="Dec 1 - DNS-based feeds, exchange aggregation"
                 />
               </ListItem>
               <ListItem sx={{ pl: 0 }}>
                 <ListItemIcon><CodeIcon sx={{ color: '#666', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
                   primary="MAST Implementation"
-                  secondary="Dec 2025"
+                  secondary="Dec 15 - Merkle tree redemption paths"
                 />
               </ListItem>
               <ListItem sx={{ pl: 0 }}>
                 <ListItemIcon><SpeedIcon sx={{ color: '#666', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
                   primary="Advanced Features"
-                  secondary="Dec 2025"
+                  secondary="Jan 1 - Key path optimization, PSBT, batch verification"
                 />
               </ListItem>
               <ListItem sx={{ pl: 0 }}>
                 <ListItemIcon><AccountBalanceIcon sx={{ color: '#666', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
                   primary="Wallet Enhancement"
-                  secondary="Jan 2026"
+                  secondary="Jan 15 - GUI integration, privacy indicators"
                 />
               </ListItem>
               <ListItem sx={{ pl: 0 }}>
                 <ListItemIcon><CheckCircleIcon sx={{ color: '#666', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
                   primary="Consensus Validation Rules"
-                  secondary="Feb 2026"
+                  secondary="Feb 15 - New transaction validation for DigiDollar"
+                />
+              </ListItem>
+              <ListItem sx={{ pl: 0 }}>
+                <ListItemIcon><PublicIcon sx={{ color: '#666', fontSize: '1.2rem' }} /></ListItemIcon>
+                <ListItemText
+                  primary="DigiDollar Testnet Deployment"
+                  secondary="Feb 20 - Fully functional on testnet"
+                />
+              </ListItem>
+              <ListItem sx={{ pl: 0 }}>
+                <ListItemIcon><LaunchIcon sx={{ color: '#666', fontSize: '1.2rem' }} /></ListItemIcon>
+                <ListItemText
+                  primary="Initial Release"
+                  secondary="Feb 28 - v9.26 with DigiDollar functionality"
                 />
               </ListItem>
             </List>
