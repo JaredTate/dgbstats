@@ -1,66 +1,266 @@
-# DigiByte Stats
+# DigiByte Stats - AI Agent Documentation
 
 ## Project Overview
 
-DigiByte Stats is a React-based web application that provides real-time statistics and visualizations for the DigiByte blockchain. The application displays comprehensive metrics including blockchain statistics, mining pool distribution, node geography, hashrate analysis, and more.
+DigiByte Stats is a comprehensive React-based web application that provides real-time statistics, visualizations, and analytics for the DigiByte blockchain. The application connects to a DigiByte node via RPC and WebSocket connections to deliver live blockchain data through an intuitive, responsive interface.
+
+## Architecture
+
+### Technology Stack
+- **Frontend**: React 17.0.2 with Material-UI (MUI) v5
+- **Routing**: React Router v6
+- **Data Visualization**: D3.js v7, Chart.js v4
+- **Real-time Communication**: WebSocket for live blockchain updates
+- **Testing**: Vitest (unit/integration), Playwright (E2E)
+- **Build Tool**: Create React App 5.0.1
+
+### Key Dependencies
+- `@mui/material`: UI component library
+- `d3` & `d3-geo`: Advanced data visualizations and geographic maps
+- `chart.js` & `react-chartjs-2`: Time series and statistical charts
+- `axios`: HTTP client for API requests
+- `world-atlas` & `topojson-client`: Geographic data for node visualization
+
+## Application Pages
+
+### 1. **HomePage** (`/`)
+Main dashboard displaying key DigiByte statistics including:
+- Current block height and blockchain info
+- Network hashrate and difficulty
+- Supply statistics and market cap
+- Recent blocks and transactions
+- Network node count
+
+### 2. **BlocksPage** (`/blocks`)
+Real-time block explorer showing:
+- Latest blocks with timestamps
+- Mining algorithm distribution
+- Block rewards and sizes
+- Miner addresses and pools
+
+### 3. **PoolsPage** (`/pools`)
+Mining pool distribution analysis featuring:
+- Interactive donut chart of pool market share
+- Multi-block and single-block miners
+- Pool identification and statistics
+- Real-time updates as blocks are mined
+- **Note**: TAP route activation status removed (already activated)
+
+### 4. **AlgosPage** (`/algos`)
+Mining algorithm statistics displaying:
+- Five DigiByte mining algorithms (SHA256, Scrypt, Skein, Qubit, Odocrypt)
+- Algorithm-specific hashrates
+- Block distribution per algorithm
+- Difficulty adjustments
+
+### 5. **HashratePage** (`/hashrate`)
+Network hashrate analysis with:
+- Total network hashrate charts
+- Historical hashrate trends
+- Algorithm-specific hashrate breakdown
+- Time-based analysis (24h, 7d, 30d)
+
+### 6. **DifficultiesPage** (`/difficulties`)
+Mining difficulty tracking:
+- Current difficulty levels per algorithm
+- Difficulty adjustment history
+- Next adjustment predictions
+- Historical difficulty charts
+
+### 7. **NodesPage** (`/nodes`)
+Geographic node distribution featuring:
+- Interactive world map visualization
+- Node count by country/region
+- Network connectivity statistics
+- Node version distribution
+
+### 8. **SupplyPage** (`/supply`)
+Supply economics dashboard showing:
+- Current circulating supply
+- Maximum supply (21 billion DGB)
+- Supply per capita calculations
+- Emission rate and inflation metrics
+- Interactive supply curve chart
+
+### 9. **TxsPage** (`/txs`)
+Transaction analytics including:
+- Recent transaction list
+- Transaction volume charts
+- Fee statistics
+- Transaction types breakdown
+
+### 10. **TaprootPage** (`/taproot`)
+Taproot activation monitoring:
+- Current activation status
+- Block signaling statistics
+- Activation timeline
+- Network upgrade progress
+
+### 11. **DownloadsPage** (`/downloads`)
+DigiByte Core download statistics:
+- Download counts by version
+- Platform distribution (Windows, Mac, Linux)
+- Historical download trends
+- Latest release information
+
+### 12. **RoadmapPage** (`/roadmap`)
+Development roadmap displaying:
+- Current development priorities
+- Upcoming features and improvements
+- Community proposals
+- Technical debt items
 
 ## Design System
 
-### Theme Consistency
-- **UI Framework**: Material-UI (MUI) v5
-- **Color Scheme**: Dark theme with gradient backgrounds
-- **Card-based Layouts**: Consistent hover effects and shadows
-- **Typography**: Hierarchical structure with responsive sizing
+### Theme Configuration
+```javascript
+Primary Color: #002352 (DigiByte Blue)
+Secondary Color: #0066cc (Light Blue)
+Background: Linear gradients (#f8f9fa to #ffffff)
+Card Elevation: Consistent shadow patterns
+Border Radius: 8px (buttons), 12px (cards)
+```
 
 ### Component Patterns
-- **Hero Sections**: Page header with title and description
-- **Stat Cards**: Reusable metric display components
-- **Loading States**: Consistent "Loading..." indicators
-- **WebSocket Integration**: Real-time data updates
-- **Responsive Design**: Mobile-first approach
+1. **Hero Sections**: Each page starts with a hero card containing title and description
+2. **Stat Cards**: Reusable metric display components with consistent styling
+3. **Loading States**: Circular progress indicators with "Loading..." text
+4. **Error Boundaries**: Graceful error handling with fallback UI
+5. **Responsive Grids**: Mobile-first design with breakpoint-specific layouts
 
-## Page Structure
-
-Each page follows a consistent structure:
-
-1. **Hero Section** - Page title and descriptive text
-2. **Main Content** - Cards, charts, or visualizations
-3. **Educational Content** - Explanatory sections when applicable
-4. **Stats/Summary** - Key metrics and totals
-
-## Technical Standards
-
-### Performance
-- Optimized D3.js and Chart.js rendering
-- Efficient WebSocket management
-- Memoized computations for expensive operations
-- Responsive chart sizing
-
-### Code Quality
-- Functional React components with hooks
-- Clear separation of concerns
-- Comprehensive error handling
-- Mobile-responsive design
-
-### Data Visualization
-- **D3.js**: Geographic maps and custom charts
-- **Chart.js**: Time series and line charts
-- **Real-time Updates**: WebSocket-driven data
+### Data Flow
+1. **WebSocket Connection**: Established on component mount for real-time updates
+2. **API Calls**: RESTful endpoints for initial data loading
+3. **State Management**: React hooks (useState, useEffect, useMemo)
+4. **Performance Optimization**: Memoization for expensive computations
 
 ## Development Guidelines
 
-When adding features or making changes:
+### Code Standards
+- **Components**: Functional components with hooks only (no class components)
+- **Styling**: MUI sx prop for component-specific styles, CSS modules for global styles
+- **Data Fetching**: Async/await pattern with proper error handling
+- **Testing**: Minimum 95% code coverage requirement
+- **Comments**: JSDoc comments for all major components and functions
 
-1. **Maintain Visual Consistency**: Follow existing card patterns and color schemes
-2. **Ensure Responsiveness**: Test on mobile and desktop viewports
-3. **Handle Loading States**: Show appropriate loading indicators
-4. **Optimize Performance**: Use React.memo and useMemo where appropriate
-5. **Follow Component Structure**: Hero → Content → Stats pattern
+### File Structure
+```
+src/
+├── pages/           # Page components
+├── components/      # Reusable components (Header, Footer, etc.)
+├── utils/           # Utility functions (formatNumber, etc.)
+├── tests/           # Test suites
+│   ├── unit/       # Component unit tests
+│   ├── integration/ # Integration tests
+│   └── utils/      # Test utilities
+├── config.js        # Configuration (API URLs, WebSocket endpoints)
+└── App.js          # Main application component with routing
+```
 
-## Testing
+### WebSocket Protocol
+Messages follow this structure:
+```javascript
+{
+  type: 'recentBlocks' | 'newBlock' | 'nodeUpdate' | ...,
+  data: { ... }
+}
+```
 
-The project maintains 100% test coverage with:
-- Unit tests (Vitest)
-- E2E tests (Playwright)
-- Cross-browser compatibility
-- Mobile viewport testing
+### API Endpoints
+Base URL configured in `config.js`:
+- `/api/getblockchaininfo` - Blockchain statistics
+- `/api/getchaintxstats` - Transaction statistics
+- `/api/getpeerinfo` - Node peer information
+- `/api/getblockhash/:height` - Block by height
+- `/api/getblock/:hash` - Block details
+
+## Testing Strategy
+
+### Unit Testing (Vitest)
+- Component rendering tests
+- User interaction simulation
+- State management verification
+- Utility function testing
+
+### E2E Testing (Playwright)
+- Cross-browser testing (Chrome, Firefox, Safari, Edge)
+- Mobile responsiveness
+- Performance metrics
+- Accessibility compliance
+
+### Test Commands
+```bash
+npm test              # Watch mode
+npm run test:run      # Single run
+npm run test:coverage # Coverage report
+npm run test:e2e      # E2E tests
+npm run test:all      # All tests
+```
+
+## Performance Considerations
+
+### Optimization Techniques
+1. **React.memo**: Prevent unnecessary re-renders
+2. **useMemo/useCallback**: Memoize expensive operations
+3. **Code Splitting**: Lazy loading for route components
+4. **WebSocket Throttling**: Batch updates to prevent UI blocking
+5. **Virtual Scrolling**: For large data lists
+6. **Chart Optimization**: Simplified rendering for mobile devices
+
+### Mobile Optimizations
+- Responsive SVG sizing for D3.js charts
+- Touch-friendly interaction zones
+- Reduced data points on mobile charts
+- Simplified UI elements for small screens
+
+## Deployment Notes
+
+### Environment Variables
+- `PORT`: Frontend server port (default: 3005)
+- `REACT_APP_API_URL`: Backend API URL
+- `REACT_APP_WS_URL`: WebSocket server URL
+
+### Build Process
+```bash
+npm run build         # Production build
+```
+
+### Server Requirements
+- Node.js 14.x or higher (tested with 21.7.2)
+- DigiByte node with RPC enabled
+- Backend server (dgbstats-server) running
+
+## Common Tasks for AI Agents
+
+### Adding a New Page
+1. Create component in `src/pages/`
+2. Add route in `App.js`
+3. Follow existing page structure (Hero → Content → Stats)
+4. Add tests in `src/tests/unit/pages/`
+5. Update navigation in `Header.js`
+
+### Modifying Charts
+1. Check if using D3.js or Chart.js
+2. Maintain responsive sizing logic
+3. Test on mobile viewports
+4. Ensure loading states work
+
+### Updating Real-time Data
+1. Check WebSocket message types
+2. Update message handlers
+3. Test with mock WebSocket data
+4. Verify state updates correctly
+
+### Working with Tests
+1. Run existing tests before changes
+2. Update tests for modified code
+3. Add new tests for new features
+4. Maintain 95%+ coverage
+
+## Important Notes
+
+- **TAP Route Status**: TAP route soft fork has been successfully activated and buried. References to TAP route signaling have been removed from the UI.
+- **Mobile First**: Always test on mobile viewports first
+- **Accessibility**: Maintain WCAG 2.1 AA compliance
+- **Performance**: Keep Lighthouse scores above 90
+- **Browser Support**: Chrome, Firefox, Safari, Edge (latest 2 versions)
