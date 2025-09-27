@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { 
-  Container, Typography, List, ListItem, ListItemText, Box, 
+import {
+  Container, Typography, List, ListItem, ListItemText, Box,
   Card, CardContent, Divider, useTheme, useMediaQuery,
   Paper, Chip, CircularProgress, Pagination
 } from '@mui/material';
 import PoolIcon from '@mui/icons-material/LocationCity';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
 import * as d3 from 'd3';
 import config from '../config';
 
@@ -16,7 +14,6 @@ import config from '../config';
  * This page provides comprehensive analysis of DigiByte mining pool distribution including:
  * - Real-time pie chart visualization of pool market share
  * - Detailed listings of multi-block and single-block miners
- * - Taproot signaling status for each pool/miner
  * - Pagination for large datasets
  * 
  * Data source: Last 240 blocks (approximately 1 hour) via WebSocket
@@ -65,8 +62,7 @@ const PoolsPage = () => {
         return {
           address,
           count: addressCounts[address],
-          poolIdentifier: blockData.poolIdentifier || 'Unknown',
-          taprootSignaling: blockData.taprootSignaling
+          poolIdentifier: blockData.poolIdentifier || 'Unknown'
         };
       })
       .sort((a, b) => b.count - a.count) // Sort by block count descending
@@ -85,7 +81,6 @@ const PoolsPage = () => {
         count: 1,
         poolIdentifier: block.poolIdentifier || 'Unknown',
         timestamp: block.timestamp,
-        taprootSignaling: block.taprootSignaling,
         height: block.height,
         rank: index + 1
       }));
@@ -520,33 +515,16 @@ const PoolsPage = () => {
             
             {/* Block count (for multi-block miners) */}
             {isMultiBlock && (
-              <Chip 
-                label={`${item.count} blocks`} 
-                size="small" 
-                sx={{ 
+              <Chip
+                label={`${item.count} blocks`}
+                size="small"
+                sx={{
                   backgroundColor: '#e8eef7',
                   fontWeight: 'bold',
                   ml: 'auto'
-                }} 
+                }}
               />
             )}
-            
-            {/* Taproot signaling status */}
-            <Chip
-              icon={item.taprootSignaling ? 
-                <CheckCircleIcon sx={{ fontSize: '1rem' }} /> : 
-                <CancelIcon sx={{ fontSize: '1rem' }} />
-              }
-              label="Taproot"
-              size="small"
-              sx={{ 
-                backgroundColor: item.taprootSignaling ? '#e8f5e9' : '#ffebee',
-                color: item.taprootSignaling ? '#2e7d32' : '#c62828',
-                fontWeight: 'medium',
-                ...(isMultiBlock ? { } : { ml: 'auto' }),
-                ...(isMobile && { display: 'none' })
-              }}
-            />
           </Box>
         }
         secondary={
@@ -560,25 +538,6 @@ const PoolsPage = () => {
               <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
                 Block: {item.height}
               </Typography>
-            )}
-            
-            {/* Mobile taproot indicator */}
-            {isMobile && (
-              <Chip
-                icon={item.taprootSignaling ? 
-                  <CheckCircleIcon sx={{ fontSize: '0.75rem' }} /> : 
-                  <CancelIcon sx={{ fontSize: '0.75rem' }} />
-                }
-                label="Taproot"
-                size="small"
-                sx={{ 
-                  ml: 'auto',
-                  height: '24px',
-                  fontSize: '0.7rem',
-                  backgroundColor: item.taprootSignaling ? '#e8f5e9' : '#ffebee',
-                  color: item.taprootSignaling ? '#2e7d32' : '#c62828'
-                }}
-              />
             )}
           </Box>
         }

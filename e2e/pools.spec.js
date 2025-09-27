@@ -195,22 +195,6 @@ test.describe('Pools Page', () => {
       const listItems = document.querySelectorAll('.MuiListItem-root');
       return listItems.length > 0;
     }, { timeout: 20000 });
-    
-    // Look for taproot indicators - could be icons or text (Firefox-compatible)
-    const taprootChips = page.locator('text=Taproot');
-    const taprootCount = await taprootChips.count();
-    
-    // Should have at least one taproot indicator if miners are displayed
-    if (taprootCount > 0) {
-      await expect(taprootChips.first()).toBeVisible({ timeout: 10000 });
-    } else {
-      // Alternative: Look for CheckCircle or Cancel icons
-      const iconIndicators = page.locator('svg[data-testid="CheckCircleIcon"], svg[data-testid="CancelIcon"]');
-      const iconCount = await iconIndicators.count();
-      if (iconCount > 0) {
-        await expect(iconIndicators.first()).toBeVisible({ timeout: 10000 });
-      }
-    }
   });
 
   test('should show summary statistics', async ({ page }) => {

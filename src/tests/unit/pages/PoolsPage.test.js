@@ -186,24 +186,6 @@ describe('PoolsPage', () => {
       });
     });
 
-    it('should show taproot signaling status', async () => {
-      renderWithProviders(<PoolsPage />);
-      
-      await waitForAsync();
-      const ws = webSocketInstances[0];
-      
-      const blocks = [
-        { minerAddress: 'DAddr1', poolIdentifier: 'Pool A', taprootSignaling: true, height: 1 },
-        { minerAddress: 'DAddr2', poolIdentifier: 'Pool B', taprootSignaling: false, height: 2 },
-      ];
-      ws.receiveMessage({ type: 'recentBlocks', data: blocks });
-      
-      await waitFor(() => {
-        // Check for Taproot chips
-        const taprootChips = screen.getAllByText('Taproot');
-        expect(taprootChips.length).toBeGreaterThan(0);
-      });
-    });
   });
 
   describe('D3.js Pie Chart', () => {
