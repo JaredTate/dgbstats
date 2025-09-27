@@ -917,6 +917,211 @@ const DigiDollarPage = () => {
     </Card>
   );
 
+  // Four-Layer Protection System Section
+  const ProtectionSystemSection = () => (
+    <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px' }}>
+      <Typography variant="h4" fontWeight="bold" sx={{ mb: 3, color: '#002352' }}>
+        Four-Layer Protection System
+      </Typography>
+
+      <Alert
+        severity="warning"
+        sx={{
+          mb: 3,
+          backgroundColor: 'rgba(255, 152, 0, 0.1)',
+          '& .MuiAlert-icon': { color: '#ff9800' }
+        }}
+      >
+        <Typography variant="body2">
+          <strong>The Time-Lock Challenge:</strong> Since collateral is cryptographically time-locked,
+          there are NO forced liquidations or margin calls. Positions must ride out the full term
+          regardless of market conditions. This requires a unique protection approach.
+        </Typography>
+      </Alert>
+
+      <Grid container spacing={2}>
+        {/* Layer 1 */}
+        <Grid item xs={12} md={6}>
+          <Paper
+            elevation={1}
+            sx={{
+              p: 3,
+              height: '100%',
+              backgroundColor: '#f8f9fa',
+              borderTop: '4px solid #002352'
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6" fontWeight="bold" color="#002352">
+                1️⃣ Higher Collateral Requirements
+              </Typography>
+              <Chip label="First Defense" size="small" sx={{ ml: 'auto', backgroundColor: '#e3f2fd' }} />
+            </Box>
+            <Typography variant="body2" paragraph>
+              The 500%→200% sliding scale provides massive buffer against price drops.
+              Short-term positions require up to 5x collateral, protecting against volatility.
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              <strong>Example:</strong> With 500% collateral, DGB can drop 80% before undercollateralization.
+            </Typography>
+          </Paper>
+        </Grid>
+
+        {/* Layer 2 */}
+        <Grid item xs={12} md={6}>
+          <Paper
+            elevation={1}
+            sx={{
+              p: 3,
+              height: '100%',
+              backgroundColor: '#f8f9fa',
+              borderTop: '4px solid #0066cc'
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6" fontWeight="bold" color="#0066cc">
+                2️⃣ Dynamic Collateral Adjustment
+              </Typography>
+              <Chip label="Second Defense" size="small" sx={{ ml: 'auto', backgroundColor: '#e3f2fd' }} />
+            </Box>
+            <Typography variant="body2" paragraph>
+              As system health changes, collateral requirements automatically adjust:
+            </Typography>
+            <List dense sx={{ pl: 0 }}>
+              <ListItem sx={{ pl: 0, py: 0 }}>
+                <Typography variant="caption">
+                  • &gt;150% healthy: Normal operations
+                </Typography>
+              </ListItem>
+              <ListItem sx={{ pl: 0, py: 0 }}>
+                <Typography variant="caption">
+                  • 120-150%: +25% collateral required
+                </Typography>
+              </ListItem>
+              <ListItem sx={{ pl: 0, py: 0 }}>
+                <Typography variant="caption">
+                  • 110-120%: +50% collateral required
+                </Typography>
+              </ListItem>
+              <ListItem sx={{ pl: 0, py: 0 }}>
+                <Typography variant="caption">
+                  • &lt;110%: +100% collateral required
+                </Typography>
+              </ListItem>
+            </List>
+          </Paper>
+        </Grid>
+
+        {/* Layer 3 */}
+        <Grid item xs={12} md={6}>
+          <Paper
+            elevation={1}
+            sx={{
+              p: 3,
+              height: '100%',
+              backgroundColor: '#f8f9fa',
+              borderTop: '4px solid #ff9800'
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6" fontWeight="bold" color="#ff9800">
+                3️⃣ Emergency Redemption Ratio
+              </Typography>
+              <Chip label="Third Defense" size="small" sx={{ ml: 'auto', backgroundColor: '#fff3e0' }} />
+            </Box>
+            <Typography variant="body2" paragraph>
+              If system drops below 100% collateralized, redemptions require more DD to unlock collateral.
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              <strong>Formula:</strong> Required DD = Original DD × (100% ÷ System %)
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Example: At 80% system health, need 125 DD to redeem position that minted 100 DD
+            </Typography>
+          </Paper>
+        </Grid>
+
+        {/* Layer 4 */}
+        <Grid item xs={12} md={6}>
+          <Paper
+            elevation={1}
+            sx={{
+              p: 3,
+              height: '100%',
+              backgroundColor: '#f8f9fa',
+              borderTop: '4px solid #4caf50'
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6" fontWeight="bold" color="#4caf50">
+                4️⃣ Supply & Demand Dynamics
+              </Typography>
+              <Chip label="Natural Defense" size="small" sx={{ ml: 'auto', backgroundColor: '#e8f5e9' }} />
+            </Box>
+            <Typography variant="body2" paragraph>
+              Locked DGB reduces circulating supply, creating natural price support.
+              With only 21B DGB max, locking creates scarcity.
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              <strong>Effect:</strong> More locking → Less supply → Higher DGB price → Better collateralization
+            </Typography>
+          </Paper>
+        </Grid>
+      </Grid>
+
+      {/* Real-Time Monitoring Box */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 3,
+          mt: 3,
+          backgroundColor: 'rgba(0, 35, 82, 0.05)',
+          borderLeft: '4px solid #002352'
+        }}
+      >
+        <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: '#002352' }}>
+          🔍 Real-Time System Monitoring
+        </Typography>
+        <Typography variant="body2" paragraph>
+          The system continuously tracks critical health metrics to ensure stability:
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6}>
+            <List dense sx={{ pl: 0 }}>
+              <ListItem sx={{ pl: 0, py: 0 }}>
+                <Typography variant="body2">• Total DGB locked per tier</Typography>
+              </ListItem>
+              <ListItem sx={{ pl: 0, py: 0 }}>
+                <Typography variant="body2">• Total DigiDollars minted</Typography>
+              </ListItem>
+            </List>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <List dense sx={{ pl: 0 }}>
+              <ListItem sx={{ pl: 0, py: 0 }}>
+                <Typography variant="body2">• Per-tier collateral ratios</Typography>
+              </ListItem>
+              <ListItem sx={{ pl: 0, py: 0 }}>
+                <Typography variant="body2">• Aggregate system health</Typography>
+              </ListItem>
+            </List>
+          </Grid>
+        </Grid>
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+          Accessible via RPC command: <code style={{ backgroundColor: '#f5f5f5', padding: '2px 4px', borderRadius: '3px' }}>getdigidollarsystemstatus</code>
+        </Typography>
+      </Paper>
+
+      <Alert severity="success" sx={{ mt: 3 }}>
+        <Typography variant="body2">
+          <strong>Key Insight:</strong> These four layers work together without forced liquidations.
+          Prevention (higher collateral), adaptation (dynamic adjustment), crisis management (emergency ratios),
+          and market forces (scarcity) create a self-balancing, resilient system.
+        </Typography>
+      </Alert>
+    </Card>
+  );
+
   // Roadmap Section
   const RoadmapSection = () => (
     <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px' }}>
@@ -1296,6 +1501,7 @@ const DigiDollarPage = () => {
         <CollateralSection />
         <TechnicalSection />
         <TechnicalDetailsSection />
+        <ProtectionSystemSection />
         <RoadmapSection />
         <UseCasesSection />
         <ResourcesSection />
