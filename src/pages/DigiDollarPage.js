@@ -125,14 +125,15 @@ const DigiDollarPage = () => {
         <Alert
           severity="info"
           sx={{
-            maxWidth: '600px',
+            maxWidth: '700px',
             mx: 'auto',
             backgroundColor: 'rgba(0, 102, 204, 0.1)',
             '& .MuiAlert-icon': { color: '#0066cc' }
           }}
         >
           <Typography variant="body2">
-            <strong>Status:</strong> In planning phase - Development will begin following community consensus
+            <strong>Status:</strong> This is the current proposed plan for how DigiDollar will work, but is subject
+            to change based on community feedback and technical review. Development will begin following community consensus.
           </Typography>
         </Alert>
       </CardContent>
