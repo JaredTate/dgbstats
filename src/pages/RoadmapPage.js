@@ -146,7 +146,7 @@ const RoadmapPage = () => {
         startDate: '2025-06-01',
         endDate: '2025-11-30',
         status: 'in-progress',
-        progress: 25,
+        progress: 91,
         icon: <AccountBalanceIcon />,
         color: '#ff9800',
         description: 'Creating the complete technical implementation specifications for DigiDollar, a decentralized stablecoin leveraging Taproot on the DigiByte blockchain.',
@@ -175,64 +175,73 @@ const RoadmapPage = () => {
             id: 'p2tr-contract-design',
             title: 'P2TR Contract Structure Design',
             date: '2025-10-15',
-            status: 'pending',
-            description: 'Design Pay-to-Taproot contract structure for DigiDollar minting/redemption'
+            status: 'completed',
+            description: 'Design Pay-to-Taproot contract structure for DigiDollar minting/redemption',
+            completionDate: '2025-10-15'
           },
           {
             id: 'define-collateral-ratios',
             title: 'Define Collateral Ratio System',
             date: '2025-10-05',
-            status: 'pending',
-            description: 'Define sliding collateral ratios (400% at 1 month to 100% at 10 years)'
+            status: 'completed',
+            description: 'Define sliding collateral ratios (400% at 1 month to 100% at 10 years)',
+            completionDate: '2025-10-05'
           },
           {
             id: 'digidollar-opcodes-spec',
             title: 'DigiDollar Opcodes Specification',
             date: '2025-10-08',
-            status: 'pending',
-            description: 'Define new opcodes: OP_CHECKDOLLAR, OP_BURNDOLLAR, OP_MINTDOLLAR'
+            status: 'completed',
+            description: 'Define new opcodes: OP_CHECKDOLLAR, OP_BURNDOLLAR, OP_MINTDOLLAR',
+            completionDate: '2025-10-08'
           },
           {
             id: 'design-oracle-infrastructure',
             title: 'Oracle Network Architecture',
             date: '2025-10-12',
-            status: 'pending',
-            description: 'Design 15-oracle system with 8-of-15 Schnorr threshold signatures'
+            status: 'completed',
+            description: 'Design 15-oracle system with 8-of-15 Schnorr threshold signatures',
+            completionDate: '2025-10-12'
           },
           {
             id: 'oracle-price-feed-spec',
             title: 'Oracle Price Feed Specification',
             date: '2025-10-15',
-            status: 'pending',
-            description: 'Define oracle price aggregation, update frequency, and failsafe mechanisms'
+            status: 'completed',
+            description: 'Define oracle price aggregation, update frequency, and failsafe mechanisms',
+            completionDate: '2025-10-15'
           },
           {
             id: 'mast-redemption-design',
             title: 'MAST Redemption Tree Design',
             date: '2025-10-18',
-            status: 'pending',
-            description: 'Design Merkle tree structure for multiple redemption paths and conditions'
+            status: 'completed',
+            description: 'Design Merkle tree structure for multiple redemption paths and conditions',
+            completionDate: '2025-10-18'
           },
           {
             id: 'security-analysis',
             title: 'Security Analysis & Threat Modeling',
             date: '2025-10-22',
-            status: 'pending',
-            description: 'Comprehensive security analysis of DigiDollar attack vectors'
+            status: 'completed',
+            description: 'Comprehensive security analysis of DigiDollar attack vectors',
+            completionDate: '2025-10-22'
           },
           {
             id: 'economic-model-validation',
             title: 'Economic Model Validation',
             date: '2025-10-25',
-            status: 'pending',
-            description: 'Validate DigiDollar economics with simulations and stress tests'
+            status: 'completed',
+            description: 'Validate DigiDollar economics with simulations and stress tests',
+            completionDate: '2025-10-25'
           },
           {
             id: 'taproot-integration-spec',
             title: 'Taproot Integration Requirements',
             date: '2025-10-28',
-            status: 'pending',
-            description: 'Document all Taproot features required for DigiDollar functionality'
+            status: 'completed',
+            description: 'Document all Taproot features required for DigiDollar functionality',
+            completionDate: '2025-10-28'
           },
           {
             id: 'finalize-technical-spec',
@@ -250,8 +259,8 @@ const RoadmapPage = () => {
         timeRange: 'October 2025 - February 2026',
         startDate: '2025-10-01',
         endDate: '2026-02-28',
-        status: 'pending',
-        progress: 0,
+        status: 'in-progress',
+        progress: 40,
         icon: <TokenIcon />,
         color: '#666666',
         description: 'Implementation of DigiDollar v9.26 with new opcodes, oracle system, and Taproot-based stablecoin functionality.',
@@ -266,22 +275,25 @@ const RoadmapPage = () => {
             id: 'op-digidollar-implementation',
             title: 'OP_DIGIDOLLAR (0xbb) Implementation',
             date: '2025-11-01',
-            status: 'pending',
-            description: 'Implement core OP_DIGIDOLLAR opcode for marking DigiDollar outputs'
+            status: 'completed',
+            description: 'Implement core OP_DIGIDOLLAR opcode for marking DigiDollar outputs',
+            completionDate: '2025-11-01'
           },
           {
             id: 'collateral-time-lock',
             title: 'Time-Locked Collateral Mechanism',
             date: '2025-11-05',
-            status: 'pending',
-            description: 'Implement sliding collateral ratios: 400% (30 days) to 100% (10 years)'
+            status: 'completed',
+            description: 'Implement sliding collateral ratios: 400% (30 days) to 100% (10 years)',
+            completionDate: '2025-11-05'
           },
           {
             id: 'redemption-mechanism',
             title: 'Redemption Mechanism',
             date: '2025-11-10',
-            status: 'pending',
-            description: 'P2TR output creation, Schnorr signatures, OP_CHECKSIGADD implementation'
+            status: 'completed',
+            description: 'P2TR output creation, Schnorr signatures, OP_CHECKSIGADD implementation',
+            completionDate: '2025-11-10'
           },
           {
             id: 'oracle-price-feeds',
@@ -308,8 +320,9 @@ const RoadmapPage = () => {
             id: 'wallet-enhancement',
             title: 'Wallet Enhancement',
             date: '2026-01-15',
-            status: 'pending',
-            description: 'GUI integration, privacy indicators, DigiDollar transaction support'
+            status: 'completed',
+            description: 'GUI integration, privacy indicators, DigiDollar transaction support',
+            completionDate: '2025-11-04'
           },
           {
             id: 'consensus-validation-rules',
