@@ -407,7 +407,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
           <Grid item xs={12} sm={6} md={4}>
             <StatCard 
               title="Latest Version" 
-              value="v8.22.2"
+              value="v8.26.1"
               icon={<UpdateIcon />}
               description="Latest DGB core version."
               loading={false}
