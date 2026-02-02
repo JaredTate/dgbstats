@@ -53,9 +53,12 @@ const CONFIRMATION_COLORS = {
 /**
  * Hero section component for the TxsPage
  * Displays title, description, and real-time transaction information
+ * @param {Object} props - Component props
+ * @param {boolean} props.isTestnet - Whether the current network is testnet
+ * @param {Object} props.networkTheme - Theme colors for the current network
  * @returns {JSX.Element} Hero section with page title and description
  */
-const HeroSection = () => (
+const HeroSection = ({ isTestnet, networkTheme }) => (
   <Card
     elevation={2}
     sx={{
@@ -64,18 +67,30 @@ const HeroSection = () => (
       mb: 4,
       overflow: 'hidden',
       backgroundImage: 'linear-gradient(135deg, #f8f9fa 0%, #e8eef7 100%)',
-      border: '1px solid rgba(0, 35, 82, 0.1)'
+      border: `1px solid ${isTestnet ? 'rgba(230, 81, 0, 0.2)' : 'rgba(0, 35, 82, 0.1)'}`
     }}
   >
     <CardContent sx={{ py: 4, textAlign: 'center' }}>
+      {isTestnet && (
+        <Chip
+          label="TESTNET"
+          sx={{
+            mb: 2,
+            bgcolor: networkTheme?.primary || '#e65100',
+            color: 'white',
+            fontWeight: 'bold',
+            fontSize: '0.85rem'
+          }}
+        />
+      )}
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
-        <AccountBalanceWalletIcon sx={{ fontSize: '2.5rem', color: '#002352', mr: 2 }} />
-        <Typography 
-          variant="h2" 
-          component="h1" 
-          fontWeight="800" 
-          sx={{ 
-            color: '#002352',
+        <AccountBalanceWalletIcon sx={{ fontSize: '2.5rem', color: networkTheme?.primary || '#002352', mr: 2 }} />
+        <Typography
+          variant="h2"
+          component="h1"
+          fontWeight="800"
+          sx={{
+            color: networkTheme?.primary || '#002352',
             letterSpacing: '0.5px',
             fontSize: { xs: '1.8rem', sm: '2.3rem', md: '2.8rem' }
           }}
@@ -937,7 +952,7 @@ const PaginationControls = ({
  * @returns {JSX.Element} Complete transaction explorer with real-time updates
  */
 const TxsPage = () => {
-  const { wsBaseUrl, getApiUrl, isTestnet } = useNetwork();
+  const { wsBaseUrl, getApiUrl, isTestnet, theme: networkTheme } = useNetwork();
 
   // Transaction data state management
   const [mempoolTransactions, setMempoolTransactions] = useState([]);
@@ -1284,7 +1299,7 @@ const TxsPage = () => {
       }}
     >
       <Container maxWidth="lg">
-        <HeroSection />
+        <HeroSection isTestnet={isTestnet} networkTheme={networkTheme} />
 
         {/* Connection status indicator */}
         <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>

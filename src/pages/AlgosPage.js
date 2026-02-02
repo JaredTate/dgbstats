@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Container, Typography, Box, Card, CardContent,
-  Divider, useTheme, useMediaQuery
+  Divider, useTheme, useMediaQuery, Chip
 } from '@mui/material';
 import PieChartIcon from '@mui/icons-material/PieChart';
 import * as d3 from 'd3';
@@ -59,9 +59,12 @@ const getAlgoColor = (algo) => {
 /**
  * Hero section component for the AlgosPage
  * Displays title, description, and explanation of multi-algorithm mining
+ * @param {Object} props - Component props
+ * @param {boolean} props.isTestnet - Whether the current network is testnet
+ * @param {Object} props.networkTheme - Theme colors for the current network
  * @returns {JSX.Element} Hero section with page title and description
  */
-const HeroSection = () => (
+const HeroSection = ({ isTestnet, networkTheme }) => (
   <Card
     elevation={2}
     sx={{
@@ -70,18 +73,30 @@ const HeroSection = () => (
       mb: 4,
       overflow: 'hidden',
       backgroundImage: 'linear-gradient(135deg, #f8f9fa 0%, #e8eef7 100%)',
-      border: '1px solid rgba(0, 35, 82, 0.1)'
+      border: `1px solid ${isTestnet ? 'rgba(230, 81, 0, 0.2)' : 'rgba(0, 35, 82, 0.1)'}`
     }}
   >
     <CardContent sx={{ py: 4, textAlign: 'center' }}>
+      {isTestnet && (
+        <Chip
+          label="TESTNET"
+          sx={{
+            mb: 2,
+            bgcolor: networkTheme?.primary || '#e65100',
+            color: 'white',
+            fontWeight: 'bold',
+            fontSize: '0.85rem'
+          }}
+        />
+      )}
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
-        <PieChartIcon sx={{ fontSize: '2.5rem', color: '#002352', mr: 2 }} />
-        <Typography 
-          variant="h2" 
-          component="h1" 
-          fontWeight="800" 
-          sx={{ 
-            color: '#002352',
+        <PieChartIcon sx={{ fontSize: '2.5rem', color: networkTheme?.primary || '#002352', mr: 2 }} />
+        <Typography
+          variant="h2"
+          component="h1"
+          fontWeight="800"
+          sx={{
+            color: networkTheme?.primary || '#002352',
             letterSpacing: '0.5px',
             fontSize: { xs: '1.8rem', sm: '2.3rem', md: '2.8rem' }
           }}
@@ -182,7 +197,7 @@ const MultiAlgoInfoSection = () => (
  */
 const AlgosPage = () => {
   // Network context for network-aware data fetching
-  const { wsBaseUrl, isTestnet } = useNetwork();
+  const { wsBaseUrl, isTestnet, theme: networkTheme } = useNetwork();
 
   // Block data state
   const [blocks, setBlocks] = useState([]);
@@ -422,7 +437,7 @@ const AlgosPage = () => {
       }}
     >
       <Container maxWidth="lg">
-        <HeroSection />
+        <HeroSection isTestnet={isTestnet} networkTheme={networkTheme} />
 
         <Card
           elevation={3}

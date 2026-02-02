@@ -4,7 +4,7 @@ import 'chartjs-adapter-luxon';
 import { LineController } from 'chart.js';
 import {
   Typography, Container, Box, Card, CardContent,
-  Divider, Grid, useTheme, useMediaQuery
+  Divider, Grid, useTheme, useMediaQuery, Chip
 } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import { useNetwork } from '../context/NetworkContext';
@@ -33,9 +33,12 @@ const algoColors = {
 /**
  * Hero section component for the DifficultiesPage
  * Displays title, description, and explanation of DigiShield technology
+ * @param {Object} props - Component props
+ * @param {boolean} props.isTestnet - Whether the current network is testnet
+ * @param {Object} props.networkTheme - Theme colors for the current network
  * @returns {JSX.Element} Hero section with title and DigiShield explanation
  */
-const HeroSection = () => (
+const HeroSection = ({ isTestnet, networkTheme }) => (
   <Card
     elevation={2}
     sx={{
@@ -44,18 +47,30 @@ const HeroSection = () => (
       mb: 4,
       overflow: 'hidden',
       backgroundImage: 'linear-gradient(135deg, #f8f9fa 0%, #e8eef7 100%)',
-      border: '1px solid rgba(0, 35, 82, 0.1)'
+      border: `1px solid ${isTestnet ? 'rgba(230, 81, 0, 0.2)' : 'rgba(0, 35, 82, 0.1)'}`
     }}
   >
     <CardContent sx={{ py: 4, textAlign: 'center' }}>
+      {isTestnet && (
+        <Chip
+          label="TESTNET"
+          sx={{
+            mb: 2,
+            bgcolor: networkTheme?.primary || '#e65100',
+            color: 'white',
+            fontWeight: 'bold',
+            fontSize: '0.85rem'
+          }}
+        />
+      )}
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
-        <TrendingUpIcon sx={{ fontSize: '2.5rem', color: '#002352', mr: 2 }} />
-        <Typography 
-          variant="h2" 
-          component="h1" 
-          fontWeight="800" 
-          sx={{ 
-            color: '#002352',
+        <TrendingUpIcon sx={{ fontSize: '2.5rem', color: networkTheme?.primary || '#002352', mr: 2 }} />
+        <Typography
+          variant="h2"
+          component="h1"
+          fontWeight="800"
+          sx={{
+            color: networkTheme?.primary || '#002352',
             letterSpacing: '0.5px',
             fontSize: { xs: '1.8rem', sm: '2.3rem', md: '2.8rem' }
           }}
@@ -248,7 +263,7 @@ const DifficultiesPage = ({ difficultiesData }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Network context for network-aware data fetching
-  const { getApiUrl, isTestnet, wsBaseUrl } = useNetwork();
+  const { getApiUrl, isTestnet, wsBaseUrl, theme: networkTheme } = useNetwork();
 
   // Chart management references
   const chartRefs = useRef([]);
@@ -538,7 +553,7 @@ const DifficultiesPage = ({ difficultiesData }) => {
       }}
     >
       <Container maxWidth="lg">
-        <HeroSection />
+        <HeroSection isTestnet={isTestnet} networkTheme={networkTheme} />
 
         {isLoading ? (
           <LoadingCard />

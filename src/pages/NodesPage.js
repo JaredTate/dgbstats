@@ -76,7 +76,7 @@ const useFetchData = (wsBaseUrl) => {
  * - Educational information about blockchain nodes
  */
 const NodesPage = () => {
-  const { wsBaseUrl, getApiUrl, isTestnet } = useNetwork();
+  const { wsBaseUrl, getApiUrl, isTestnet, theme: networkTheme } = useNetwork();
   const { nodesData, loading } = useFetchData(wsBaseUrl);
 
   // Convert TopoJSON world data to GeoJSON for D3 rendering
@@ -551,7 +551,7 @@ const NodesPage = () => {
         mb: 4,
         overflow: 'hidden',
         backgroundImage: 'linear-gradient(135deg, #f8f9fa 0%, #e8eef7 100%)',
-        border: '1px solid rgba(0, 35, 82, 0.1)',
+        border: `1px solid ${isTestnet ? 'rgba(230, 81, 0, 0.2)' : 'rgba(0, 35, 82, 0.1)'}`,
         transition: 'transform 0.3s ease-in-out',
         '&:hover': {
           transform: 'translateY(-5px)',
@@ -560,11 +560,23 @@ const NodesPage = () => {
       }}
     >
       <CardContent sx={{ py: 4, textAlign: 'center' }}>
+        {isTestnet && (
+          <Chip
+            label="TESTNET"
+            sx={{
+              mb: 2,
+              bgcolor: networkTheme?.primary || '#e65100',
+              color: 'white',
+              fontWeight: 'bold',
+              fontSize: '0.85rem'
+            }}
+          />
+        )}
         {/* Page title with animated icon */}
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
-          <RouterIcon sx={{ 
-            fontSize: { xs: '2rem', sm: '2.3rem', md: '2.5rem' }, 
-            color: '#002352', 
+          <RouterIcon sx={{
+            fontSize: { xs: '2rem', sm: '2.3rem', md: '2.5rem' },
+            color: networkTheme?.primary || '#002352',
             mr: 2,
             animation: 'pulse 2s infinite',
             '@keyframes pulse': {
@@ -573,12 +585,12 @@ const NodesPage = () => {
               '100%': { transform: 'scale(1)', opacity: 1 }
             }
           }} />
-          <Typography 
-            variant="h2" 
-            component="h1" 
-            fontWeight="800" 
-            sx={{ 
-              color: '#002352',
+          <Typography
+            variant="h2"
+            component="h1"
+            fontWeight="800"
+            sx={{
+              color: networkTheme?.primary || '#002352',
               letterSpacing: '0.5px',
               fontSize: { xs: '1.8rem', sm: '2.3rem', md: '2.8rem' }
             }}
