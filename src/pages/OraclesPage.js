@@ -236,15 +236,15 @@ const OraclesPage = () => {
           </Tooltip>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Tooltip title="Number of oracles actively broadcasting price updates. Requires 4-of-7 for consensus on testnet" arrow placement="top">
+          <Tooltip title="Number of oracles contributing to network price consensus. Requires 4-of-7 for consensus on testnet" arrow placement="top">
             <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help' }}>
-              <Typography variant="body2" color="text.secondary">Active Oracles</Typography>
+              <Typography variant="body2" color="text.secondary">Network Oracles</Typography>
               <Typography variant="h3" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
-                {oracles.filter(o => o.is_running).length} / {oracles.length}
+                {oraclePrice.oracle_count || 0} / 7
               </Typography>
               <Chip
-                label={oraclePrice.status}
-                color={oraclePrice.status === 'active' ? 'success' : 'warning'}
+                label={oraclePrice.oracle_count >= 4 ? 'consensus' : 'no consensus'}
+                color={oraclePrice.oracle_count >= 4 ? 'success' : 'warning'}
                 size="small"
                 sx={{ mt: 1 }}
               />

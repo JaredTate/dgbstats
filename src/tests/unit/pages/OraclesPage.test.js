@@ -68,7 +68,7 @@ describe('OraclesPage', () => {
 
       expect(screen.getByText('Testnet Oracle Price')).toBeInTheDocument();
       expect(screen.getByText('DGB/USD Price')).toBeInTheDocument();
-      expect(screen.getByText('Active Oracles')).toBeInTheDocument();
+      expect(screen.getByText('Network Oracles')).toBeInTheDocument();
       expect(screen.getByText('Last Update')).toBeInTheDocument();
     });
 
@@ -160,14 +160,14 @@ describe('OraclesPage', () => {
       }, { timeout: 3000 });
     });
 
-    it('should display oracle count from fetched data', async () => {
+    it('should display network oracle count from fetched data', async () => {
       await act(async () => {
         renderWithProviders(<OraclesPage />, { network: 'testnet' });
       });
 
       await waitFor(() => {
-        // Active oracles: 2 running out of 3
-        expect(screen.getByText('2 / 3')).toBeInTheDocument();
+        // Network oracles: oracle_count from getoracleprice (7) out of 7
+        expect(screen.getByText('7 / 7')).toBeInTheDocument();
       });
     });
 
