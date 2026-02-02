@@ -30,6 +30,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
   const [chainTxStats, setChainTxStats] = useState(null);
   const [txOutsetInfo, setTxOutsetInfo] = useState(null);
   const [blockReward, setBlockReward] = useState(null);
+  const [deploymentInfo, setDeploymentInfo] = useState(null);
   const [txOutsetInfoLoading, setTxOutsetInfoLoading] = useState(true);
 
   // Network context for network-aware data fetching
@@ -57,6 +58,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
         setChainTxStats(message.data.chainTxStats);
         setTxOutsetInfo(message.data.txOutsetInfo);
         setBlockReward(message.data.blockReward);
+        setDeploymentInfo(message.data.deploymentInfo);
         setTxOutsetInfoLoading(false);
       }
     };
@@ -188,42 +190,35 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
 
   /**
    * SoftforksCard - Specialized card for displaying active blockchain softforks
-   * Shows all currently active softforks and their implementation status
+   * Shows all currently active softforks from getdeploymentinfo RPC
    */
   const SoftforksCard = () => {
-    // Debug logging
-    if (blockchainInfo) {
-      console.log('SoftforksCard - blockchainInfo.softforks:', blockchainInfo.softforks);
-    }
+    // Get deployments from deploymentInfo
+    const getDeployments = () => {
+      if (!deploymentInfo?.deployments) return null;
 
-    // Get softforks from blockchainInfo with fallback handling
-    const getSoftforks = () => {
-      if (!blockchainInfo) return null;
-
-      // Check for softforks in different possible locations
-      const softforks = blockchainInfo.softforks || blockchainInfo.bip9_softforks || blockchainInfo.deployments;
-
-      if (!softforks || Object.keys(softforks).length === 0) {
+      const deployments = deploymentInfo.deployments;
+      if (!deployments || Object.keys(deployments).length === 0) {
         return null;
       }
 
-      return softforks;
+      return deployments;
     };
 
-    // Render softfork entry based on its structure
-    const renderSoftforkEntry = (key, value) => {
-      // Handle different value types (object with type property, or string/boolean)
-      let displayValue = 'unknown';
+    // Render deployment entry showing name and status
+    const renderDeploymentEntry = (key, value) => {
+      // Determine status display
+      let statusText = 'unknown';
+      let statusColor = 'text.secondary';
+
       if (typeof value === 'object' && value !== null) {
-        if (value.type) {
-          displayValue = value.type;
-        } else if (value.status) {
-          displayValue = value.status;
-        } else if (value.active !== undefined) {
-          displayValue = value.active ? 'active' : 'inactive';
+        if (value.active === true) {
+          statusText = value.type === 'buried' ? 'buried' : 'active';
+          statusColor = 'success.main';
+        } else if (value.active === false) {
+          statusText = value.bip9?.status || 'inactive';
+          statusColor = 'warning.main';
         }
-      } else {
-        displayValue = String(value);
       }
 
       return (
@@ -238,14 +233,14 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
           <Typography variant="body2" fontWeight="bold">
             {key}:
           </Typography>
-          <Typography variant="body2">
-            {displayValue}
+          <Typography variant="body2" sx={{ color: statusColor }}>
+            {statusText}
           </Typography>
         </Box>
       );
     };
 
-    const softforks = getSoftforks();
+    const deployments = getDeployments();
 
     return (
       <Card
@@ -272,14 +267,14 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
             </Avatar>
           </Box>
 
-          {/* Softforks list */}
-          {softforks ? (
+          {/* Deployments list */}
+          {deployments ? (
             <Box>
-              {Object.entries(softforks).map(([key, value]) => renderSoftforkEntry(key, value))}
+              {Object.entries(deployments).map(([key, value]) => renderDeploymentEntry(key, value))}
             </Box>
-          ) : blockchainInfo ? (
+          ) : deploymentInfo === null && blockchainInfo ? (
             <Typography variant="body2" color="text.secondary">
-              No softfork data available
+              Loading deployment data...
             </Typography>
           ) : (
             <Typography variant="h5">Loading...</Typography>
@@ -288,7 +283,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
           <Divider sx={{ my: 1 }} />
 
           <Typography variant="body2" color="text.secondary">
-            Active on chain softforks.
+            Active on-chain softforks.
           </Typography>
         </CardContent>
       </Card>
