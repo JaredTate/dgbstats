@@ -1,5 +1,5 @@
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render, act } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { vi } from 'vitest';
@@ -91,38 +91,55 @@ export class MockWebSocket {
     this.onclose = null;
     this.onerror = null;
     this.onmessage = null;
-    
-    // Simulate connection opening
+    this._sentMessages = [];
+
+    // Make close a spy for verification
+    // Use code 1000 (normal closure) to prevent reconnection logic from triggering
+    this.close = vi.fn(() => {
+      this.readyState = WebSocket.CLOSED;
+      if (this.onclose) {
+        act(() => {
+          this.onclose({ type: 'close', code: 1000, reason: 'Normal closure' });
+        });
+      }
+    });
+
+    // Simulate connection opening asynchronously wrapped in act
     setTimeout(() => {
       this.readyState = WebSocket.OPEN;
       if (this.onopen) {
-        this.onopen({ type: 'open' });
+        act(() => {
+          this.onopen({ type: 'open' });
+        });
       }
     }, 0);
   }
 
   send(data) {
-    // Mock send method
+    // Store sent messages for verification
+    this._sentMessages.push(data);
   }
 
-  close() {
-    this.readyState = WebSocket.CLOSED;
-    if (this.onclose) {
-      this.onclose({ type: 'close' });
-    }
+  // Helper method to get sent messages for test assertions
+  getSentMessages() {
+    return this._sentMessages;
   }
 
-  // Helper method to simulate receiving a message
+  // Helper method to simulate receiving a message - wrapped in act for React state updates
   receiveMessage(data) {
     if (this.onmessage && this.readyState === WebSocket.OPEN) {
-      this.onmessage({ data: JSON.stringify(data) });
+      act(() => {
+        this.onmessage({ data: JSON.stringify(data) });
+      });
     }
   }
 
-  // Helper method to simulate an error
+  // Helper method to simulate an error - wrapped in act for React state updates
   triggerError(error) {
     if (this.onerror) {
-      this.onerror({ type: 'error', error });
+      act(() => {
+        this.onerror({ type: 'error', error });
+      });
     }
   }
 }
@@ -130,19 +147,22 @@ export class MockWebSocket {
 // Create WebSocket mock
 export function createWebSocketMock() {
   const mockInstances = [];
-  
+
   const MockWebSocketConstructor = vi.fn().mockImplementation((url) => {
     const instance = new MockWebSocket(url);
     mockInstances.push(instance);
     return instance;
   });
-  
+
   // Add static properties
   MockWebSocketConstructor.CONNECTING = 0;
   MockWebSocketConstructor.OPEN = 1;
   MockWebSocketConstructor.CLOSING = 2;
   MockWebSocketConstructor.CLOSED = 3;
-  
+
+  // Expose instances on the constructor for tests that access global.WebSocket.instances
+  MockWebSocketConstructor.instances = mockInstances;
+
   return {
     MockWebSocket: MockWebSocketConstructor,
     instances: mockInstances,
@@ -152,8 +172,12 @@ export function createWebSocketMock() {
   };
 }
 
-// Wait for async updates
-export const waitForAsync = () => new Promise(resolve => setTimeout(resolve, 0));
+// Wait for async updates - wraps in act and allows microtasks to flush
+export const waitForAsync = async () => {
+  await act(async () => {
+    await new Promise(resolve => setTimeout(resolve, 0));
+  });
+};
 
 // Mock Chart.js
 export function mockChartJs() {
