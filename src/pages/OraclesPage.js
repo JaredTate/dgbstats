@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container, Typography, Box, Grid, Card, CardContent,
   Divider, Chip, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Paper, Alert, Button, LinearProgress,
-  Tooltip, IconButton, Link
+  Tooltip, IconButton, Link, CircularProgress
 } from '@mui/material';
 import SensorsIcon from '@mui/icons-material/Sensors';
 import CloudDoneIcon from '@mui/icons-material/CloudDone';
@@ -19,7 +19,29 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import KeyIcon from '@mui/icons-material/Key';
 import SendIcon from '@mui/icons-material/Send';
 import VerifiedIcon from '@mui/icons-material/Verified';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { useNetwork } from '../context/NetworkContext';
+import config from '../config';
+
+// Default mock data for fallback when API is unavailable
+const DEFAULT_ORACLE_PRICE = {
+  price_micro_usd: 6029,
+  price_usd: 0.006029,
+  oracle_count: 7,
+  status: 'active',
+  last_update_height: 1234567,
+  is_stale: false
+};
+
+const DEFAULT_ORACLES = [
+  { oracle_id: 0, pubkey: '0398720f6d15252fb2c3501107d46129589d8ab56e0f967be2e470f40675eb7b57', endpoint: 'oracle1.digibyte.io:12028', is_active: true, is_running: true, last_price: 6029, status: 'running', selected_for_epoch: true },
+  { oracle_id: 1, pubkey: '02a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd', endpoint: 'oracle2.digibyte.io:12028', is_active: true, is_running: true, last_price: 6031, status: 'running', selected_for_epoch: true },
+  { oracle_id: 2, pubkey: '03b2c3d4e5f6789012345678901234567890123456789012345678901234abcdef', endpoint: 'oracle3.digibyte.io:12028', is_active: true, is_running: true, last_price: 6028, status: 'running', selected_for_epoch: true },
+  { oracle_id: 3, pubkey: '02c3d4e5f6789012345678901234567890123456789012345678901234abcdef01', endpoint: 'oracle4.digibyte.io:12028', is_active: true, is_running: false, last_price: 0, status: 'stopped', selected_for_epoch: false },
+  { oracle_id: 4, pubkey: '03d4e5f6789012345678901234567890123456789012345678901234abcdef0123', endpoint: 'oracle5.digibyte.io:12028', is_active: true, is_running: true, last_price: 6030, status: 'running', selected_for_epoch: true },
+  { oracle_id: 5, pubkey: '02e5f6789012345678901234567890123456789012345678901234abcdef012345', endpoint: 'oracle6.digibyte.io:12028', is_active: true, is_running: false, last_price: 0, status: 'stopped', selected_for_epoch: false },
+  { oracle_id: 6, pubkey: '03f6789012345678901234567890123456789012345678901234abcdef01234567', endpoint: 'oracle7.digibyte.io:12028', is_active: true, is_running: true, last_price: 6027, status: 'running', selected_for_epoch: true },
+];
 
 /**
  * OraclesPage Component - DigiDollar Oracle Network Status (Testnet Only)
@@ -30,25 +52,73 @@ import { useNetwork } from '../context/NetworkContext';
 const OraclesPage = () => {
   const { theme: networkTheme, isTestnet } = useNetwork();
 
-  // Mock oracle data - will be replaced with real RPC data
-  const [oraclePrice, setOraclePrice] = useState({
-    price_micro_usd: 6029,
-    price_usd: 0.006029,
-    oracle_count: 7,
-    status: 'active',
-    last_update_height: 1234567,
-    is_stale: false
-  });
+  // State for oracle data
+  const [oraclePrice, setOraclePrice] = useState(DEFAULT_ORACLE_PRICE);
+  const [oracles, setOracles] = useState(DEFAULT_ORACLES);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
-  const [oracles, setOracles] = useState([
-    { oracle_id: 0, pubkey: '0398720f6d15252fb2c3501107d46129589d8ab56e0f967be2e470f40675eb7b57', endpoint: 'oracle1.digibyte.io:12028', is_active: true, is_running: true, last_price: 6029, status: 'running', selected_for_epoch: true },
-    { oracle_id: 1, pubkey: '02a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd', endpoint: 'oracle2.digibyte.io:12028', is_active: true, is_running: true, last_price: 6031, status: 'running', selected_for_epoch: true },
-    { oracle_id: 2, pubkey: '03b2c3d4e5f6789012345678901234567890123456789012345678901234abcdef', endpoint: 'oracle3.digibyte.io:12028', is_active: true, is_running: true, last_price: 6028, status: 'running', selected_for_epoch: true },
-    { oracle_id: 3, pubkey: '02c3d4e5f6789012345678901234567890123456789012345678901234abcdef01', endpoint: 'oracle4.digibyte.io:12028', is_active: true, is_running: false, last_price: 0, status: 'stopped', selected_for_epoch: false },
-    { oracle_id: 4, pubkey: '03d4e5f6789012345678901234567890123456789012345678901234abcdef0123', endpoint: 'oracle5.digibyte.io:12028', is_active: true, is_running: true, last_price: 6030, status: 'running', selected_for_epoch: true },
-    { oracle_id: 5, pubkey: '02e5f6789012345678901234567890123456789012345678901234abcdef012345', endpoint: 'oracle6.digibyte.io:12028', is_active: true, is_running: false, last_price: 0, status: 'stopped', selected_for_epoch: false },
-    { oracle_id: 6, pubkey: '03f6789012345678901234567890123456789012345678901234abcdef01234567', endpoint: 'oracle7.digibyte.io:12028', is_active: true, is_running: true, last_price: 6027, status: 'running', selected_for_epoch: true },
-  ]);
+  // Fetch oracle data from API
+  const fetchOracleData = useCallback(async () => {
+    try {
+      setError(null);
+
+      // Fetch oracle price and list in parallel
+      const [priceResponse, oraclesResponse] = await Promise.all([
+        fetch(`${config.apiBaseUrl}/api/testnet/getoracleprice`),
+        fetch(`${config.apiBaseUrl}/api/testnet/listoracles`)
+      ]);
+
+      if (!priceResponse.ok || !oraclesResponse.ok) {
+        throw new Error('Failed to fetch oracle data from API');
+      }
+
+      const priceData = await priceResponse.json();
+      const oraclesData = await oraclesResponse.json();
+
+      // Update state with real data
+      setOraclePrice({
+        price_micro_usd: priceData.price_micro_usd || 0,
+        price_usd: priceData.price_usd || 0,
+        oracle_count: priceData.oracle_count || 0,
+        status: priceData.status || 'unknown',
+        last_update_height: priceData.last_update_height || 0,
+        is_stale: priceData.is_stale || false
+      });
+
+      // Map oracle data to expected format
+      const mappedOracles = oraclesData.map(oracle => ({
+        oracle_id: oracle.oracle_id,
+        pubkey: oracle.pubkey,
+        endpoint: oracle.endpoint || `oracle${oracle.oracle_id}.digibyte.io:12028`,
+        is_active: oracle.is_active,
+        is_running: oracle.is_running,
+        last_price: oracle.last_price || 0,
+        status: oracle.status || (oracle.is_running ? 'running' : 'stopped'),
+        selected_for_epoch: oracle.selected_for_epoch || false
+      }));
+
+      setOracles(mappedOracles);
+      setLastUpdated(new Date());
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching oracle data:', err);
+      setError('Unable to fetch live oracle data. Showing cached/mock data.');
+      setLoading(false);
+      // Keep existing data as fallback
+    }
+  }, []);
+
+  // Initial data fetch and refresh interval
+  useEffect(() => {
+    fetchOracleData();
+
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchOracleData, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchOracleData]);
 
   // Format price from micro-USD to display format
   const formatPrice = (microUsd) => {
@@ -118,11 +188,37 @@ const OraclesPage = () => {
   // Current Price Card
   const CurrentPriceCard = () => (
     <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px', borderTop: `4px solid ${isTestnet ? '#4caf50' : '#0066cc'}` }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-        <AttachMoneyIcon sx={{ fontSize: '2rem', color: isTestnet ? '#2e7d32' : '#002352', mr: 1 }} />
-        <Typography variant="h5" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
-          Testnet Oracle Price
-        </Typography>
+      {/* Error Alert */}
+      {error && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <AttachMoneyIcon sx={{ fontSize: '2rem', color: isTestnet ? '#2e7d32' : '#002352', mr: 1 }} />
+          <Typography variant="h5" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
+            Testnet Oracle Price
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {lastUpdated && (
+            <Typography variant="caption" color="text.secondary">
+              Updated: {lastUpdated.toLocaleTimeString()}
+            </Typography>
+          )}
+          <Tooltip title="Refresh data">
+            <IconButton
+              onClick={fetchOracleData}
+              disabled={loading}
+              size="small"
+              sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}
+            >
+              {loading ? <CircularProgress size={20} /> : <RefreshIcon />}
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
 
       <Grid container spacing={3}>

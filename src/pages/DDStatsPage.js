@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container, Typography, Box, Grid, Card, CardContent,
-  Divider, Chip, LinearProgress, Paper, Alert, Tooltip
+  Divider, Chip, LinearProgress, Paper, Alert, Tooltip,
+  IconButton, CircularProgress
 } from '@mui/material';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import LockIcon from '@mui/icons-material/Lock';
@@ -14,7 +15,32 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import SecurityIcon from '@mui/icons-material/Security';
 import SpeedIcon from '@mui/icons-material/Speed';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { useNetwork } from '../context/NetworkContext';
+import config from '../config';
+
+// Default mock data for fallback when API is unavailable
+const DEFAULT_DD_STATS = {
+  health_percentage: 852,
+  health_status: 'healthy',
+  total_collateral_dgb: 14762213.45,
+  total_dd_supply: 1043006, // in cents ($10,430.06)
+  oracle_price_micro_usd: 6029,
+  oracle_price_cents: 1,
+  is_emergency: false,
+  active_positions: 47,
+  dca_tier: {
+    min_collateral: 150,
+    max_collateral: 999999,
+    multiplier: 1.0,
+    status: 'healthy'
+  },
+  err_tier: {
+    ratio: 1.0,
+    burn_multiplier: 1.0,
+    description: 'Normal (1.0x burn)'
+  }
+};
 
 /**
  * DDStatsPage Component - DigiDollar Network Statistics (Testnet Only)
@@ -28,28 +54,70 @@ import { useNetwork } from '../context/NetworkContext';
 const DDStatsPage = () => {
   const { theme: networkTheme, isTestnet } = useNetwork();
 
-  // Mock DigiDollar stats - will be replaced with real RPC data from getdigidollarstats
-  const [ddStats, setDdStats] = useState({
-    health_percentage: 852,
-    health_status: 'healthy',
-    total_collateral_dgb: 14762213.45,
-    total_dd_supply: 1043006, // in cents ($10,430.06)
-    oracle_price_micro_usd: 6029,
-    oracle_price_cents: 1,
-    is_emergency: false,
-    active_positions: 47,
-    dca_tier: {
-      min_collateral: 150,
-      max_collateral: 999999,
-      multiplier: 1.0,
-      status: 'healthy'
-    },
-    err_tier: {
-      ratio: 1.0,
-      burn_multiplier: 1.0,
-      description: 'Normal (1.0x burn)'
+  // State for DD stats
+  const [ddStats, setDdStats] = useState(DEFAULT_DD_STATS);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [oracleCount, setOracleCount] = useState(7); // Track active oracles separately
+
+  // Fetch DD stats from API
+  const fetchDDStats = useCallback(async () => {
+    try {
+      setError(null);
+
+      // Fetch DD stats and oracle data in parallel
+      const [statsResponse, oracleResponse] = await Promise.all([
+        fetch(`${config.apiBaseUrl}/api/testnet/getdigidollarstats`),
+        fetch(`${config.apiBaseUrl}/api/testnet/listoracles`)
+      ]);
+
+      if (!statsResponse.ok) {
+        throw new Error('Failed to fetch DigiDollar stats from API');
+      }
+
+      const statsData = await statsResponse.json();
+
+      // Map API response to expected format
+      setDdStats({
+        health_percentage: statsData.health_percentage || 0,
+        health_status: statsData.health_status || 'unknown',
+        total_collateral_dgb: (statsData.total_collateral_dgb || 0),
+        total_dd_supply: statsData.total_dd_supply || 0, // in cents
+        oracle_price_micro_usd: statsData.oracle_price_micro_usd || 0,
+        oracle_price_cents: statsData.oracle_price_cents || 0,
+        is_emergency: statsData.is_emergency || false,
+        active_positions: statsData.active_positions || 0,
+        dca_tier: statsData.dca_tier || DEFAULT_DD_STATS.dca_tier,
+        err_tier: statsData.err_tier || DEFAULT_DD_STATS.err_tier
+      });
+
+      // Get active oracle count
+      if (oracleResponse.ok) {
+        const oracleData = await oracleResponse.json();
+        const activeCount = oracleData.filter(o => o.is_running).length;
+        setOracleCount(activeCount > 0 ? activeCount : oracleData.length);
+      }
+
+      setLastUpdated(new Date());
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching DD stats:', err);
+      setError('Unable to fetch live DigiDollar stats. Showing cached/mock data.');
+      setLoading(false);
+      // Keep existing data as fallback
     }
-  });
+  }, []);
+
+  // Initial data fetch and refresh interval
+  useEffect(() => {
+    fetchDDStats();
+
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchDDStats, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchDDStats]);
 
   // Format helpers
   const formatDGB = (amount) => {
@@ -164,15 +232,39 @@ const DDStatsPage = () => {
             Network DigiDollar Status
           </Typography>
         </Box>
-        <Chip
-          label={ddStats.is_emergency ? 'EMERGENCY' : ddStats.health_status.toUpperCase()}
-          sx={{
-            backgroundColor: ddStats.is_emergency ? '#f44336' : healthColor,
-            color: 'white',
-            fontWeight: 'bold'
-          }}
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {lastUpdated && (
+            <Typography variant="caption" sx={{ opacity: 0.8 }}>
+              {lastUpdated.toLocaleTimeString()}
+            </Typography>
+          )}
+          <Tooltip title="Refresh data">
+            <IconButton
+              onClick={fetchDDStats}
+              disabled={loading}
+              size="small"
+              sx={{ color: 'white' }}
+            >
+              {loading ? <CircularProgress size={20} color="inherit" /> : <RefreshIcon />}
+            </IconButton>
+          </Tooltip>
+          <Chip
+            label={ddStats.is_emergency ? 'EMERGENCY' : ddStats.health_status.toUpperCase()}
+            sx={{
+              backgroundColor: ddStats.is_emergency ? '#f44336' : healthColor,
+              color: 'white',
+              fontWeight: 'bold'
+            }}
+          />
+        </Box>
       </Box>
+
+      {/* Error Alert */}
+      {error && (
+        <Alert severity="warning" sx={{ mx: 2, mt: 2 }}>
+          {error}
+        </Alert>
+      )}
 
       <CardContent sx={{ p: 3 }}>
         <Grid container spacing={4}>
@@ -439,7 +531,7 @@ const DDStatsPage = () => {
           <Card elevation={2} sx={{ p: 2, textAlign: 'center', borderRadius: '12px', borderTop: '4px solid #2e7d32', cursor: 'help' }}>
             <SpeedIcon sx={{ fontSize: '2.5rem', color: '#2e7d32', mb: 1 }} />
             <Typography variant="body2" color="text.secondary">Active Oracles</Typography>
-            <Typography variant="h5" fontWeight="bold">7</Typography>
+            <Typography variant="h5" fontWeight="bold" sx={{ color: '#2e7d32' }}>{oracleCount}</Typography>
           </Card>
         </Tooltip>
       </Grid>
@@ -464,8 +556,8 @@ const DDStatsPage = () => {
             </Typography>
           </Paper>
           <Typography variant="body2" color="text.secondary">
-            The system maintains stability through over-collateralization. At 852% collateralization,
-            DGB would need to drop 88% before the system becomes undercollateralized.
+            The system maintains stability through over-collateralization. At {ddStats.health_percentage}% collateralization,
+            DGB would need to drop {Math.max(0, Math.round((1 - 100/ddStats.health_percentage) * 100))}% before the system becomes undercollateralized.
           </Typography>
         </Grid>
         <Grid item xs={12} md={6}>
