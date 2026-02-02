@@ -29,6 +29,8 @@ const Header = () => {
     { text: 'Difficulties', path: '/testnet/difficulties' },
     { text: 'Hashrate', path: '/testnet/hashrate' },
     { text: 'Nodes', path: '/testnet/nodes' },
+    { text: 'Oracles', path: '/testnet/oracles' },
+    { text: 'DD Stats', path: '/testnet/ddstats' },
     { text: 'DigiDollar', path: '/testnet/digidollar' },
   ] : [
     { text: 'Home', path: '/' },
@@ -222,9 +224,9 @@ const Header = () => {
               sx={{
                 display: { xs: 'none', lg: 'flex' },
                 flexGrow: 1,
-                justifyContent: 'center',
+                justifyContent: 'flex-end',
                 alignItems: 'center',
-                gap: 0.5
+                gap: 0.25
               }}
             >
               {primaryMenuItems.map((item) => (
@@ -235,12 +237,13 @@ const Header = () => {
                   size="small"
                   sx={{
                     color: 'white',
-                    px: 1.5,
+                    px: 1,
                     py: 0.5,
-                    fontSize: '0.875rem',
+                    fontSize: '0.85rem',
                     textTransform: 'none',
                     fontWeight: '500',
                     whiteSpace: 'nowrap',
+                    minWidth: 'auto',
                     '&:hover': {
                       backgroundColor: 'rgba(255, 255, 255, 0.15)'
                     }
@@ -253,7 +256,7 @@ const Header = () => {
 
             {/* Desktop: Network switch button (testnet only shows this in primary bar) */}
             {isTestnet && (
-              <Box sx={{ display: { xs: 'none', lg: 'flex' } }}>
+              <Box sx={{ display: { xs: 'none', lg: 'flex' }, ml: 1 }}>
                 <Button
                   component={RouterLink}
                   to="/"
@@ -265,10 +268,10 @@ const Header = () => {
                     fontSize: '0.875rem',
                     textTransform: 'none',
                     fontWeight: 'bold',
-                    bgcolor: 'rgba(255, 255, 255, 0.2)',
+                    bgcolor: '#0066cc',
                     border: '1px solid rgba(255, 255, 255, 0.3)',
                     '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.3)'
+                      backgroundColor: '#0055aa'
                     }
                   }}
                 >
@@ -351,15 +354,16 @@ const Header = () => {
                   to="/testnet"
                   size="small"
                   sx={{
-                    color: '#4caf50',
+                    color: 'white',
                     fontSize: '0.8rem',
                     textTransform: 'none',
                     fontWeight: 'bold',
                     py: 0.5,
                     px: 2,
+                    bgcolor: '#4caf50',
                     border: '1px solid #4caf50',
                     '&:hover': {
-                      backgroundColor: 'rgba(76, 175, 80, 0.15)'
+                      backgroundColor: '#388e3c'
                     }
                   }}
                 >
