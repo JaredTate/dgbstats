@@ -11,8 +11,8 @@ import PoolsPage from './pages/PoolsPage';
 import SupplyPage from './pages/SupplyPage';
 import DownloadsPage from './pages/DownloadsPage';
 import NodesPage from './pages/NodesPage';
-import Header from './components/Header';
-import Footer from './components/Footer';
+import MainnetLayout from './components/MainnetLayout';
+import TestnetLayout from './components/TestnetLayout';
 import config from './config';
 import HashratePage from './pages/HashratePage';
 import TaprootPage from './pages/TaprootPage';
@@ -124,50 +124,58 @@ const App = () => {
       <CssBaseline />
       <BrowserRouter>
         <div className={styles.app}>
-          <Header />
-          <div className={styles.contentContainer}>
           <Routes>
-            <Route
-              index
-              path="/"
-              element={
-                <HomePage
-                  blockchainInfo={blockchainInfo}
-                  chainTxStats={chainTxStats}
-                  txOutsetInfo={txOutsetInfo}
-                  blockReward={blockReward}
-                  numberWithCommas={numberWithCommas}
-                  formatNumber={formatNumber}
-                />
-              }
-            />
-            <Route path="/blocks" element={<BlocksPage />} />
-            <Route path="/txs" element={<TxsPage />} />
-            <Route path="/downloads" element={<DownloadsPage />} />
-            <Route path="/roadmap" element={<RoadmapPage />} />
-            <Route path="/digidollar" element={<DigiDollarPage />} />
-            <Route path="/nodes" element={<NodesPage />} />
-            <Route path="/pools" element={<PoolsPage />} />
-            <Route
-              path="/supply"
-              element={<SupplyPage txOutsetInfo={txOutsetInfo} worldPopulation={worldPopulation} />}
-            />
-            <Route path="/algos" element={<AlgosPage />} />
-            <Route
-              path="/difficulties"
-              element={<DifficultiesPage difficultiesData={blockchainInfo?.difficulties} />}
-            />
-            <Route
-              path="/hashrate"
-              element={<HashratePage difficultiesData={blockchainInfo?.difficulties} />}
-            />
-            <Route path="/taproot" element={<TaprootPage />} />
+            {/* Mainnet routes */}
+            <Route element={<MainnetLayout />}>
+              <Route
+                index
+                path="/"
+                element={
+                  <HomePage
+                    numberWithCommas={numberWithCommas}
+                    formatNumber={formatNumber}
+                  />
+                }
+              />
+              <Route path="/blocks" element={<BlocksPage />} />
+              <Route path="/txs" element={<TxsPage />} />
+              <Route path="/downloads" element={<DownloadsPage />} />
+              <Route path="/roadmap" element={<RoadmapPage />} />
+              <Route path="/digidollar" element={<DigiDollarPage />} />
+              <Route path="/nodes" element={<NodesPage />} />
+              <Route path="/pools" element={<PoolsPage />} />
+              <Route path="/supply" element={<SupplyPage txOutsetInfo={txOutsetInfo} worldPopulation={worldPopulation} />} />
+              <Route path="/algos" element={<AlgosPage />} />
+              <Route path="/difficulties" element={<DifficultiesPage difficultiesData={blockchainInfo?.difficulties} />} />
+              <Route path="/hashrate" element={<HashratePage difficultiesData={blockchainInfo?.difficulties} />} />
+              <Route path="/taproot" element={<TaprootPage />} />
+            </Route>
+
+            {/* Testnet routes */}
+            <Route path="/testnet" element={<TestnetLayout />}>
+              <Route
+                index
+                element={
+                  <HomePage
+                    numberWithCommas={numberWithCommas}
+                    formatNumber={formatNumber}
+                  />
+                }
+              />
+              <Route path="blocks" element={<BlocksPage />} />
+              <Route path="txs" element={<TxsPage />} />
+              <Route path="supply" element={<SupplyPage worldPopulation={worldPopulation} />} />
+              <Route path="algos" element={<AlgosPage />} />
+              <Route path="difficulties" element={<DifficultiesPage />} />
+              <Route path="hashrate" element={<HashratePage />} />
+              <Route path="nodes" element={<NodesPage />} />
+              <Route path="digidollar" element={<DigiDollarPage />} />
+              <Route path="taproot" element={<TaprootPage />} />
+            </Route>
           </Routes>
         </div>
-        <Footer />
-      </div>
-    </BrowserRouter>
-  </ThemeProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 };
 

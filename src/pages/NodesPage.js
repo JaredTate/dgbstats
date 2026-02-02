@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { 
-  Typography, Container, Box, Card, CardContent, 
+import {
+  Typography, Container, Box, Card, CardContent,
   Divider, Grid, Paper,
   CircularProgress, Chip, Avatar
 } from '@mui/material';
@@ -14,7 +14,7 @@ import { feature } from 'topojson-client';
 import { useWidth } from '../utils';
 import world from '../countries-110m.json';
 import usStates from 'us-atlas/states-10m.json';
-import config from '../config';
+import { useNetwork } from '../context/NetworkContext';
 import RouterIcon from '@mui/icons-material/Router';
 import PublicIcon from '@mui/icons-material/Public';
 import FlagIcon from '@mui/icons-material/Flag';
@@ -26,19 +26,20 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 /**
  * Custom hook for fetching node geolocation data via WebSocket
  * Manages real-time connection to retrieve DigiByte network node information
- * 
+ *
+ * @param {string} wsBaseUrl - WebSocket base URL from network context
  * @returns {Object} - Contains nodesData array and loading state
  */
-const useFetchData = () => {
+const useFetchData = (wsBaseUrl) => {
   const [nodesData, setNodesData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const socket = new WebSocket(config.wsBaseUrl);
+    const socket = new WebSocket(wsBaseUrl);
 
     // WebSocket connection handlers
     socket.onopen = () => console.log('WebSocket connection established');
-    
+
     socket.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
@@ -59,14 +60,14 @@ const useFetchData = () => {
 
     // Cleanup WebSocket connection
     return () => socket.readyState === WebSocket.OPEN && socket.close();
-  }, []);
+  }, [wsBaseUrl]);
 
   return { nodesData, loading };
 };
 
 /**
  * NodesPage Component - Geographic visualization of DigiByte network nodes
- * 
+ *
  * This page displays a world map showing the global distribution of DigiByte nodes
  * based on data from the DigiHash mining pool's peers.dat file. Features include:
  * - Interactive world map with node locations
@@ -75,7 +76,8 @@ const useFetchData = () => {
  * - Educational information about blockchain nodes
  */
 const NodesPage = () => {
-  const { nodesData, loading } = useFetchData();
+  const { wsBaseUrl, getApiUrl, isTestnet } = useNetwork();
+  const { nodesData, loading } = useFetchData(wsBaseUrl);
 
   // Convert TopoJSON world data to GeoJSON for D3 rendering
   const worldData = useMemo(() => feature(world, world.objects.countries), []);

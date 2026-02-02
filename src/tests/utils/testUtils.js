@@ -3,6 +3,7 @@ import { render } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { vi } from 'vitest';
+import { NetworkProvider } from '../../context/NetworkContext';
 
 // Ensure window.matchMedia is available before Material-UI components load
 if (typeof window !== 'undefined' && !window.matchMedia) {
@@ -58,6 +59,7 @@ export function renderWithProviders(
   {
     route = '/',
     theme: customTheme = theme,
+    network = 'mainnet',
     ...renderOptions
   } = {}
 ) {
@@ -65,11 +67,13 @@ export function renderWithProviders(
 
   function Wrapper({ children }) {
     return (
-      <ThemeProvider theme={customTheme}>
-        <BrowserRouter>
-          {children}
-        </BrowserRouter>
-      </ThemeProvider>
+      <NetworkProvider network={network}>
+        <ThemeProvider theme={customTheme}>
+          <BrowserRouter>
+            {children}
+          </BrowserRouter>
+        </ThemeProvider>
+      </NetworkProvider>
     );
   }
 

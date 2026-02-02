@@ -27,7 +27,7 @@ import MemoryIcon from '@mui/icons-material/Memory';
 import InfoIcon from '@mui/icons-material/Info';
 import QueryBuilderIcon from '@mui/icons-material/QueryBuilder';
 import SecurityIcon from '@mui/icons-material/Security';
-import config from '../config';
+import { useNetwork } from '../context/NetworkContext';
 
 /**
  * Priority color mapping for transaction fee priorities
@@ -937,6 +937,7 @@ const PaginationControls = ({
  * @returns {JSX.Element} Complete transaction explorer with real-time updates
  */
 const TxsPage = () => {
+  const { wsBaseUrl, getApiUrl, isTestnet } = useNetwork();
 
   // Transaction data state management
   const [mempoolTransactions, setMempoolTransactions] = useState([]);
@@ -1043,7 +1044,7 @@ const TxsPage = () => {
     const connectWebSocket = () => {
       if (!isMounted) return;
 
-      const socket = new WebSocket(config.wsBaseUrl);
+      const socket = new WebSocket(wsBaseUrl);
       wsRef.current = socket;
 
       /**
@@ -1217,7 +1218,7 @@ const TxsPage = () => {
         wsRef.current.close();
       }
     };
-  }, []);
+  }, [wsBaseUrl]);
 
   /**
    * Pagination effect for mempool transactions

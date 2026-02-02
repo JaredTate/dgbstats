@@ -31,3 +31,4 @@ src/config.js
 
 server.js
 src/pages/TransactionsPage.js
+/.playwright-mcp

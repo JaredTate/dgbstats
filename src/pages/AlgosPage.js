@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Container, Typography, Box, Card, CardContent, 
-  Divider, useTheme, useMediaQuery 
+import {
+  Container, Typography, Box, Card, CardContent,
+  Divider, useTheme, useMediaQuery
 } from '@mui/material';
 import PieChartIcon from '@mui/icons-material/PieChart';
 import * as d3 from 'd3';
-import config from '../config';
+import { useNetwork } from '../context/NetworkContext';
 
 /**
  * Algorithm color mapping for consistent visual identification
@@ -181,15 +181,18 @@ const MultiAlgoInfoSection = () => (
  * @returns {JSX.Element} Complete algorithms page with real-time pie chart
  */
 const AlgosPage = () => {
+  // Network context for network-aware data fetching
+  const { wsBaseUrl, isTestnet } = useNetwork();
+
   // Block data state
   const [blocks, setBlocks] = useState([]);
-  
+
   // Loading state
   const [loading, setLoading] = useState(true);
-  
+
   // D3.js SVG reference for pie chart
   const svgRef = useRef();
-  
+
   // Responsive design hooks
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -202,11 +205,11 @@ const AlgosPage = () => {
    * to ensure the page displays data even if WebSocket connection fails
    */
   useEffect(() => {
-    console.log(`Connecting to WebSocket at: ${config.wsBaseUrl}`);
+    console.log(`Connecting to WebSocket at: ${wsBaseUrl}`);
     let socket;
-    
+
     try {
-      socket = new WebSocket(config.wsBaseUrl);
+      socket = new WebSocket(wsBaseUrl);
       
       /**
        * WebSocket connection opened successfully
@@ -310,7 +313,7 @@ const AlgosPage = () => {
         socket.close();
       }
     };
-  }, [loading]);
+  }, [loading, wsBaseUrl]);
 
 
   // Update the pie chart whenever the blocks state changes

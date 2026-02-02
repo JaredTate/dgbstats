@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Chart, registerables } from 'chart.js';
 import 'chartjs-adapter-luxon';
 import { LineController } from 'chart.js';
-import { 
-  Typography, Container, Box, Card, CardContent, 
-  Divider, Grid, useTheme, useMediaQuery 
+import {
+  Typography, Container, Box, Card, CardContent,
+  Divider, Grid, useTheme, useMediaQuery
 } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import config from '../config';
+import { useNetwork } from '../context/NetworkContext';
 
 Chart.register(...registerables);
 Chart.register(LineController);
@@ -224,26 +224,32 @@ const DigiShieldInfoSection = () => (
 
 /**
  * DifficultiesPage component - Real-time DigiByte algorithm difficulty tracking
- * 
+ *
  * This page displays real-time difficulty charts for all five DigiByte mining algorithms:
  * SHA256D, Scrypt, Skein, Qubit, and Odo. Each algorithm uses DigiShield technology
  * for independent, real-time difficulty adjustment.
- * 
+ *
  * Features:
  * - WebSocket connection for real-time difficulty updates
  * - Chart.js line charts showing difficulty trends over recent blocks
  * - Individual cards for each algorithm with color-coded styling
  * - Educational content about DigiShield technology
  * - Responsive design for mobile and desktop viewing
- * 
+ * - Network-aware data fetching (mainnet/testnet support)
+ *
  * @component
+ * @param {Object} props - Component props
+ * @param {Object} [props.difficultiesData] - Pre-loaded difficulties data (optional)
  * @returns {JSX.Element} Complete difficulties page with real-time charts
  */
-const DifficultiesPage = () => {
+const DifficultiesPage = ({ difficultiesData }) => {
   // Get theme for responsive design
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
+
+  // Network context for network-aware data fetching
+  const { getApiUrl, isTestnet, wsBaseUrl } = useNetwork();
+
   // Chart management references
   const chartRefs = useRef([]);
   const chartInstances = useRef([]);
@@ -252,20 +258,44 @@ const DifficultiesPage = () => {
   const [difficulties, setDifficulties] = useState(
     algoNames.reduce((acc, algo) => ({ ...acc, [algo]: [] }), {})
   );
-  
+
+  // Local state for fetched difficulties when prop is not provided
+  const [localDifficulties, setLocalDifficulties] = useState(null);
+
   // Loading state management
   const [isLoading, setIsLoading] = useState(true);
 
   /**
+   * Fetch difficulties data when prop is not provided (e.g., for testnet)
+   */
+  useEffect(() => {
+    if (!difficultiesData) {
+      const fetchData = async () => {
+        try {
+          const response = await fetch(getApiUrl('/getblockchaininfo'));
+          const data = await response.json();
+          setLocalDifficulties(data.difficulties);
+        } catch (error) {
+          console.error('Error fetching difficulties:', error);
+        }
+      };
+      fetchData();
+    }
+  }, [difficultiesData, getApiUrl]);
+
+  // Use the prop if provided, otherwise use local state
+  const currentDifficulties = difficultiesData || localDifficulties;
+
+  /**
    * WebSocket connection effect for real-time difficulty updates
    * Handles initial data load and real-time block updates
-   * 
+   *
    * Message types handled:
    * - 'recentBlocks': Initial load of last 240 blocks with difficulty data
    * - 'newBlock': Real-time updates when new blocks are mined
    */
   useEffect(() => {
-    const socket = new WebSocket(config.wsBaseUrl);
+    const socket = new WebSocket(wsBaseUrl);
 
     /**
      * WebSocket connection opened successfully
@@ -324,7 +354,7 @@ const DifficultiesPage = () => {
     return () => {
       socket.close();
     };
-  }, []);
+  }, [wsBaseUrl]);
 
   /**
    * Chart rendering and updating effect

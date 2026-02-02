@@ -1,22 +1,36 @@
 import React, { useState } from 'react';
-import { 
-  AppBar, Toolbar, Typography, Box, IconButton, 
-  useMediaQuery, Button, Container, Drawer, List, ListItem, ListItemText
+import {
+  AppBar, Toolbar, Typography, Box, IconButton,
+  Button, Container, Drawer, List, ListItem, ListItemText, Chip, Divider
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
+import GitHubIcon from '@mui/icons-material/GitHub';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { Link as RouterLink } from 'react-router-dom';
-import { useTheme } from '@mui/material/styles';
+import { useNetwork } from '../context/NetworkContext';
 
 const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const network = useNetwork();
+  const isTestnet = network?.isTestnet || false;
+  const networkTheme = network?.theme || { gradient: 'linear-gradient(135deg, #002352 0%, #0066cc 100%)' };
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
-  const menuItems = [
+  // Primary navigation items (internal site links)
+  const primaryMenuItems = isTestnet ? [
+    { text: 'Home', path: '/testnet' },
+    { text: 'Blocks', path: '/testnet/blocks' },
+    { text: 'Txs', path: '/testnet/txs' },
+    { text: 'Supply', path: '/testnet/supply' },
+    { text: 'Algos', path: '/testnet/algos' },
+    { text: 'Difficulties', path: '/testnet/difficulties' },
+    { text: 'Hashrate', path: '/testnet/hashrate' },
+    { text: 'Nodes', path: '/testnet/nodes' },
+    { text: 'DigiDollar', path: '/testnet/digidollar' },
+  ] : [
     { text: 'Home', path: '/' },
     { text: 'Blocks', path: '/blocks' },
     { text: 'Txs', path: '/txs' },
@@ -29,21 +43,29 @@ const Header = () => {
     { text: 'Downloads', path: '/downloads' },
     { text: 'Roadmap', path: '/roadmap' },
     { text: 'DigiDollar', path: '/digidollar' },
-    { text: 'DigiHash', path: 'https://digihash.digibyte.io/', external: true },
-    { text: 'DigiByte.org', path: 'https://digibyte.org', external: true },
   ];
 
+  // External links (mainnet only)
+  const externalLinks = [
+    { text: 'DigiExplorer', path: 'https://digiexplorer.info/', icon: null },
+    { text: 'DigiHash', path: 'https://digihash.digibyte.io/', icon: null },
+    { text: 'DigiByte.org', path: 'https://digibyte.org', icon: null },
+    { text: 'GitHub', path: 'https://github.com/DigiByte-Core/digibyte', icon: <GitHubIcon sx={{ fontSize: 16, mr: 0.5 }} /> },
+  ];
+
+  // Mobile drawer content
   const drawer = (
-    <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center' }}>
-      <Box sx={{ 
-        py: 2, 
-        bgcolor: '#002352',
+    <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center', width: 280 }}>
+      {/* Drawer header */}
+      <Box sx={{
+        py: 2,
+        bgcolor: network?.theme?.primary || '#002352',
         color: 'white',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center' 
+        justifyContent: 'center'
       }}>
-        <Box 
+        <Box
           component="img"
           src="/logo.png"
           alt="DigiByte Logo"
@@ -52,132 +74,216 @@ const Header = () => {
         <Typography variant="h6" fontWeight="bold">
           DigiByte Stats
         </Typography>
+        {isTestnet && (
+          <Chip
+            label="TESTNET"
+            size="small"
+            sx={{
+              bgcolor: '#4caf50',
+              color: 'white',
+              fontWeight: 'bold',
+              ml: 1
+            }}
+          />
+        )}
       </Box>
+
+      {/* Primary navigation */}
       <List>
-        {menuItems.map((item) => (
-          <ListItem 
-            button 
-            component={item.external ? 'a' : RouterLink} 
-            to={!item.external ? item.path : undefined}
-            href={item.external ? item.path : undefined}
-            target={item.external ? '_blank' : undefined}
-            rel={item.external ? 'noopener noreferrer' : undefined}
+        {primaryMenuItems.map((item) => (
+          <ListItem
+            button
+            component={RouterLink}
+            to={item.path}
             key={item.text}
-            sx={{ 
-              '&:hover': { 
-                bgcolor: '#e3f2fd'
-              }
+            sx={{
+              '&:hover': { bgcolor: '#e3f2fd' }
             }}
           >
             <ListItemText primary={item.text} />
           </ListItem>
         ))}
       </List>
+
+      {/* External links section (mainnet only) */}
+      {!isTestnet && (
+        <>
+          <Divider />
+          <Typography variant="caption" sx={{ display: 'block', mt: 2, mb: 1, color: 'text.secondary' }}>
+            External Resources
+          </Typography>
+          <List>
+            {externalLinks.map((item) => (
+              <ListItem
+                button
+                component="a"
+                href={item.path}
+                target="_blank"
+                rel="noopener noreferrer"
+                key={item.text}
+                sx={{
+                  '&:hover': { bgcolor: '#e3f2fd' }
+                }}
+              >
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      {item.icon}
+                      {item.text}
+                      <OpenInNewIcon sx={{ fontSize: 14, ml: 0.5, color: 'text.secondary' }} />
+                    </Box>
+                  }
+                />
+              </ListItem>
+            ))}
+          </List>
+        </>
+      )}
+
+      {/* Network switch */}
+      <Divider />
+      <List>
+        <ListItem
+          button
+          component={RouterLink}
+          to={isTestnet ? '/' : '/testnet'}
+          sx={{
+            bgcolor: isTestnet ? 'rgba(0, 35, 82, 0.1)' : 'rgba(46, 125, 50, 0.1)',
+            '&:hover': { bgcolor: isTestnet ? 'rgba(0, 35, 82, 0.2)' : 'rgba(46, 125, 50, 0.2)' }
+          }}
+        >
+          <ListItemText
+            primary={isTestnet ? '← Switch to Mainnet' : 'Switch to Testnet →'}
+            sx={{ textAlign: 'center', fontWeight: 'bold' }}
+          />
+        </ListItem>
+      </List>
     </Box>
   );
 
   return (
-    <AppBar 
-      position="sticky" 
-      sx={{ 
-        background: 'linear-gradient(135deg, #002352 0%, #0066cc 100%)',
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-      }}
-    >
-      <Container maxWidth="lg">
-        <Toolbar disableGutters>
-          <Box 
-            component={RouterLink} 
-            to="/"
-            sx={{ 
-              display: 'flex', 
-              alignItems: 'center',
-              textDecoration: 'none', 
-              color: 'white',
-              mr: { xs: 1, md: 2 } // Reduced right margin
-            }}
-          >
-            <Box 
-              component="img"
-              src="/logo.png"
-              alt="DigiByte Logo"
-              sx={{ height: 40, mr: 1 }}
-            />
-            <Typography 
-              variant="h6" 
-              noWrap 
-              component="div"
-              sx={{ 
-                fontWeight: 'bold',
-                flexGrow: { xs: 1, md: 0 },
-                fontSize: { xs: '1.1rem', md: '1.25rem' } // Slightly smaller on mobile for space
+    <Box sx={{ flexGrow: 1 }}>
+      {/* Primary Navigation Bar */}
+      <AppBar
+        position="sticky"
+        sx={{
+          background: isTestnet ? networkTheme.gradient : '#0066cc',
+          boxShadow: 'none'
+        }}
+      >
+        <Container maxWidth="lg">
+          <Toolbar disableGutters sx={{ minHeight: { xs: 56, md: 64 } }}>
+            {/* Logo and title */}
+            <Box
+              component={RouterLink}
+              to={isTestnet ? '/testnet' : '/'}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                textDecoration: 'none',
+                color: 'white',
+                mr: 3
               }}
             >
-              DigiByte Stats
-            </Typography>
-          </Box>
-
-          {/* Spacer to push menu items to the right */}
-          <Box sx={{ flexGrow: 1 }} />
-
-          {/* Desktop menu - right aligned with proper spacing */}
-          <Box 
-            sx={{ 
-              display: { xs: 'none', md: 'flex' }, 
-              overflowX: 'auto',
-              flexWrap: 'nowrap',
-              '&::-webkit-scrollbar': {
-                display: 'none'
-              },
-              msOverflowStyle: 'none',
-              scrollbarWidth: 'none',
-              justifyContent: 'flex-end', // Right align menu items
-              alignItems: 'center',
-            }}
-          >
-            {menuItems.map((item) => (
-              <Button
-                key={item.text}
-                component={item.external ? 'a' : RouterLink}
-                to={!item.external ? item.path : undefined}
-                href={item.external ? item.path : undefined}
-                target={item.external ? '_blank' : undefined}
-                rel={item.external ? 'noopener noreferrer' : undefined}
-                size="small"
+              <Box
+                component="img"
+                src="/logo.png"
+                alt="DigiByte Logo"
+                sx={{ height: 36, mr: 1 }}
+              />
+              <Typography
+                variant="h6"
+                noWrap
+                component="div"
                 sx={{
-                  color: 'white',
-                  px: 0.75, // Reduce horizontal padding for more compact layout
-                  py: 0.5,
-                  minWidth: 'auto',
-                  fontSize: '0.9rem', // Slightly smaller font
-                  textTransform: 'none',
-                  fontWeight: '500',
-                  whiteSpace: 'nowrap',
-                  mx: 0.1, // Very minimal margin between items
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.2)'
-                  },
-                  '&.active': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    fontWeight: 'bold'
-                  }
+                  fontWeight: 'bold',
+                  fontSize: { xs: '1rem', md: '1.2rem' }
                 }}
               >
-                {item.text}
-              </Button>
-            ))}
-          </Box>
+                DigiByte Stats
+              </Typography>
+              {isTestnet && (
+                <Chip
+                  label="TESTNET"
+                  size="small"
+                  sx={{
+                    bgcolor: '#4caf50',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    ml: 1,
+                    height: 24
+                  }}
+                />
+              )}
+            </Box>
 
-          {/* Mobile menu button */}
-          {isMobile && (
-            <div>
+            {/* Desktop primary navigation */}
+            <Box
+              sx={{
+                display: { xs: 'none', lg: 'flex' },
+                flexGrow: 1,
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 0.5
+              }}
+            >
+              {primaryMenuItems.map((item) => (
+                <Button
+                  key={item.text}
+                  component={RouterLink}
+                  to={item.path}
+                  size="small"
+                  sx={{
+                    color: 'white',
+                    px: 1.5,
+                    py: 0.5,
+                    fontSize: '0.875rem',
+                    textTransform: 'none',
+                    fontWeight: '500',
+                    whiteSpace: 'nowrap',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.15)'
+                    }
+                  }}
+                >
+                  {item.text}
+                </Button>
+              ))}
+            </Box>
+
+            {/* Desktop: Network switch button (testnet only shows this in primary bar) */}
+            {isTestnet && (
+              <Box sx={{ display: { xs: 'none', lg: 'flex' } }}>
+                <Button
+                  component={RouterLink}
+                  to="/"
+                  size="small"
+                  sx={{
+                    color: 'white',
+                    px: 2,
+                    py: 0.5,
+                    fontSize: '0.875rem',
+                    textTransform: 'none',
+                    fontWeight: 'bold',
+                    bgcolor: 'rgba(255, 255, 255, 0.2)',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.3)'
+                    }
+                  }}
+                >
+                  Mainnet →
+                </Button>
+              </Box>
+            )}
+
+            {/* Mobile menu button */}
+            <Box sx={{ display: { xs: 'flex', lg: 'none' }, ml: 'auto' }}>
               <IconButton
                 size="large"
-                edge="end"
                 color="inherit"
                 aria-label="menu"
                 onClick={handleDrawerToggle}
-                sx={{ ml: 2 }} // Moderate left margin for mobile menu button
               >
                 <MenuIcon />
               </IconButton>
@@ -188,11 +294,82 @@ const Header = () => {
               >
                 {drawer}
               </Drawer>
-            </div>
-          )}
-        </Toolbar>
-      </Container>
-    </AppBar>
+            </Box>
+          </Toolbar>
+        </Container>
+      </AppBar>
+
+      {/* Secondary Bar - External Links (Mainnet only, Desktop only) */}
+      {!isTestnet && (
+        <Box
+          sx={{
+            display: { xs: 'none', lg: 'block' },
+            bgcolor: '#002352'
+          }}
+        >
+          <Container maxWidth="lg">
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                py: 0.75
+              }}
+            >
+                {externalLinks.map((item) => (
+                  <Button
+                    key={item.text}
+                    component="a"
+                    href={item.path}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    size="small"
+                    startIcon={item.icon}
+                    endIcon={<OpenInNewIcon sx={{ fontSize: 12 }} />}
+                    sx={{
+                      color: 'white',
+                      fontSize: '0.8rem',
+                      textTransform: 'none',
+                      py: 0.5,
+                      px: 1.5,
+                      minWidth: 'auto',
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                      }
+                    }}
+                  >
+                    {item.text}
+                  </Button>
+                ))}
+
+                {/* Divider */}
+                <Box sx={{ width: '1px', height: 20, bgcolor: 'rgba(255, 255, 255, 0.3)', mx: 2 }} />
+
+                {/* Testnet switch */}
+                <Button
+                  component={RouterLink}
+                  to="/testnet"
+                  size="small"
+                  sx={{
+                    color: '#4caf50',
+                    fontSize: '0.8rem',
+                    textTransform: 'none',
+                    fontWeight: 'bold',
+                    py: 0.5,
+                    px: 2,
+                    border: '1px solid #4caf50',
+                    '&:hover': {
+                      backgroundColor: 'rgba(76, 175, 80, 0.15)'
+                    }
+                  }}
+                >
+                  Testnet →
+                </Button>
+            </Box>
+          </Container>
+        </Box>
+      )}
+    </Box>
   );
 };
 

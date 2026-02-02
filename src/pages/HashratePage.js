@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Container, Typography, Grid, Box, Card, CardContent, 
-  Divider, useTheme, useMediaQuery, Avatar 
+import {
+  Container, Typography, Grid, Box, Card, CardContent,
+  Divider, useTheme, useMediaQuery, Avatar
 } from '@mui/material';
 import SpeedIcon from '@mui/icons-material/Speed';
 import TimerIcon from '@mui/icons-material/Timer';
 import LanguageIcon from '@mui/icons-material/Language';
-import config from '../config';
+import { useNetwork } from '../context/NetworkContext';
 
 /**
  * DigiByte's five mining algorithms
@@ -38,7 +38,10 @@ const algoColors = {
  * The hashrate is calculated using block data from the last hour to provide
  * accurate real-time measurements of network computational power.
  */
-const HashratePage = () => {
+const HashratePage = ({ difficultiesData }) => {
+  // Network context for network-aware data fetching
+  const { getApiUrl, isTestnet, wsBaseUrl } = useNetwork();
+
   // State management for hashrate calculations and statistics
   const [hashrates, setHashrates] = useState(
     algoNames.reduce((acc, algo) => ({ ...acc, [algo]: 0 }), {})
@@ -53,20 +56,44 @@ const HashratePage = () => {
   const [totalBlocksInLastHour, setTotalBlocksInLastHour] = useState(0);
   const [totalHashrate, setTotalHashrate] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  
+
+  // Local state for difficulties when prop is not provided (e.g., testnet)
+  const [localDifficulties, setLocalDifficulties] = useState(null);
+
   // Ref to store blocks data for calculations
   const blocksRef = useRef([]);
-  
+
   // Responsive design hooks
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  /**
+   * Fetch difficulties data when not provided as prop (e.g., for testnet)
+   */
+  useEffect(() => {
+    if (!difficultiesData) {
+      const fetchData = async () => {
+        try {
+          const response = await fetch(getApiUrl('/getblockchaininfo'));
+          const data = await response.json();
+          setLocalDifficulties(data.difficulties);
+        } catch (error) {
+          console.error('Error fetching difficulties:', error);
+        }
+      };
+      fetchData();
+    }
+  }, [difficultiesData, getApiUrl]);
+
+  // Use the prop if provided, otherwise use local state
+  const difficulties = difficultiesData || localDifficulties;
 
   /**
    * WebSocket connection management for real-time block data
    * Handles initial data load and real-time updates for hashrate calculations
    */
   useEffect(() => {
-    const socket = new WebSocket(config.wsBaseUrl);
+    const socket = new WebSocket(wsBaseUrl);
 
     // Connection established
     socket.onopen = () => {
@@ -101,7 +128,7 @@ const HashratePage = () => {
     return () => {
       socket.close();
     };
-  }, []);
+  }, [wsBaseUrl]);
 
   /**
    * Calculate hashrates and block time statistics for all algorithms

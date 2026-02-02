@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Container, Typography, Grid, Button, Card, CardContent, 
+import {
+  Container, Typography, Grid, Button, Card, CardContent,
   Box, Divider, Chip, useMediaQuery, useTheme, Pagination
 } from '@mui/material';
 import BlockIcon from '@mui/icons-material/ViewCompact';
@@ -10,7 +10,7 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import PoolIcon from '@mui/icons-material/Waves';
 import TransactionsIcon from '@mui/icons-material/Sync';
 import VerifiedIcon from '@mui/icons-material/Verified';
-import config from '../config';
+import { useNetwork } from '../context/NetworkContext';
 
 /**
  * Algorithm color mapping for consistent visual identification
@@ -28,9 +28,12 @@ const ALGO_COLORS = {
 /**
  * Hero section component for the BlocksPage
  * Displays title, description, and real-time block information
+ * @param {Object} props - Component props
+ * @param {boolean} props.isTestnet - Whether the current network is testnet
+ * @param {Object} props.networkTheme - Theme colors for the current network
  * @returns {JSX.Element} Hero section with page title and description
  */
-const HeroSection = () => (
+const HeroSection = ({ isTestnet, networkTheme }) => (
   <Card
     elevation={2}
     sx={{
@@ -39,18 +42,30 @@ const HeroSection = () => (
       mb: 4,
       overflow: 'hidden',
       backgroundImage: 'linear-gradient(135deg, #f8f9fa 0%, #e8eef7 100%)',
-      border: '1px solid rgba(0, 35, 82, 0.1)'
+      border: `1px solid ${isTestnet ? 'rgba(230, 81, 0, 0.2)' : 'rgba(0, 35, 82, 0.1)'}`
     }}
   >
     <CardContent sx={{ py: 4, textAlign: 'center' }}>
+      {isTestnet && (
+        <Chip
+          label="TESTNET"
+          sx={{
+            mb: 2,
+            bgcolor: networkTheme?.primary || '#e65100',
+            color: 'white',
+            fontWeight: 'bold',
+            fontSize: '0.85rem'
+          }}
+        />
+      )}
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
-        <BlockIcon sx={{ fontSize: '2.5rem', color: '#002352', mr: 2 }} />
-        <Typography 
-          variant="h2" 
-          component="h1" 
-          fontWeight="800" 
-          sx={{ 
-            color: '#002352',
+        <BlockIcon sx={{ fontSize: '2.5rem', color: networkTheme?.primary || '#002352', mr: 2 }} />
+        <Typography
+          variant="h2"
+          component="h1"
+          fontWeight="800"
+          sx={{
+            color: networkTheme?.primary || '#002352',
             letterSpacing: '0.5px',
             fontSize: { xs: '1.8rem', sm: '2.3rem', md: '2.8rem' }
           }}
@@ -58,14 +73,14 @@ const HeroSection = () => (
           Realtime DigiByte Blocks
         </Typography>
       </Box>
-      
-      <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 3, borderColor: '#0066cc', borderWidth: 2 }} />
-      
-      <Typography 
-        variant="subtitle1" 
-        component="p" 
-        sx={{ 
-          maxWidth: '800px', 
+
+      <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 3, borderColor: networkTheme?.secondary || '#0066cc', borderWidth: 2 }} />
+
+      <Typography
+        variant="subtitle1"
+        component="p"
+        sx={{
+          maxWidth: '800px',
           mx: 'auto',
           color: '#555',
           fontSize: '1.1rem'
@@ -372,16 +387,19 @@ const PaginationControls = ({
  * @returns {JSX.Element} Complete blocks page with real-time updates and pagination
  */
 const BlocksPage = () => {
+  // Network context for network-aware data fetching
+  const { wsBaseUrl, isTestnet, theme: networkTheme } = useNetwork();
+
   // Block data state management
   const [blocks, setBlocks] = useState([]);
   const [displayedBlocks, setDisplayedBlocks] = useState([]);
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(0);
-  
+
   // Loading state
   const [loading, setLoading] = useState(true);
-  
+
   // Responsive design hooks
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -390,13 +408,13 @@ const BlocksPage = () => {
   /**
    * WebSocket connection effect for real-time block updates
    * Handles initial data load and real-time new block notifications
-   * 
+   *
    * Message types handled:
    * - 'recentBlocks': Initial load of recent blocks (typically last 20-50 blocks)
    * - 'newBlock': Real-time updates when new blocks are mined
    */
   useEffect(() => {
-    const socket = new WebSocket(config.wsBaseUrl);
+    const socket = new WebSocket(wsBaseUrl);
 
     /**
      * WebSocket connection opened successfully
@@ -445,7 +463,7 @@ const BlocksPage = () => {
     return () => {
       socket.close();
     };
-  }, []);
+  }, [wsBaseUrl]);
 
   /**
    * Pagination effect - updates displayed blocks based on current page
@@ -495,7 +513,7 @@ const BlocksPage = () => {
       }}
     >
       <Container maxWidth="lg">
-        <HeroSection />
+        <HeroSection isTestnet={isTestnet} networkTheme={networkTheme} />
 
         {loading ? (
           <LoadingCard />

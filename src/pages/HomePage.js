@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Container, Typography, Box, Grid, Card, CardContent, 
+import {
+  Container, Typography, Box, Grid, Card, CardContent,
   Divider, Avatar
 } from '@mui/material';
 import BlockIcon from '@mui/icons-material/ViewCompact';
@@ -12,7 +12,7 @@ import RewardIcon from '@mui/icons-material/EmojiEvents';
 import SpeedIcon from '@mui/icons-material/Speed';
 import UpdateIcon from '@mui/icons-material/Update';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
-import config from '../config';
+import { useNetwork } from '../context/NetworkContext';
 
 /**
  * HomePage Component - Main dashboard displaying DigiByte blockchain statistics
@@ -32,12 +32,15 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
   const [blockReward, setBlockReward] = useState(null);
   const [txOutsetInfoLoading, setTxOutsetInfoLoading] = useState(true);
 
+  // Network context for network-aware data fetching
+  const { wsBaseUrl, isTestnet, theme: networkTheme } = useNetwork();
+
   /**
    * WebSocket connection setup for real-time data updates
    * Establishes connection on component mount and handles incoming data
    */
   useEffect(() => {
-    const socket = new WebSocket(config.wsBaseUrl);
+    const socket = new WebSocket(wsBaseUrl);
 
     // WebSocket event handlers
     socket.onopen = () => {
@@ -66,7 +69,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
     return () => {
       socket.close();
     };
-  }, []);
+  }, [wsBaseUrl]);
 
   /**
    * Reusable StatCard component for displaying blockchain statistics
@@ -187,64 +190,110 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
    * SoftforksCard - Specialized card for displaying active blockchain softforks
    * Shows all currently active softforks and their implementation status
    */
-  const SoftforksCard = () => (
-    <Card 
-      elevation={3} 
-      sx={{
-        height: '100%',
-        transition: 'transform 0.3s, box-shadow 0.3s',
-        '&:hover': {
-          transform: 'translateY(-5px)',
-          boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
-        },
-        borderTop: '4px solid #3949ab',
-        borderRadius: '8px'
-      }}
-    >
-      <CardContent>
-        {/* Card header */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-          <Typography variant="h6" fontWeight="bold" color="text.primary">
-            Active Softforks
+  const SoftforksCard = () => {
+    // Debug logging
+    if (blockchainInfo) {
+      console.log('SoftforksCard - blockchainInfo.softforks:', blockchainInfo.softforks);
+    }
+
+    // Get softforks from blockchainInfo with fallback handling
+    const getSoftforks = () => {
+      if (!blockchainInfo) return null;
+
+      // Check for softforks in different possible locations
+      const softforks = blockchainInfo.softforks || blockchainInfo.bip9_softforks || blockchainInfo.deployments;
+
+      if (!softforks || Object.keys(softforks).length === 0) {
+        return null;
+      }
+
+      return softforks;
+    };
+
+    // Render softfork entry based on its structure
+    const renderSoftforkEntry = (key, value) => {
+      // Handle different value types (object with type property, or string/boolean)
+      let displayValue = 'unknown';
+      if (typeof value === 'object' && value !== null) {
+        if (value.type) {
+          displayValue = value.type;
+        } else if (value.status) {
+          displayValue = value.status;
+        } else if (value.active !== undefined) {
+          displayValue = value.active ? 'active' : 'inactive';
+        }
+      } else {
+        displayValue = String(value);
+      }
+
+      return (
+        <Box
+          key={key}
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            mb: 0.5
+          }}
+        >
+          <Typography variant="body2" fontWeight="bold">
+            {key}:
           </Typography>
-          <Avatar sx={{ bgcolor: '#3949ab' }}>
-            <DoneAllIcon />
-          </Avatar>
+          <Typography variant="body2">
+            {displayValue}
+          </Typography>
         </Box>
-        
-        {/* Softforks list */}
-        {blockchainInfo && blockchainInfo.softforks ? (
-          <Box>
-            {Object.entries(blockchainInfo.softforks).map(([key, value]) => (
-              <Box 
-                key={key} 
-                sx={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between',
-                  mb: 0.5
-                }}
-              >
-                <Typography variant="body2" fontWeight="bold">
-                  {key}:
-                </Typography>
-                <Typography variant="body2">
-                  {value.type}
-                </Typography>
-              </Box>
-            ))}
+      );
+    };
+
+    const softforks = getSoftforks();
+
+    return (
+      <Card
+        elevation={3}
+        sx={{
+          height: '100%',
+          transition: 'transform 0.3s, box-shadow 0.3s',
+          '&:hover': {
+            transform: 'translateY(-5px)',
+            boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
+          },
+          borderTop: '4px solid #3949ab',
+          borderRadius: '8px'
+        }}
+      >
+        <CardContent>
+          {/* Card header */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+            <Typography variant="h6" fontWeight="bold" color="text.primary">
+              Active Softforks
+            </Typography>
+            <Avatar sx={{ bgcolor: '#3949ab' }}>
+              <DoneAllIcon />
+            </Avatar>
           </Box>
-        ) : (
-          <Typography variant="h5">Loading...</Typography>
-        )}
-        
-        <Divider sx={{ my: 1 }} />
-        
-        <Typography variant="body2" color="text.secondary">
-          Active on chain softforks.
-        </Typography>
-      </CardContent>
-    </Card>
-  );
+
+          {/* Softforks list */}
+          {softforks ? (
+            <Box>
+              {Object.entries(softforks).map(([key, value]) => renderSoftforkEntry(key, value))}
+            </Box>
+          ) : blockchainInfo ? (
+            <Typography variant="body2" color="text.secondary">
+              No softfork data available
+            </Typography>
+          ) : (
+            <Typography variant="h5">Loading...</Typography>
+          )}
+
+          <Divider sx={{ my: 1 }} />
+
+          <Typography variant="body2" color="text.secondary">
+            Active on chain softforks.
+          </Typography>
+        </CardContent>
+      </Card>
+    );
+  };
 
   /**
    * HeroSection - Top banner with main title and description
@@ -259,28 +308,28 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
         mb: 5,
         overflow: 'hidden',
         backgroundImage: 'linear-gradient(135deg, #f8f9fa 0%, #e8eef7 100%)',
-        border: '1px solid rgba(0, 35, 82, 0.1)'
+        border: `1px solid ${isTestnet ? `${networkTheme.primary}33` : 'rgba(0, 35, 82, 0.1)'}`
       }}
     >
       <CardContent sx={{ py: 4, textAlign: 'center' }}>
         {/* Main title with icon */}
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
-          <StorageIcon sx={{ fontSize: '2.5rem', color: '#002352', mr: 2 }} />
-          <Typography 
-            variant="h2" 
-            component="h1" 
-            fontWeight="800" 
-            sx={{ 
-              color: '#002352',
+          <StorageIcon sx={{ fontSize: '2.5rem', color: networkTheme.primary, mr: 2 }} />
+          <Typography
+            variant="h2"
+            component="h1"
+            fontWeight="800"
+            sx={{
+              color: networkTheme.primary,
               letterSpacing: '0.5px',
               fontSize: { xs: '1.8rem', sm: '2.3rem', md: '2.8rem' }
             }}
           >
-            DigiByte Blockchain Statistics
+            DigiByte {isTestnet ? 'Testnet ' : ''}Blockchain Statistics
           </Typography>
         </Box>
         
-        <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 3, borderColor: '#0066cc', borderWidth: 2 }} />
+        <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 3, borderColor: networkTheme.secondary, borderWidth: 2 }} />
         
         {/* Website description */}
         <Typography 
@@ -405,9 +454,9 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
           </Grid>
           
           <Grid item xs={12} sm={6} md={4}>
-            <StatCard 
-              title="Latest Version" 
-              value="v8.26.1"
+            <StatCard
+              title="Latest Version"
+              value="v8.26.2"
               icon={<UpdateIcon />}
               description="Latest DGB core version."
               loading={false}

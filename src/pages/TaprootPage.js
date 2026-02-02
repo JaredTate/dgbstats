@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Typography, Box, Paper, LinearProgress } from '@mui/material';
 import styles from '../App.module.css';
-import config from '../config';
+import { useNetwork } from '../context/NetworkContext';
 
 /**
  * BIP9 activation threshold (70% of miners must signal support)
@@ -322,6 +322,8 @@ const TechnicalParametersSection = ({ taprootStatus }) => (
  * @returns {JSX.Element} Complete Taproot activation page
  */
 const TaprootPage = () => {
+  const { wsBaseUrl, isTestnet } = useNetwork();
+
   // Taproot activation status from blockchain
   const [taprootStatus, setTaprootStatus] = useState({
     type: 'bip9',
@@ -420,7 +422,7 @@ const TaprootPage = () => {
    * Handles initial blockchain data and real-time block updates
    */
   useEffect(() => {
-    const socket = new WebSocket(config.wsBaseUrl);
+    const socket = new WebSocket(wsBaseUrl);
 
     /**
      * WebSocket connection opened successfully
@@ -474,7 +476,7 @@ const TaprootPage = () => {
      * Prevents memory leaks when component unmounts
      */
     return () => socket.close();
-  }, []);
+  }, [wsBaseUrl]);
 
   // Calculate derived values
   const progress = calculateProgress();

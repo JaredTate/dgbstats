@@ -1,15 +1,15 @@
-import React, { useRef, useEffect, useState, memo } from 'react';
+import React, { useRef, useEffect, useState, memo, useCallback } from 'react';
 import { Chart, registerables } from 'chart.js';
 import 'chartjs-adapter-luxon';
-import { 
-  Typography, Container, Box, Card, CardContent, 
+import {
+  Typography, Container, Box, Card, CardContent,
   Divider, Grid, Chip
 } from '@mui/material';
 import TokenIcon from '@mui/icons-material/Token';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import PeopleIcon from '@mui/icons-material/People';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import config from '../config';
+import { useNetwork } from '../context/NetworkContext';
 
 // Register Chart.js components globally (once outside component)
 Chart.register(...registerables);
@@ -137,24 +137,51 @@ const StatCard = memo(({ title, value, percentage, percentageLabel, description,
  * Features real-time data updates via WebSocket with fallback to default values
  * for immediate rendering and better user experience.
  */
-const SupplyPage = ({ worldPopulation }) => {
+const SupplyPage = ({ worldPopulation, txOutsetInfo: propTxOutsetInfo }) => {
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
-  
+  const { getApiUrl, wsBaseUrl, isTestnet } = useNetwork();
+
   // Initialize with default data to prevent loading states and null checks
   const [txOutsetInfo, setTxOutsetInfo] = useState(DEFAULT_SUPPLY_DATA);
+  const [localTxOutsetInfo, setLocalTxOutsetInfo] = useState(null);
+
+  // Memoize getApiUrl to use in useEffect dependencies
+  const memoizedGetApiUrl = useCallback(getApiUrl, [getApiUrl]);
+
+  /**
+   * Fetch supply data from API when prop is not provided (e.g., for testnet)
+   * This ensures the page works independently when not receiving data via props
+   */
+  useEffect(() => {
+    if (!propTxOutsetInfo) {
+      const fetchData = async () => {
+        try {
+          const response = await fetch(memoizedGetApiUrl('/gettxoutsetinfo'));
+          const data = await response.json();
+          setLocalTxOutsetInfo(data);
+        } catch (error) {
+          console.error('Error fetching tx outset info:', error);
+        }
+      };
+      fetchData();
+    }
+  }, [propTxOutsetInfo, memoizedGetApiUrl]);
+
+  // Use the prop if provided, otherwise use local state fetched from API
+  const supplyData = propTxOutsetInfo || localTxOutsetInfo;
 
   /**
    * WebSocket connection management for real-time supply data
    * Implements reconnection logic and graceful fallback to default data
    */
   useEffect(() => {
-    console.log(`Connecting to WebSocket at: ${config.wsBaseUrl}`);
+    console.log(`Connecting to WebSocket at: ${wsBaseUrl}`);
     let socket;
     let reconnectAttempts = 0;
     const maxReconnectAttempts = 3;
     const reconnectDelay = 2000; // 2 seconds
-    
+
     // Start with default data to render chart immediately
     // This ensures the page is functional even if WebSocket fails
     const defaultSupplyData = {
@@ -164,10 +191,10 @@ const SupplyPage = ({ worldPopulation }) => {
       txouts: 20000000,
       bogosize: 1500000000
     };
-    
+
     // Initialize with default data for immediate display
     setTxOutsetInfo(defaultSupplyData);
-    
+
     /**
      * Initialize WebSocket connection with retry logic
      * Handles connection, error, and reconnection scenarios
@@ -178,8 +205,8 @@ const SupplyPage = ({ worldPopulation }) => {
         if (socket) {
           socket.close();
         }
-        
-        socket = new WebSocket(config.wsBaseUrl);
+
+        socket = new WebSocket(wsBaseUrl);
         
         // Connection established successfully
         socket.onopen = () => {
@@ -236,7 +263,7 @@ const SupplyPage = ({ worldPopulation }) => {
         socket.close(1000, "Component unmounted");
       }
     };
-  }, []);
+  }, [wsBaseUrl]);
 
   /**
    * Create Chart.js configuration for supply timeline visualization
@@ -403,9 +430,11 @@ const SupplyPage = ({ worldPopulation }) => {
    */
   useEffect(() => {
     if (!chartRef.current) return;
-    
-    // Proceed with chart rendering using current supply data
-    const currentSupply = txOutsetInfo ? txOutsetInfo.total_amount : 15700000000;
+
+    // Use supplyData which combines prop, local fetch, and WebSocket data
+    // Priority: propTxOutsetInfo > localTxOutsetInfo > txOutsetInfo (WebSocket) > DEFAULT_SUPPLY_DATA
+    const effectiveSupplyData = supplyData || txOutsetInfo || DEFAULT_SUPPLY_DATA;
+    const currentSupply = effectiveSupplyData.total_amount;
     console.log('Rendering supply chart with data:', currentSupply);
     
     const canvasElement = chartRef.current;
@@ -485,11 +514,13 @@ const SupplyPage = ({ worldPopulation }) => {
         chartInstanceRef.current = null;
       }
     };
-  }, [txOutsetInfo]); // Re-render only when supply data changes
+  }, [supplyData, txOutsetInfo]); // Re-render when supply data changes
 
   // Calculate supply statistics with safe defaults
+  // Use supplyData which combines prop, local fetch, and WebSocket data
+  const effectiveSupplyData = supplyData || txOutsetInfo || DEFAULT_SUPPLY_DATA;
   const totalSupply = 21000000000;
-  const currentSupply = txOutsetInfo ? txOutsetInfo.total_amount : 15700000000;
+  const currentSupply = effectiveSupplyData.total_amount;
   const remainingSupply = totalSupply - currentSupply;
   const currentSupplyPercentage = ((currentSupply / totalSupply) * 100).toFixed(1);
   const remainingSupplyPercentage = ((remainingSupply / totalSupply) * 100).toFixed(1);
