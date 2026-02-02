@@ -5,18 +5,37 @@ import { renderWithProviders } from '../../utils/testUtils';
 
 // Mock data for API responses
 const mockOraclePrice = {
-  price_micro_usd: 6029,
-  price_usd: 0.006029,
-  oracle_count: 7,
+  price_micro_usd: 50000,
+  price_usd: 0.05,
+  oracle_count: 5,
   status: 'active',
-  last_update_height: 1234567,
-  is_stale: false
+  last_update_height: 2000,
+  is_stale: false,
+  '24h_high': 5,
+  '24h_low': 5,
+  volatility: 2.5
 };
 
+// Mock data for getalloracleprices endpoint
+const mockAllOraclePrices = {
+  block_height: 2000,
+  consensus_price_micro_usd: 50000,
+  consensus_price_usd: 0.05,
+  oracle_count: 5,
+  required: 4,
+  total_oracles: 7,
+  oracles: [
+    { oracle_id: 0, name: 'Jared', endpoint: 'oracle1.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064194, deviation_pct: 0, signature_valid: true, status: 'reporting' },
+    { oracle_id: 1, name: 'Green Candle', endpoint: 'oracle2.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064192, deviation_pct: 0, signature_valid: true, status: 'reporting' },
+    { oracle_id: 2, name: 'Bastian', endpoint: 'oracle3.digibyte.io:12030', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
+  ]
+};
+
+// Mock data for getoracles endpoint (config with pubkeys)
 const mockOracles = [
-  { oracle_id: 0, pubkey: '03e1dce189a530c1fb39dcd9282cf5f9de0e4eb257344be9fd94ce27c06005e8c7', endpoint: 'oracle1.digibyte.io:12028', is_active: true, is_running: true, last_price: 6029, status: 'running', selected_for_epoch: true },
-  { oracle_id: 1, pubkey: '033dfb7a36ab40fa6fbc69b4b499eaa17bfa1958aa89ec248efc24b4c18694f990', endpoint: 'oracle2.digibyte.io:12028', is_active: true, is_running: true, last_price: 6031, status: 'running', selected_for_epoch: true },
-  { oracle_id: 2, pubkey: '03172755a320cec96c981d46c86d79a03578d73406a25e89d8edc616a8f361cb5c', endpoint: 'oracle3.digibyte.io:12028', is_active: true, is_running: false, last_price: 0, status: 'stopped', selected_for_epoch: false },
+  { oracle_id: 0, name: 'Jared', pubkey: '03e1dce189a530c1fb39dcd9282cf5f9de0e4eb257344be9fd94ce27c06005e8c7', endpoint: 'oracle1.digibyte.io:12030', is_active: true, status: 'no_data' },
+  { oracle_id: 1, name: 'Green Candle', pubkey: '033dfb7a36ab40fa6fbc69b4b499eaa17bfa1958aa89ec248efc24b4c18694f990', endpoint: 'oracle2.digibyte.io:12030', is_active: true, status: 'no_data' },
+  { oracle_id: 2, name: 'Bastian', pubkey: '03172755a320cec96c981d46c86d79a03578d73406a25e89d8edc616a8f361cb5c', endpoint: 'oracle3.digibyte.io:12030', is_active: true, status: 'no_data' },
 ];
 
 describe('OraclesPage', () => {
@@ -26,7 +45,7 @@ describe('OraclesPage', () => {
     // Store original fetch
     originalFetch = global.fetch;
 
-    // Mock fetch
+    // Mock fetch for all oracle endpoints
     global.fetch = vi.fn((url) => {
       if (url.includes('getoracleprice')) {
         return Promise.resolve({
@@ -34,7 +53,13 @@ describe('OraclesPage', () => {
           json: () => Promise.resolve(mockOraclePrice)
         });
       }
-      if (url.includes('listoracles')) {
+      if (url.includes('getalloracleprices')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockAllOraclePrices)
+        });
+      }
+      if (url.includes('getoracles')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve(mockOracles)
@@ -99,12 +124,12 @@ describe('OraclesPage', () => {
       });
 
       expect(screen.getByText('Testnet Oracle Network')).toBeInTheDocument();
-      expect(screen.getByText('ID')).toBeInTheDocument();
+      expect(screen.getByText('Oracle')).toBeInTheDocument();
       expect(screen.getByText('Status')).toBeInTheDocument();
-      expect(screen.getByText('Last Price')).toBeInTheDocument();
+      expect(screen.getByText('Price')).toBeInTheDocument();
       expect(screen.getByText('Endpoint')).toBeInTheDocument();
       expect(screen.getByText('Public Key')).toBeInTheDocument();
-      expect(screen.getByText('Epoch Selected')).toBeInTheDocument();
+      expect(screen.getByText('Signature')).toBeInTheDocument();
     });
 
     it('should render the technical specifications section', async () => {
@@ -139,7 +164,8 @@ describe('OraclesPage', () => {
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/testnet/getoracleprice'));
-        expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/testnet/listoracles'));
+        expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/testnet/getalloracleprices'));
+        expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/testnet/getoracles'));
       });
     });
 
@@ -166,8 +192,8 @@ describe('OraclesPage', () => {
       });
 
       await waitFor(() => {
-        // Network oracles: oracle_count from getoracleprice (7) out of 7
-        expect(screen.getByText('7 / 7')).toBeInTheDocument();
+        // Network oracles: oracle_count from getoracleprice (5) out of 7
+        expect(screen.getByText('5 / 7')).toBeInTheDocument();
       });
     });
 
@@ -198,28 +224,28 @@ describe('OraclesPage', () => {
   });
 
   describe('Oracle Table', () => {
-    it('should display oracle IDs in the table', async () => {
+    it('should display oracle names in the table', async () => {
       await act(async () => {
         renderWithProviders(<OraclesPage />, { network: 'testnet' });
       });
 
       await waitFor(() => {
-        expect(screen.getByText('Oracle 0')).toBeInTheDocument();
-        expect(screen.getByText('Oracle 1')).toBeInTheDocument();
-        expect(screen.getByText('Oracle 2')).toBeInTheDocument();
+        expect(screen.getByText('Jared')).toBeInTheDocument();
+        expect(screen.getByText('Green Candle')).toBeInTheDocument();
+        expect(screen.getByText('Bastian')).toBeInTheDocument();
       });
     });
 
-    it('should display running status correctly', async () => {
+    it('should display reporting status correctly', async () => {
       await act(async () => {
         renderWithProviders(<OraclesPage />, { network: 'testnet' });
       });
 
       await waitFor(() => {
-        const runningChips = screen.getAllByText('running');
-        expect(runningChips.length).toBeGreaterThan(0);
-        const stoppedChips = screen.getAllByText('stopped');
-        expect(stoppedChips.length).toBeGreaterThan(0);
+        const reportingChips = screen.getAllByText('reporting');
+        expect(reportingChips.length).toBeGreaterThan(0);
+        const noDataChips = screen.getAllByText('no data');
+        expect(noDataChips.length).toBeGreaterThan(0);
       });
     });
 
@@ -229,8 +255,8 @@ describe('OraclesPage', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText('oracle1.digibyte.io:12028')).toBeInTheDocument();
-        expect(screen.getByText('oracle2.digibyte.io:12028')).toBeInTheDocument();
+        expect(screen.getByText('oracle1.digibyte.io:12030')).toBeInTheDocument();
+        expect(screen.getByText('oracle2.digibyte.io:12030')).toBeInTheDocument();
       });
     });
   });

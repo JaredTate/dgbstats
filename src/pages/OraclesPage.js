@@ -25,22 +25,26 @@ import config from '../config';
 
 // Default mock data for fallback when API is unavailable
 const DEFAULT_ORACLE_PRICE = {
-  price_micro_usd: 6029,
-  price_usd: 0.006029,
-  oracle_count: 7,
+  price_micro_usd: 50000,
+  price_usd: 0.05,
+  oracle_count: 5,
   status: 'active',
-  last_update_height: 1234567,
-  is_stale: false
+  last_update_height: 2000,
+  is_stale: false,
+  '24h_high': 5,
+  '24h_low': 5,
+  volatility: 2.5
 };
 
+// Default oracle data matching getalloracleprices format
 const DEFAULT_ORACLES = [
-  { oracle_id: 0, pubkey: '0398720f6d15252fb2c3501107d46129589d8ab56e0f967be2e470f40675eb7b57', endpoint: 'oracle1.digibyte.io:12028', is_active: true, is_running: true, last_price: 6029, status: 'running', selected_for_epoch: true },
-  { oracle_id: 1, pubkey: '02a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd', endpoint: 'oracle2.digibyte.io:12028', is_active: true, is_running: true, last_price: 6031, status: 'running', selected_for_epoch: true },
-  { oracle_id: 2, pubkey: '03b2c3d4e5f6789012345678901234567890123456789012345678901234abcdef', endpoint: 'oracle3.digibyte.io:12028', is_active: true, is_running: true, last_price: 6028, status: 'running', selected_for_epoch: true },
-  { oracle_id: 3, pubkey: '02c3d4e5f6789012345678901234567890123456789012345678901234abcdef01', endpoint: 'oracle4.digibyte.io:12028', is_active: true, is_running: false, last_price: 0, status: 'stopped', selected_for_epoch: false },
-  { oracle_id: 4, pubkey: '03d4e5f6789012345678901234567890123456789012345678901234abcdef0123', endpoint: 'oracle5.digibyte.io:12028', is_active: true, is_running: true, last_price: 6030, status: 'running', selected_for_epoch: true },
-  { oracle_id: 5, pubkey: '02e5f6789012345678901234567890123456789012345678901234abcdef012345', endpoint: 'oracle6.digibyte.io:12028', is_active: true, is_running: false, last_price: 0, status: 'stopped', selected_for_epoch: false },
-  { oracle_id: 6, pubkey: '03f6789012345678901234567890123456789012345678901234abcdef01234567', endpoint: 'oracle7.digibyte.io:12028', is_active: true, is_running: true, last_price: 6027, status: 'running', selected_for_epoch: true },
+  { oracle_id: 0, name: 'Jared', pubkey: '03e1dce189a530c1fb39dcd9282cf5f9de0e4eb257344be9fd94ce27c06005e8c7', endpoint: 'oracle1.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 0, signature_valid: true, status: 'reporting' },
+  { oracle_id: 1, name: 'Green Candle', pubkey: '033dfb7a36ab40fa6fbc69b4b499eaa17bfa1958aa89ec248efc24b4c18694f990', endpoint: 'oracle2.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 0, signature_valid: true, status: 'reporting' },
+  { oracle_id: 2, name: 'Bastian', pubkey: '03172755a320cec96c981d46c86d79a03578d73406a25e89d8edc616a8f361cb5c', endpoint: 'oracle3.digibyte.io:12030', price_micro_usd: 0, price_usd: 0, timestamp: 0, signature_valid: false, status: 'no_data' },
+  { oracle_id: 3, name: 'DanGB', pubkey: '03546c07ee9d21640c4b4e96e6954bd49c3ab5bcf36c6a512603ebf75f8609da0c', endpoint: 'oracle4.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 0, signature_valid: true, status: 'reporting' },
+  { oracle_id: 4, name: 'Shenger', pubkey: '039cef021f841794c1afc4e84d678f3c70dbe3a972330b2b6329852898443deb4f', endpoint: 'oracle5.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 0, signature_valid: true, status: 'reporting' },
+  { oracle_id: 5, name: 'Ycagel', pubkey: '0285016758856ed27388501a54031fa3a678df705bf811fb8bc9abd2d7cfb6d9f7', endpoint: 'oracle6.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 0, signature_valid: true, status: 'reporting' },
+  { oracle_id: 6, name: 'Aussie', pubkey: '02ec2122bab83d1199350d5bd3e5e88b305da873211b1876edd5170fbe9c7f962e', endpoint: 'oracle7.digibyte.io:12030', price_micro_usd: 0, price_usd: 0, timestamp: 0, signature_valid: false, status: 'no_data' },
 ];
 
 /**
@@ -64,40 +68,52 @@ const OraclesPage = () => {
     try {
       setError(null);
 
-      // Fetch oracle price and list in parallel
-      const [priceResponse, oraclesResponse] = await Promise.all([
+      // Fetch oracle price and detailed oracle data in parallel
+      const [priceResponse, allOraclePricesResponse, oraclesConfigResponse] = await Promise.all([
         fetch(`${config.apiBaseUrl}/api/testnet/getoracleprice`),
-        fetch(`${config.apiBaseUrl}/api/testnet/listoracles`)
+        fetch(`${config.apiBaseUrl}/api/testnet/getalloracleprices`),
+        fetch(`${config.apiBaseUrl}/api/testnet/getoracles`)
       ]);
 
-      if (!priceResponse.ok || !oraclesResponse.ok) {
+      if (!priceResponse.ok || !allOraclePricesResponse.ok) {
         throw new Error('Failed to fetch oracle data from API');
       }
 
       const priceData = await priceResponse.json();
-      const oraclesData = await oraclesResponse.json();
+      const allOraclePricesData = await allOraclePricesResponse.json();
+      const oraclesConfigData = oraclesConfigResponse.ok ? await oraclesConfigResponse.json() : [];
 
-      // Update state with real data
+      // Update state with real price data
       setOraclePrice({
         price_micro_usd: priceData.price_micro_usd || 0,
         price_usd: priceData.price_usd || 0,
         oracle_count: priceData.oracle_count || 0,
         status: priceData.status || 'unknown',
         last_update_height: priceData.last_update_height || 0,
-        is_stale: priceData.is_stale || false
+        is_stale: priceData.is_stale || false,
+        '24h_high': priceData['24h_high'] || 0,
+        '24h_low': priceData['24h_low'] || 0,
+        volatility: priceData.volatility || 0
       });
 
-      // Map oracle data to expected format
-      const mappedOracles = oraclesData.map(oracle => ({
-        oracle_id: oracle.oracle_id,
-        pubkey: oracle.pubkey,
-        endpoint: oracle.endpoint || `oracle${oracle.oracle_id}.digibyte.io:12028`,
-        is_active: oracle.is_active,
-        is_running: oracle.is_running,
-        last_price: oracle.last_price || 0,
-        status: oracle.status || (oracle.is_running ? 'running' : 'stopped'),
-        selected_for_epoch: oracle.selected_for_epoch || false
-      }));
+      // Merge oracle data from getalloracleprices (live status) with getoracles (pubkeys)
+      const mappedOracles = (allOraclePricesData.oracles || []).map(oracle => {
+        // Find matching config data to get pubkey
+        const configData = oraclesConfigData.find(o => o.oracle_id === oracle.oracle_id) || {};
+        return {
+          oracle_id: oracle.oracle_id,
+          name: oracle.name,
+          pubkey: configData.pubkey || '',
+          endpoint: oracle.endpoint,
+          price_micro_usd: oracle.price_micro_usd || 0,
+          price_usd: oracle.price_usd || 0,
+          timestamp: oracle.timestamp || 0,
+          deviation_pct: oracle.deviation_pct || 0,
+          signature_valid: oracle.signature_valid,
+          status: oracle.status || 'no_data',
+          is_running: oracle.status === 'reporting'
+        };
+      });
 
       setOracles(mappedOracles);
       setLastUpdated(new Date());
@@ -405,150 +421,167 @@ const OraclesPage = () => {
   );
 
   // Oracle List Table
-  const OracleListSection = () => (
-    <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <SecurityIcon sx={{ fontSize: '2rem', color: isTestnet ? '#2e7d32' : '#002352', mr: 1 }} />
-        <Typography variant="h5" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
-          Testnet Oracle Network
-        </Typography>
-        <Chip
-          label={`${oracles.filter(o => o.is_running).length} Active`}
-          color="success"
-          size="small"
-          sx={{ ml: 2 }}
-        />
-      </Box>
+  const OracleListSection = () => {
+    const reportingCount = oracles.filter(o => o.status === 'reporting').length;
 
-      <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e0e0e0' }}>
-        <Table>
-          <TableHead sx={{ backgroundColor: isTestnet ? 'rgba(46, 125, 50, 0.1)' : 'rgba(0, 35, 82, 0.05)' }}>
-            <TableRow>
-              <TableCell>
-                <Tooltip title="Unique identifier assigned to each oracle operator" arrow>
-                  <strong style={{ cursor: 'help' }}>ID</strong>
-                </Tooltip>
-              </TableCell>
-              <TableCell>
-                <Tooltip title="Running = actively fetching and broadcasting prices. Stopped = not currently online" arrow>
-                  <strong style={{ cursor: 'help' }}>Status</strong>
-                </Tooltip>
-              </TableCell>
-              <TableCell>
-                <Tooltip title="Most recent price this oracle reported to the network in micro-USD format" arrow>
-                  <strong style={{ cursor: 'help' }}>Last Price</strong>
-                </Tooltip>
-              </TableCell>
-              <TableCell>
-                <Tooltip title="P2P network address where this oracle broadcasts price updates" arrow>
-                  <strong style={{ cursor: 'help' }}>Endpoint</strong>
-                </Tooltip>
-              </TableCell>
-              <TableCell>
-                <Tooltip title="BIP-340 Schnorr public key used to verify this oracle's signatures" arrow>
-                  <strong style={{ cursor: 'help' }}>Public Key</strong>
-                </Tooltip>
-              </TableCell>
-              <TableCell>
-                <Tooltip title="Whether this oracle is selected to participate in the current epoch's price consensus" arrow>
-                  <strong style={{ cursor: 'help' }}>Epoch Selected</strong>
-                </Tooltip>
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {oracles.map((oracle) => (
-              <TableRow
-                key={oracle.oracle_id}
-                sx={{
-                  backgroundColor: oracle.is_running ? 'transparent' : 'rgba(0,0,0,0.02)',
-                  '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' }
-                }}
-              >
+    return (
+      <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+          <SecurityIcon sx={{ fontSize: '2rem', color: isTestnet ? '#2e7d32' : '#002352', mr: 1 }} />
+          <Typography variant="h5" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
+            Testnet Oracle Network
+          </Typography>
+          <Chip
+            label={`${reportingCount} / ${oracles.length} Reporting`}
+            color={reportingCount >= 4 ? 'success' : 'warning'}
+            size="small"
+            sx={{ ml: 2 }}
+          />
+        </Box>
+
+        <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e0e0e0' }}>
+          <Table>
+            <TableHead sx={{ backgroundColor: isTestnet ? 'rgba(46, 125, 50, 0.1)' : 'rgba(0, 35, 82, 0.05)' }}>
+              <TableRow>
                 <TableCell>
-                  <Chip
-                    label={`Oracle ${oracle.oracle_id}`}
-                    size="small"
-                    sx={{
-                      backgroundColor: isTestnet ? '#e8f5e9' : '#e3f2fd',
-                      fontWeight: 'bold'
-                    }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {oracle.is_running ? (
-                      <CloudDoneIcon sx={{ color: '#4caf50' }} />
-                    ) : (
-                      <CloudOffIcon sx={{ color: '#9e9e9e' }} />
-                    )}
-                    <Chip
-                      label={oracle.status}
-                      size="small"
-                      color={oracle.status === 'running' ? 'success' : 'default'}
-                    />
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Typography
-                    variant="body2"
-                    fontWeight="bold"
-                    sx={{ color: oracle.is_running ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}
-                  >
-                    {formatPrice(oracle.last_price)}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                    {oracle.endpoint}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Tooltip title={`${oracle.pubkey} (Click to view in source code)`}>
-                    <Link
-                      href={`https://github.com/DigiByte-Core/digibyte/blob/feature/digidollar-v1/src/kernel/chainparams.cpp#L${1070 + oracle.oracle_id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      sx={{
-                        fontFamily: 'monospace',
-                        fontSize: '0.75rem',
-                        maxWidth: '150px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        display: 'block',
-                        textDecoration: 'none',
-                        color: isTestnet ? '#2e7d32' : '#002352',
-                        '&:hover': {
-                          textDecoration: 'underline',
-                          color: isTestnet ? '#4caf50' : '#0066cc'
-                        }
-                      }}
-                    >
-                      {oracle.pubkey.substring(0, 10)}...{oracle.pubkey.substring(oracle.pubkey.length - 8)}
-                    </Link>
+                  <Tooltip title="Oracle operator name and unique identifier" arrow>
+                    <strong style={{ cursor: 'help' }}>Oracle</strong>
                   </Tooltip>
                 </TableCell>
                 <TableCell>
-                  {oracle.selected_for_epoch ? (
-                    <VerifiedIcon sx={{ color: '#4caf50' }} />
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">-</Typography>
-                  )}
+                  <Tooltip title="Reporting = actively broadcasting prices. No Data = not currently online" arrow>
+                    <strong style={{ cursor: 'help' }}>Status</strong>
+                  </Tooltip>
+                </TableCell>
+                <TableCell>
+                  <Tooltip title="Current price this oracle is reporting to the network" arrow>
+                    <strong style={{ cursor: 'help' }}>Price</strong>
+                  </Tooltip>
+                </TableCell>
+                <TableCell>
+                  <Tooltip title="P2P network address where this oracle broadcasts price updates" arrow>
+                    <strong style={{ cursor: 'help' }}>Endpoint</strong>
+                  </Tooltip>
+                </TableCell>
+                <TableCell>
+                  <Tooltip title="BIP-340 Schnorr public key used to verify this oracle's signatures" arrow>
+                    <strong style={{ cursor: 'help' }}>Public Key</strong>
+                  </Tooltip>
+                </TableCell>
+                <TableCell>
+                  <Tooltip title="Whether this oracle's price signature is cryptographically valid" arrow>
+                    <strong style={{ cursor: 'help' }}>Signature</strong>
+                  </Tooltip>
                 </TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {oracles.map((oracle) => (
+                <TableRow
+                  key={oracle.oracle_id}
+                  sx={{
+                    backgroundColor: oracle.status === 'reporting' ? 'transparent' : 'rgba(0,0,0,0.02)',
+                    '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' }
+                  }}
+                >
+                  <TableCell>
+                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                      <Typography variant="body2" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
+                        {oracle.name || `Oracle ${oracle.oracle_id}`}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        ID: {oracle.oracle_id}
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {oracle.status === 'reporting' ? (
+                        <CloudDoneIcon sx={{ color: '#4caf50' }} />
+                      ) : (
+                        <CloudOffIcon sx={{ color: '#9e9e9e' }} />
+                      )}
+                      <Chip
+                        label={oracle.status === 'reporting' ? 'reporting' : 'no data'}
+                        size="small"
+                        color={oracle.status === 'reporting' ? 'success' : 'default'}
+                      />
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Typography
+                      variant="body2"
+                      fontWeight="bold"
+                      sx={{ color: oracle.status === 'reporting' ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}
+                    >
+                      {oracle.status === 'reporting' ? formatPrice(oracle.price_micro_usd) : '--'}
+                    </Typography>
+                    {oracle.deviation_pct != null && oracle.deviation_pct !== 0 && (
+                      <Typography variant="caption" color={Math.abs(oracle.deviation_pct) > 5 ? 'error' : 'text.secondary'}>
+                        {oracle.deviation_pct > 0 ? '+' : ''}{oracle.deviation_pct.toFixed(2)}%
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                      {oracle.endpoint}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    {oracle.pubkey ? (
+                      <Tooltip title={`${oracle.pubkey} (Click to view in source code)`}>
+                        <Link
+                          href={`https://github.com/DigiByte-Core/digibyte/blob/feature/digidollar-v1/src/kernel/chainparams.cpp#L${1070 + oracle.oracle_id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          sx={{
+                            fontFamily: 'monospace',
+                            fontSize: '0.75rem',
+                            maxWidth: '150px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            display: 'block',
+                            textDecoration: 'none',
+                            color: isTestnet ? '#2e7d32' : '#002352',
+                            '&:hover': {
+                              textDecoration: 'underline',
+                              color: isTestnet ? '#4caf50' : '#0066cc'
+                            }
+                          }}
+                        >
+                          {oracle.pubkey.substring(0, 10)}...{oracle.pubkey.substring(oracle.pubkey.length - 8)}
+                        </Link>
+                      </Tooltip>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">--</Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {oracle.signature_valid ? (
+                      <Tooltip title="Signature cryptographically valid">
+                        <CheckCircleIcon sx={{ color: '#4caf50' }} />
+                      </Tooltip>
+                    ) : (
+                      <Tooltip title="No valid signature (oracle not reporting)">
+                        <ErrorIcon sx={{ color: '#9e9e9e' }} />
+                      </Tooltip>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
 
-      <Box sx={{ mt: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
-        <Typography variant="body2" color="text.secondary">
-          <strong>Price Format:</strong> Oracle prices use micro-USD format where 1,000,000 = $1.00.
-          This ensures exact arithmetic with no floating-point errors.
-        </Typography>
-      </Box>
-    </Card>
-  );
+        <Box sx={{ mt: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
+          <Typography variant="body2" color="text.secondary">
+            <strong>Price Format:</strong> Oracle prices use micro-USD format where 1,000,000 = $1.00.
+            This ensures exact arithmetic with no floating-point errors. Consensus requires 4-of-7 oracles on testnet.
+          </Typography>
+        </Box>
+      </Card>
+    );
+  };
 
   // Technical Details Section
   const TechnicalSection = () => (
