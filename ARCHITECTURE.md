@@ -74,7 +74,7 @@ Each network has distinct visual styling to help users identify which network th
 | Network | Primary Color | Accent | Visual Indicator |
 |---------|---------------|--------|------------------|
 | **Mainnet** | `#002352` (DigiByte Blue) | `#0066cc` | Standard blue theme |
-| **Testnet** | `#e65100` (Orange) | `#ff9800` | Orange theme with "TESTNET" indicators |
+| **Testnet** | `#2e7d32` (Forest Green) | `#4caf50` | Green theme with "TESTNET" indicators |
 
 ### Layout Components
 
@@ -93,7 +93,7 @@ src/components/
 
 **TestnetLayout.js**:
 - Reduced navigation menu (no Pools, Downloads, Roadmap)
-- Orange themed Header and Footer
+- Green themed Header and Footer
 - "TESTNET" visual indicators
 - Testnet-specific branding
 
@@ -275,7 +275,7 @@ All real-time data flows through a single WebSocket connection:
 ```javascript
 // Message Types Received from Server
 {
-  type: 'initialData',      // Blockchain info, tx stats, supply, block reward
+  type: 'initialData',      // Blockchain info, tx stats, supply, block reward, deploymentInfo
   type: 'recentBlocks',     // Array of latest 240 blocks
   type: 'newBlock',         // Single new block notification
   type: 'geoData',          // Geographic peer node locations
@@ -704,28 +704,44 @@ export default {
 
 ### Key Statistics
 - **Pages**: 13 total (analytics, network, economics, information)
-- **Components**: 3 reusable (Header, Footer, XIcon)
+- **Components**: 5 reusable (Header, Footer, XIcon, MainnetLayout, TestnetLayout)
+- **Context Providers**: 1 (NetworkContext)
+- **Custom Hooks**: 5 (in useNetworkData.js)
 - **Utilities**: 3 functions (formatNumber, numberWithCommas, useWidth)
-- **Test Files**: 20+ unit tests, 20+ E2E specs
+- **Unit/Integration Tests**: 18 test files (314 tests)
+- **E2E Tests**: 21 spec files (1,112 tests across 7 browsers)
 - **Dependencies**: 35+ production packages
 - **Technologies**: React 17, MUI 5, D3.js 7, Chart.js 4
+
+### Network Support
+- **Mainnet**: Full production network at `/` routes (port 5002 WebSocket)
+- **Testnet**: Development network at `/testnet/*` routes (port 5003 WebSocket)
+- **Network Switching**: Easy toggle via header navigation
 
 ### Critical Features
 - **Multi-Algorithm Support**: 5 mining algorithms with color coding
 - **Real-Time Updates**: WebSocket for live blockchain data
 - **Geographic Visualization**: D3-geo world map with 1,000+ nodes
 - **Supply Tracking**: 21 billion DGB max with emission projections
-- **Mobile-First**: Responsive design tested on 6+ browser configurations
+- **Mobile-First**: Responsive design tested on 7+ browser configurations
+- **Softfork Status**: Uses getdeploymentinfo RPC for activation status
+
+### SEO Implementation
+- Open Graph meta tags for social sharing
+- Twitter Card integration with large images
+- JSON-LD structured data for search engines
+- XML sitemap covering all 21 pages (mainnet + testnet)
+- robots.txt with AI crawler support (GPTBot, Claude-Web)
 
 ### Performance Highlights
 - 95% test coverage requirement
 - Sub-second chart rendering
 - Automatic WebSocket reconnection
 - Memoized expensive calculations
-- Lazy loading ready
+- Code splitting ready
 
 ---
 
-*Architecture Document v1.0*
+*Architecture Document v1.1*
 *Last Updated: 2026-02-02*
 *DigiByte Stats - Real-Time Blockchain Analytics*

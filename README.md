@@ -12,7 +12,7 @@ A comprehensive real-time blockchain statistics dashboard for the DigiByte netwo
 
 ### 📈 Analytics Pages
 
-1. **Home** - Main dashboard with key metrics
+1. **Home** - Main dashboard with key metrics and softfork status
 2. **Blocks** - Real-time block explorer with mining details
 3. **Mining Pools** - Pool distribution analysis with interactive charts
 4. **Algorithms** - Multi-algorithm mining statistics (SHA256, Scrypt, Skein, Qubit, Odocrypt)
@@ -24,6 +24,14 @@ A comprehensive real-time blockchain statistics dashboard for the DigiByte netwo
 10. **Taproot** - Network upgrade activation monitoring
 11. **Downloads** - DigiByte Core wallet download statistics
 12. **Roadmap** - Development priorities and upcoming features
+13. **DigiDollar** - Decentralized stablecoin concept and collateral system
+
+### 🌐 Network Support
+
+- **Mainnet**: Full production network with all features
+- **Testnet**: Dedicated testnet support at `/testnet/*` routes
+- **Network Switching**: Easy toggle between networks via header navigation
+- **Separate WebSocket**: Independent real-time connections per network
 
 ### 🎨 Modern UI/UX
 - Material-UI v5 components with DigiByte branding
@@ -31,6 +39,13 @@ A comprehensive real-time blockchain statistics dashboard for the DigiByte netwo
 - Interactive D3.js and Chart.js visualizations
 - Dark theme with gradient backgrounds
 - Real-time data updates without page refresh
+
+### 🔍 SEO & Social Sharing
+- Comprehensive Open Graph meta tags for social previews
+- Twitter Card integration with large image previews
+- JSON-LD structured data for search engines
+- XML sitemap with all pages (mainnet and testnet)
+- robots.txt optimized for search engines and AI crawlers
 
 ## Prerequisites
 
@@ -144,13 +159,20 @@ npm start
 ```
 dgbstats/
 ├── src/
-│   ├── pages/          # Page components (12 pages)
-│   ├── components/     # Reusable components
-│   ├── utils/          # Utility functions
-│   ├── tests/          # Test suites
-│   ├── config.js       # Configuration
-│   └── App.js          # Main application
-├── public/             # Static assets
+│   ├── pages/          # Page components (13 pages)
+│   ├── components/     # Reusable components (Header, Footer, Layouts)
+│   ├── context/        # React Context providers (NetworkContext)
+│   ├── hooks/          # Custom hooks (useNetworkData)
+│   ├── tests/          # Test suites (unit, integration, mocks)
+│   ├── config.js       # API configuration
+│   ├── utils.js        # Utility functions
+│   └── App.js          # Main application with routing
+├── public/
+│   ├── og-images/      # Open Graph preview images
+│   ├── sitemap.xml     # XML sitemap
+│   ├── robots.txt      # Crawler rules
+│   └── index.html      # HTML template with meta tags
+├── e2e/                # Playwright E2E tests (21 specs)
 └── package.json        # Dependencies
 ```
 
@@ -248,6 +270,10 @@ npm run test:all:clean   # Tests + cleanup
 
 ## Recent Updates
 
+- **Full Testnet Support**: Complete testnet implementation with dedicated WebSocket, routing, and peer tracking
+- **Deployment Info**: Updated to use `getdeploymentinfo` RPC for softfork status (replaces deprecated `softforks` field)
+- **SEO Enhancements**: Added Open Graph images, sitemap, and AI crawler support
+- **DigiDollar Page**: New page explaining the decentralized stablecoin concept
 - **TAP Route Activation**: Successfully activated and buried - UI elements removed
 - **Enhanced Testing**: Comprehensive test suite with 95%+ coverage
 - **Performance Improvements**: Optimized chart rendering and WebSocket handling
