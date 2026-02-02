@@ -109,7 +109,7 @@ const OraclesPage = () => {
       setLoading(false);
     } catch (err) {
       console.error('Error fetching oracle data:', err);
-      setError('Unable to fetch live oracle data. Showing cached/mock data.');
+      setError('Unable to fetch live oracle data. Network may be unavailable.');
       setLoading(false);
       // Keep existing data as fallback
     }
