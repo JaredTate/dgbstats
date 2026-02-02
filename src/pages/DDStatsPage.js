@@ -19,26 +19,26 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { useNetwork } from '../context/NetworkContext';
 import config from '../config';
 
-// Default mock data for fallback when API is unavailable
-const DEFAULT_DD_STATS = {
-  health_percentage: 852,
-  health_status: 'healthy',
-  total_collateral_dgb: 14762213.45,
-  total_dd_supply: 1043006, // in cents ($10,430.06)
-  oracle_price_micro_usd: 6029,
-  oracle_price_cents: 1,
+// Empty initial state - no mock data
+const EMPTY_DD_STATS = {
+  health_percentage: 0,
+  health_status: 'unavailable',
+  total_collateral_dgb: 0,
+  total_dd_supply: 0,
+  oracle_price_micro_usd: 0,
+  oracle_price_cents: 0,
   is_emergency: false,
-  active_positions: 47,
+  active_positions: 0,
   dca_tier: {
-    min_collateral: 150,
-    max_collateral: 999999,
-    multiplier: 1.0,
-    status: 'healthy'
+    min_collateral: 0,
+    max_collateral: 0,
+    multiplier: 0,
+    status: 'unavailable'
   },
   err_tier: {
-    ratio: 1.0,
-    burn_multiplier: 1.0,
-    description: 'Normal (1.0x burn)'
+    ratio: 0,
+    burn_multiplier: 0,
+    description: 'Not Reporting'
   }
 };
 
@@ -54,22 +54,22 @@ const DEFAULT_DD_STATS = {
 const DDStatsPage = () => {
   const { theme: networkTheme, isTestnet } = useNetwork();
 
-  // State for DD stats
-  const [ddStats, setDdStats] = useState(DEFAULT_DD_STATS);
+  // State for DD stats - start empty, no mock data
+  const [ddStats, setDdStats] = useState(EMPTY_DD_STATS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [oracleCount, setOracleCount] = useState(7); // Track active oracles separately
+  const [oracleCount, setOracleCount] = useState(0); // Track active oracles separately
 
   // Fetch DD stats from API
   const fetchDDStats = useCallback(async () => {
     try {
       setError(null);
 
-      // Fetch DD stats and oracle data in parallel
-      const [statsResponse, oracleResponse] = await Promise.all([
+      // Fetch DD stats and oracle price in parallel
+      const [statsResponse, oraclePriceResponse] = await Promise.all([
         fetch(`${config.apiBaseUrl}/api/testnet/getdigidollarstats`),
-        fetch(`${config.apiBaseUrl}/api/testnet/listoracles`)
+        fetch(`${config.apiBaseUrl}/api/testnet/getoracleprice`)
       ]);
 
       if (!statsResponse.ok) {
@@ -78,34 +78,32 @@ const DDStatsPage = () => {
 
       const statsData = await statsResponse.json();
 
-      // Map API response to expected format
+      // Map API response to expected format - no fallback to mock data
       setDdStats({
         health_percentage: statsData.health_percentage || 0,
-        health_status: statsData.health_status || 'unknown',
+        health_status: statsData.health_status || 'unavailable',
         total_collateral_dgb: (statsData.total_collateral_dgb || 0),
         total_dd_supply: statsData.total_dd_supply || 0, // in cents
         oracle_price_micro_usd: statsData.oracle_price_micro_usd || 0,
         oracle_price_cents: statsData.oracle_price_cents || 0,
         is_emergency: statsData.is_emergency || false,
         active_positions: statsData.active_positions || 0,
-        dca_tier: statsData.dca_tier || DEFAULT_DD_STATS.dca_tier,
-        err_tier: statsData.err_tier || DEFAULT_DD_STATS.err_tier
+        dca_tier: statsData.dca_tier || EMPTY_DD_STATS.dca_tier,
+        err_tier: statsData.err_tier || EMPTY_DD_STATS.err_tier
       });
 
-      // Get active oracle count
-      if (oracleResponse.ok) {
-        const oracleData = await oracleResponse.json();
-        const activeCount = oracleData.filter(o => o.is_running).length;
-        setOracleCount(activeCount > 0 ? activeCount : oracleData.length);
+      // Get network oracle count from getoracleprice
+      if (oraclePriceResponse.ok) {
+        const oraclePriceData = await oraclePriceResponse.json();
+        setOracleCount(oraclePriceData.oracle_count || 0);
       }
 
       setLastUpdated(new Date());
       setLoading(false);
     } catch (err) {
       console.error('Error fetching DD stats:', err);
-      setError('Unable to fetch live DigiDollar stats. Showing cached/mock data.');
+      setError('Unable to fetch live DigiDollar stats. Network may be unavailable.');
       setLoading(false);
-      // Keep existing data as fallback
     }
   }, []);
 
@@ -119,21 +117,24 @@ const DDStatsPage = () => {
     return () => clearInterval(interval);
   }, [fetchDDStats]);
 
-  // Format helpers
+  // Format helpers - show "Not Reporting" when no data
   const formatDGB = (amount) => {
-    if (!amount) return '0 DGB';
+    if (!amount || amount === 0) return 'Not Reporting';
     return amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' DGB';
   };
 
   const formatDD = (cents) => {
-    if (!cents) return '$0.00';
-    return '$' + (cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (!cents || cents === 0) return 'Not Reporting';
+    return '$' + (cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' DD';
   };
 
   const formatPrice = (microUsd) => {
-    if (!microUsd) return '$0.000000';
+    if (!microUsd || microUsd === 0) return 'Not Reporting';
     return '$' + (microUsd / 1000000).toFixed(6);
   };
+
+  // Check if we have valid data
+  const hasData = ddStats.health_percentage > 0 || ddStats.total_dd_supply > 0;
 
   // Get health color based on percentage
   const getHealthColor = (health) => {

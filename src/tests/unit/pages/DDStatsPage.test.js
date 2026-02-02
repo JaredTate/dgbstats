@@ -26,13 +26,15 @@ const mockDDStats = {
   }
 };
 
-const mockOracles = [
-  { oracle_id: 0, is_running: true, status: 'running' },
-  { oracle_id: 1, is_running: true, status: 'running' },
-  { oracle_id: 2, is_running: true, status: 'running' },
-  { oracle_id: 3, is_running: false, status: 'stopped' },
-  { oracle_id: 4, is_running: true, status: 'running' },
-];
+// Mock getoracleprice response
+const mockOraclePrice = {
+  price_micro_usd: 50000,
+  price_usd: 0.05,
+  oracle_count: 5,
+  status: 'active',
+  last_update_height: 2000,
+  is_stale: false
+};
 
 const mockEmergencyStats = {
   ...mockDDStats,
@@ -67,10 +69,10 @@ describe('DDStatsPage', () => {
           json: () => Promise.resolve(mockDDStats)
         });
       }
-      if (url.includes('listoracles')) {
+      if (url.includes('getoracleprice')) {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve(mockOracles)
+          json: () => Promise.resolve(mockOraclePrice)
         });
       }
       return Promise.reject(new Error('Unknown endpoint'));
@@ -152,7 +154,7 @@ describe('DDStatsPage', () => {
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/testnet/getdigidollarstats'));
-        expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/testnet/listoracles'));
+        expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/testnet/getoracleprice'));
       });
     });
 
@@ -265,10 +267,10 @@ describe('DDStatsPage', () => {
             json: () => Promise.resolve(mockEmergencyStats)
           });
         }
-        if (url.includes('listoracles')) {
+        if (url.includes('getoracleprice')) {
           return Promise.resolve({
             ok: true,
-            json: () => Promise.resolve(mockOracles)
+            json: () => Promise.resolve(mockOraclePrice)
           });
         }
         return Promise.reject(new Error('Unknown endpoint'));
@@ -305,10 +307,10 @@ describe('DDStatsPage', () => {
             json: () => Promise.resolve(mockEmergencyStats)
           });
         }
-        if (url.includes('listoracles')) {
+        if (url.includes('getoracleprice')) {
           return Promise.resolve({
             ok: true,
-            json: () => Promise.resolve(mockOracles)
+            json: () => Promise.resolve(mockOraclePrice)
           });
         }
         return Promise.reject(new Error('Unknown endpoint'));

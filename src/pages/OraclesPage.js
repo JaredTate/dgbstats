@@ -23,29 +23,18 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { useNetwork } from '../context/NetworkContext';
 import config from '../config';
 
-// Default mock data for fallback when API is unavailable
-const DEFAULT_ORACLE_PRICE = {
-  price_micro_usd: 50000,
-  price_usd: 0.05,
-  oracle_count: 5,
-  status: 'active',
-  last_update_height: 2000,
-  is_stale: false,
-  '24h_high': 5,
-  '24h_low': 5,
-  volatility: 2.5
+// Empty initial state - no mock data
+const EMPTY_ORACLE_PRICE = {
+  price_micro_usd: 0,
+  price_usd: 0,
+  oracle_count: 0,
+  status: 'unavailable',
+  last_update_height: 0,
+  is_stale: true,
+  '24h_high': 0,
+  '24h_low': 0,
+  volatility: 0
 };
-
-// Default oracle data matching getalloracleprices format
-const DEFAULT_ORACLES = [
-  { oracle_id: 0, name: 'Jared', pubkey: '03e1dce189a530c1fb39dcd9282cf5f9de0e4eb257344be9fd94ce27c06005e8c7', endpoint: 'oracle1.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 0, signature_valid: true, status: 'reporting' },
-  { oracle_id: 1, name: 'Green Candle', pubkey: '033dfb7a36ab40fa6fbc69b4b499eaa17bfa1958aa89ec248efc24b4c18694f990', endpoint: 'oracle2.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 0, signature_valid: true, status: 'reporting' },
-  { oracle_id: 2, name: 'Bastian', pubkey: '03172755a320cec96c981d46c86d79a03578d73406a25e89d8edc616a8f361cb5c', endpoint: 'oracle3.digibyte.io:12030', price_micro_usd: 0, price_usd: 0, timestamp: 0, signature_valid: false, status: 'no_data' },
-  { oracle_id: 3, name: 'DanGB', pubkey: '03546c07ee9d21640c4b4e96e6954bd49c3ab5bcf36c6a512603ebf75f8609da0c', endpoint: 'oracle4.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 0, signature_valid: true, status: 'reporting' },
-  { oracle_id: 4, name: 'Shenger', pubkey: '039cef021f841794c1afc4e84d678f3c70dbe3a972330b2b6329852898443deb4f', endpoint: 'oracle5.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 0, signature_valid: true, status: 'reporting' },
-  { oracle_id: 5, name: 'Ycagel', pubkey: '0285016758856ed27388501a54031fa3a678df705bf811fb8bc9abd2d7cfb6d9f7', endpoint: 'oracle6.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 0, signature_valid: true, status: 'reporting' },
-  { oracle_id: 6, name: 'Aussie', pubkey: '02ec2122bab83d1199350d5bd3e5e88b305da873211b1876edd5170fbe9c7f962e', endpoint: 'oracle7.digibyte.io:12030', price_micro_usd: 0, price_usd: 0, timestamp: 0, signature_valid: false, status: 'no_data' },
-];
 
 /**
  * OraclesPage Component - DigiDollar Oracle Network Status (Testnet Only)
@@ -56,9 +45,9 @@ const DEFAULT_ORACLES = [
 const OraclesPage = () => {
   const { theme: networkTheme, isTestnet } = useNetwork();
 
-  // State for oracle data
-  const [oraclePrice, setOraclePrice] = useState(DEFAULT_ORACLE_PRICE);
-  const [oracles, setOracles] = useState(DEFAULT_ORACLES);
+  // State for oracle data - start empty, no mock data
+  const [oraclePrice, setOraclePrice] = useState(EMPTY_ORACLE_PRICE);
+  const [oracles, setOracles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -138,9 +127,12 @@ const OraclesPage = () => {
 
   // Format price from micro-USD to display format
   const formatPrice = (microUsd) => {
-    if (!microUsd || microUsd === 0) return '--';
+    if (!microUsd || microUsd === 0) return 'Not Reporting';
     return '$' + (microUsd / 1000000).toFixed(6);
   };
+
+  // Check if we have valid data
+  const hasData = oraclePrice.oracle_count > 0 || oracles.length > 0;
 
   // Hero Section
   const HeroSection = () => (
@@ -237,53 +229,72 @@ const OraclesPage = () => {
         </Box>
       </Box>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
-          <Tooltip title="Consensus price from oracle network - median of all active oracle price feeds with outlier filtering" arrow placement="top">
-            <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help' }}>
-              <Typography variant="body2" color="text.secondary">DGB/USD Price</Typography>
-              <Typography variant="h3" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
-                {formatPrice(oraclePrice.price_micro_usd)}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {oraclePrice.price_micro_usd.toLocaleString()} micro-USD
-              </Typography>
-            </Box>
-          </Tooltip>
+      {loading ? (
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <CircularProgress size={40} sx={{ color: isTestnet ? '#2e7d32' : '#002352' }} />
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>Loading oracle data...</Typography>
+        </Box>
+      ) : !hasData && error ? (
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <CloudOffIcon sx={{ fontSize: '3rem', color: '#9e9e9e', mb: 1 }} />
+          <Typography variant="h6" color="text.secondary">Oracle Network Unavailable</Typography>
+          <Typography variant="body2" color="text.secondary">Unable to fetch oracle data from the network</Typography>
+        </Box>
+      ) : (
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={4}>
+            <Tooltip title="Consensus price from oracle network - median of all active oracle price feeds with outlier filtering" arrow placement="top">
+              <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help' }}>
+                <Typography variant="body2" color="text.secondary">DGB/USD Price</Typography>
+                <Typography variant="h3" fontWeight="bold" sx={{ color: oraclePrice.price_micro_usd > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
+                  {formatPrice(oraclePrice.price_micro_usd)}
+                </Typography>
+                {oraclePrice.price_micro_usd > 0 && (
+                  <Typography variant="caption" color="text.secondary">
+                    {oraclePrice.price_micro_usd.toLocaleString()} micro-USD
+                  </Typography>
+                )}
+              </Box>
+            </Tooltip>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Tooltip title="Number of oracles contributing to network price consensus. Requires 4-of-7 for consensus on testnet" arrow placement="top">
+              <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help' }}>
+                <Typography variant="body2" color="text.secondary">Network Oracles</Typography>
+                <Typography variant="h3" fontWeight="bold" sx={{ color: oraclePrice.oracle_count > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
+                  {oraclePrice.oracle_count > 0 ? `${oraclePrice.oracle_count} / 7` : 'Not Reporting'}
+                </Typography>
+                {oraclePrice.oracle_count > 0 && (
+                  <Chip
+                    label={oraclePrice.oracle_count >= 4 ? 'consensus' : 'no consensus'}
+                    color={oraclePrice.oracle_count >= 4 ? 'success' : 'warning'}
+                    size="small"
+                    sx={{ mt: 1 }}
+                  />
+                )}
+              </Box>
+            </Tooltip>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Tooltip title="Block height when the oracle price was last updated. Price becomes stale after 20 blocks without update" arrow placement="top">
+              <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help' }}>
+                <Typography variant="body2" color="text.secondary">Last Update</Typography>
+                <Typography variant="h4" fontWeight="bold" sx={{ color: oraclePrice.last_update_height > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
+                  {oraclePrice.last_update_height > 0 ? `Block ${oraclePrice.last_update_height.toLocaleString()}` : 'No Data'}
+                </Typography>
+                {oraclePrice.last_update_height > 0 && (
+                  <Chip
+                    label={oraclePrice.is_stale ? 'Stale' : 'Fresh'}
+                    color={oraclePrice.is_stale ? 'error' : 'success'}
+                    size="small"
+                    sx={{ mt: 1 }}
+                  />
+                )}
+              </Box>
+            </Tooltip>
+          </Grid>
         </Grid>
-        <Grid item xs={12} md={4}>
-          <Tooltip title="Number of oracles contributing to network price consensus. Requires 4-of-7 for consensus on testnet" arrow placement="top">
-            <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help' }}>
-              <Typography variant="body2" color="text.secondary">Network Oracles</Typography>
-              <Typography variant="h3" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
-                {oraclePrice.oracle_count || 0} / 7
-              </Typography>
-              <Chip
-                label={oraclePrice.oracle_count >= 4 ? 'consensus' : 'no consensus'}
-                color={oraclePrice.oracle_count >= 4 ? 'success' : 'warning'}
-                size="small"
-                sx={{ mt: 1 }}
-              />
-            </Box>
-          </Tooltip>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Tooltip title="Block height when the oracle price was last updated. Price becomes stale after 20 blocks without update" arrow placement="top">
-            <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help' }}>
-              <Typography variant="body2" color="text.secondary">Last Update</Typography>
-              <Typography variant="h4" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
-                Block {oraclePrice.last_update_height?.toLocaleString()}
-              </Typography>
-              <Chip
-                label={oraclePrice.is_stale ? 'Stale' : 'Fresh'}
-                color={oraclePrice.is_stale ? 'error' : 'success'}
-                size="small"
-                sx={{ mt: 1 }}
-              />
-            </Box>
-          </Tooltip>
-        </Grid>
-      </Grid>
+      )}
 
       {isTestnet && (
         <Box sx={{ mt: 2, p: 1.5, backgroundColor: 'rgba(46, 125, 50, 0.08)', borderRadius: '8px', textAlign: 'center' }}>
@@ -431,13 +442,36 @@ const OraclesPage = () => {
           <Typography variant="h5" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
             Testnet Oracle Network
           </Typography>
-          <Chip
-            label={`${reportingCount} / ${oracles.length} Reporting`}
-            color={reportingCount >= 4 ? 'success' : 'warning'}
-            size="small"
-            sx={{ ml: 2 }}
-          />
+          {oracles.length > 0 ? (
+            <Chip
+              label={`${reportingCount} / ${oracles.length} Reporting`}
+              color={reportingCount >= 4 ? 'success' : 'warning'}
+              size="small"
+              sx={{ ml: 2 }}
+            />
+          ) : (
+            <Chip
+              label="Not Reporting"
+              color="default"
+              size="small"
+              sx={{ ml: 2 }}
+            />
+          )}
         </Box>
+
+        {loading ? (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <CircularProgress size={40} sx={{ color: isTestnet ? '#2e7d32' : '#002352' }} />
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>Loading oracle network...</Typography>
+          </Box>
+        ) : oracles.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 4, backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
+            <CloudOffIcon sx={{ fontSize: '3rem', color: '#9e9e9e', mb: 1 }} />
+            <Typography variant="h6" color="text.secondary">No Oracle Data Available</Typography>
+            <Typography variant="body2" color="text.secondary">Unable to fetch oracle network status</Typography>
+          </Box>
+        ) : (
+          <>
 
         <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e0e0e0' }}>
           <Table>
@@ -579,6 +613,8 @@ const OraclesPage = () => {
             This ensures exact arithmetic with no floating-point errors. Consensus requires 4-of-7 oracles on testnet.
           </Typography>
         </Box>
+        </>
+        )}
       </Card>
     );
   };
