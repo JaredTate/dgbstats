@@ -235,8 +235,10 @@ describe('HomePage', () => {
         type: 'initialData',
         data: {
           blockchainInfo: {
-            blocks: 17456789,
-            softforks: {
+            blocks: 17456789
+          },
+          deploymentInfo: {
+            deployments: {
               csv: { type: 'buried', active: true, height: 419328 },
               segwit: { type: 'buried', active: true, height: 1201536 },
               taproot: { type: 'bip9', active: true }
@@ -244,7 +246,7 @@ describe('HomePage', () => {
           }
         }
       });
-      
+
       await waitFor(() => {
         expect(screen.getByText('Active Softforks')).toBeInTheDocument();
         expect(screen.getByText('csv:')).toBeInTheDocument();
@@ -253,7 +255,7 @@ describe('HomePage', () => {
         // There are multiple "buried" texts, so use getAllByText
         const buriedTexts = screen.getAllByText('buried');
         expect(buriedTexts.length).toBe(2); // csv and segwit are both buried
-        expect(screen.getByText('bip9')).toBeInTheDocument();
+        expect(screen.getByText('active')).toBeInTheDocument(); // taproot is active
       });
     });
   });
@@ -372,14 +374,14 @@ describe('HomePage', () => {
     it('should have proper heading hierarchy', async () => {
       // SKIPPED: HomePage has a bug where it doesn't check blockchainInfo.softforks before calling Object.entries()
       renderHomePage();
-      
+
       const h1 = screen.getByRole('heading', { level: 1 });
       expect(h1).toHaveTextContent('DigiByte Blockchain Statistics');
-      
+
       // Wait for WebSocket data to populate stat cards with h6 headings
       await waitForAsync();
       const ws = webSocketInstances[0];
-      
+
       ws.receiveMessage({
         type: 'initialData',
         data: {
@@ -388,7 +390,7 @@ describe('HomePage', () => {
           }
         }
       });
-      
+
       await waitFor(() => {
         const headings = screen.getAllByRole('heading');
         expect(headings.length).toBeGreaterThan(1);
@@ -397,10 +399,103 @@ describe('HomePage', () => {
 
     it('should have descriptive text for screen readers', () => {
       renderHomePage();
-      
+
       // Check for descriptive content
       expect(screen.getByText(/This is a free & open source website/)).toBeInTheDocument();
       expect(screen.getByText(/Total blocks in the DigiByte blockchain since the chain was started/)).toBeInTheDocument();
+    });
+  });
+
+  describe('Testnet Network', () => {
+    // Helper function to render HomePage with testnet network
+    const renderHomePageTestnet = () => {
+      return renderWithProviders(
+        <HomePage
+          numberWithCommas={(x) => {
+            if (x === null || x === undefined) return "0";
+            return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+          }}
+          formatNumber={(num) => {
+            if (num === null || num === undefined) return "0";
+            return num.toLocaleString();
+          }}
+        />,
+        { network: 'testnet' }
+      );
+    };
+
+    it('should render the page on testnet network', () => {
+      renderHomePageTestnet();
+
+      // On testnet, the title includes "Testnet"
+      expect(screen.getByText('DigiByte Testnet Blockchain Statistics')).toBeInTheDocument();
+    });
+
+    it('should connect to testnet WebSocket URL', async () => {
+      renderHomePageTestnet();
+
+      await waitForAsync();
+
+      // Testnet uses ws://localhost:5003 (from NetworkContext)
+      expect(mockWebSocket).toHaveBeenCalledWith('ws://localhost:5003');
+      expect(webSocketInstances.length).toBe(1);
+    });
+
+    it('should display testnet data correctly', async () => {
+      renderHomePageTestnet();
+
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      // Send testnet-specific data (lower block numbers typical for testnet)
+      ws.receiveMessage({
+        type: 'initialData',
+        data: {
+          blockchainInfo: {
+            blocks: 123456,
+            difficulties: {
+              sha256d: 1234,
+              scrypt: 234,
+              skein: 345,
+              qubit: 456,
+              odocrypt: 567
+            }
+          },
+          chainTxStats: {
+            txcount: 98765
+          },
+          txOutsetInfo: {
+            total_amount: 1234567890
+          },
+          blockReward: 625.0
+        }
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('123,456')).toBeInTheDocument(); // Testnet block count
+        expect(screen.getByText('98,765')).toBeInTheDocument(); // Testnet transaction count
+      });
+    });
+
+    it('should render all stat cards on testnet', () => {
+      renderHomePageTestnet();
+
+      // Check for stat card titles (same as mainnet)
+      expect(screen.getByText('Total Blocks')).toBeInTheDocument();
+      expect(screen.getByText('Total Transactions')).toBeInTheDocument();
+      expect(screen.getByText('Total Size')).toBeInTheDocument();
+      expect(screen.getByText('Current Circulating Supply')).toBeInTheDocument();
+    });
+
+    it('should close testnet WebSocket connection on unmount', async () => {
+      const { unmount } = renderHomePageTestnet();
+
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      unmount();
+
+      expect(ws.readyState).toBe(WebSocket.CLOSED);
     });
   });
 });

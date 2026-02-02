@@ -589,15 +589,15 @@ describe('BlocksPage', () => {
 
     it('should display new blocks when they arrive', async () => {
       renderWithProviders(<BlocksPage />);
-      
+
       await waitForAsync();
       const ws = webSocketInstances[0];
-      
+
       ws.receiveMessage({
         type: 'recentBlocks',
         data: mockApiResponses.blocksData.blocks
       });
-      
+
       // Send new block
       ws.receiveMessage({
         type: 'newBlock',
@@ -613,12 +613,119 @@ describe('BlocksPage', () => {
           taprootSignaling: true
         }
       });
-      
+
       await waitFor(() => {
         // New block should be displayed
         const newBlock = screen.getByText('17,456,790');
         expect(newBlock).toBeInTheDocument();
       });
+    });
+  });
+
+  describe('Testnet Network', () => {
+    it('should render the page on testnet network', () => {
+      renderWithProviders(<BlocksPage />, { network: 'testnet' });
+
+      expect(screen.getByText('Realtime DigiByte Blocks')).toBeInTheDocument();
+    });
+
+    it('should connect to testnet WebSocket URL', async () => {
+      renderWithProviders(<BlocksPage />, { network: 'testnet' });
+
+      await waitForAsync();
+
+      // Testnet uses ws://localhost:5003 (from NetworkContext)
+      expect(mockWebSocket).toHaveBeenCalledWith('ws://localhost:5003');
+      expect(webSocketInstances.length).toBe(1);
+    });
+
+    it('should display testnet blocks correctly', async () => {
+      renderWithProviders(<BlocksPage />, { network: 'testnet' });
+
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      // Send testnet-specific block data (lower block numbers)
+      ws.receiveMessage({
+        type: 'recentBlocks',
+        data: [{
+          height: 12345,
+          hash: '0000000testnet1234567890abcdef',
+          time: Date.now(),
+          size: 500,
+          txCount: 3,
+          poolIdentifier: 'Testnet Miner',
+          algo: 'sha256d',
+          difficulty: 1234.56,
+          taprootSignaling: false
+        }]
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('12,345')).toBeInTheDocument();
+        expect(screen.getByText('Testnet Miner')).toBeInTheDocument();
+      });
+    });
+
+    it('should show TESTNET indicator when on testnet', async () => {
+      renderWithProviders(<BlocksPage />, { network: 'testnet' });
+
+      // The BlocksPage shows TESTNET chip in hero section
+      expect(screen.getByText('TESTNET')).toBeInTheDocument();
+    });
+
+    it('should handle new blocks on testnet', async () => {
+      renderWithProviders(<BlocksPage />, { network: 'testnet' });
+
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      // Send initial blocks
+      ws.receiveMessage({
+        type: 'recentBlocks',
+        data: [{
+          height: 12345,
+          hash: '0000000testnet1234567890abcdef',
+          time: Date.now() - 15000,
+          size: 500,
+          txCount: 3,
+          poolIdentifier: 'Testnet Miner',
+          algo: 'sha256d',
+          difficulty: 1234.56,
+          taprootSignaling: false
+        }]
+      });
+
+      // Send new block
+      ws.receiveMessage({
+        type: 'newBlock',
+        data: {
+          height: 12346,
+          hash: '0000000testnet1234567890abcdef2',
+          time: Date.now(),
+          size: 600,
+          txCount: 5,
+          poolIdentifier: 'New Testnet Miner',
+          algo: 'scrypt',
+          difficulty: 1235.67,
+          taprootSignaling: false
+        }
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('12,346')).toBeInTheDocument();
+      });
+    });
+
+    it('should close testnet WebSocket connection on unmount', async () => {
+      const { unmount } = renderWithProviders(<BlocksPage />, { network: 'testnet' });
+
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      unmount();
+
+      expect(ws.readyState).toBe(WebSocket.CLOSED);
     });
   });
 });

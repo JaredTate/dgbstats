@@ -352,7 +352,7 @@ describe('NodesPage', () => {
   describe('Accessibility', () => {
     it('should provide accessible descriptions for the map', () => {
       renderWithProviders(<NodesPage />);
-      
+
       // Check for map section accessibility instead of specific testid
       expect(screen.getByText('Node Statistics')).toBeInTheDocument();
       expect(screen.getByText('About DigiByte Blockchain Network Nodes')).toBeInTheDocument();
@@ -360,14 +360,81 @@ describe('NodesPage', () => {
 
     it('should have proper heading hierarchy', () => {
       renderWithProviders(<NodesPage />);
-      
+
       const h1 = screen.getByRole('heading', { level: 1 });
       expect(h1).toHaveTextContent('DigiByte Blockchain Nodes');
-      
+
       // Check for Node Statistics heading (h5)
       expect(screen.getByText('Node Statistics')).toBeInTheDocument();
       // Check for About section heading (h5)
       expect(screen.getByText('About DigiByte Blockchain Network Nodes')).toBeInTheDocument();
+    });
+  });
+
+  describe('Testnet Network', () => {
+    it('should render the page on testnet network', () => {
+      renderWithProviders(<NodesPage />, { network: 'testnet' });
+
+      expect(screen.getByText('DigiByte Blockchain Nodes')).toBeInTheDocument();
+    });
+
+    it('should connect to testnet WebSocket URL', async () => {
+      renderWithProviders(<NodesPage />, { network: 'testnet' });
+
+      await waitForAsync();
+
+      // Testnet uses ws://localhost:5003 (from NetworkContext)
+      expect(mockWebSocket).toHaveBeenCalledWith('ws://localhost:5003');
+      expect(webSocketInstances.length).toBe(1);
+    });
+
+    it('should display testnet node data correctly', async () => {
+      renderWithProviders(<NodesPage />, { network: 'testnet' });
+
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      // Send testnet-specific node data (fewer nodes typical for testnet)
+      ws.receiveMessage({
+        type: 'geoData',
+        data: [
+          { ip: '10.0.0.1', lat: 37.7749, lon: -122.4194, country: 'United States' },
+          { ip: '10.0.0.2', lat: 52.5200, lon: 13.4050, country: 'Germany' }
+        ]
+      });
+
+      await waitFor(() => {
+        // Check that the testnet nodes are displayed
+        expect(screen.getByText('United States')).toBeInTheDocument();
+        expect(screen.getByText('Germany')).toBeInTheDocument();
+      });
+    });
+
+    it('should close testnet WebSocket connection on unmount', async () => {
+      const { unmount } = renderWithProviders(<NodesPage />, { network: 'testnet' });
+
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      unmount();
+
+      expect(ws.readyState).toBe(WebSocket.CLOSED);
+    });
+
+    it('should handle testnet with no nodes', async () => {
+      renderWithProviders(<NodesPage />, { network: 'testnet' });
+
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      // Send empty node data (possible on testnet)
+      ws.receiveMessage({
+        type: 'geoData',
+        data: []
+      });
+
+      // Should not crash and still display the page
+      expect(screen.getByText('DigiByte Blockchain Nodes')).toBeInTheDocument();
     });
   });
 });

@@ -63,6 +63,23 @@ export const handlers = [
     return HttpResponse.json([]);
   }),
 
+  // TxOutsetInfo endpoint for SupplyPage (handles both port 3001 and 5001)
+  http.get('http://localhost:5001/api/gettxoutsetinfo', () => {
+    return HttpResponse.json({
+      total_amount: 15700000000,
+      height: 18000000,
+      bestblock: "0000000000000000000000000000000000000000000000000000000000000000",
+      txouts: 15000000,
+      bogosize: 1000000000
+    });
+  }),
+
+  // Handle any other endpoint on port 5001
+  http.get('http://localhost:5001/*', ({ request }) => {
+    console.error(`Unhandled GET request on port 5001: ${request.url}`);
+    return HttpResponse.json({ error: 'Not found' }, { status: 404 });
+  }),
+
   // Default handler for unhandled requests
   http.get('*', ({ request }) => {
     console.error(`Unhandled GET request: ${request.url}`);
