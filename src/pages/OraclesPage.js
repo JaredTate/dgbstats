@@ -504,19 +504,28 @@ const OraclesPage = () => {
                   </Typography>
                 </TableCell>
                 <TableCell>
-                  <Tooltip title={oracle.pubkey}>
-                    <Typography
-                      variant="body2"
+                  <Tooltip title={`${oracle.pubkey} (Click to view in source code)`}>
+                    <Link
+                      href={`https://github.com/DigiByte-Core/digibyte/blob/feature/digidollar-v1/src/kernel/chainparams.cpp#L${1070 + oracle.oracle_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       sx={{
                         fontFamily: 'monospace',
                         fontSize: '0.75rem',
                         maxWidth: '150px',
                         overflow: 'hidden',
-                        textOverflow: 'ellipsis'
+                        textOverflow: 'ellipsis',
+                        display: 'block',
+                        textDecoration: 'none',
+                        color: isTestnet ? '#2e7d32' : '#002352',
+                        '&:hover': {
+                          textDecoration: 'underline',
+                          color: isTestnet ? '#4caf50' : '#0066cc'
+                        }
                       }}
                     >
                       {oracle.pubkey.substring(0, 10)}...{oracle.pubkey.substring(oracle.pubkey.length - 8)}
-                    </Typography>
+                    </Link>
                   </Tooltip>
                 </TableCell>
                 <TableCell>
