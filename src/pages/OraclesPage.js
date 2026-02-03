@@ -267,14 +267,9 @@ const OraclesPage = () => {
             <Tooltip title="Number of oracles contributing to network price consensus. Requires 5-of-8 for consensus on testnet" arrow placement="top">
               <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help' }}>
                 <Typography variant="body2" color="text.secondary">Network Oracles</Typography>
-                <Typography variant="h3" fontWeight="bold" sx={{ color: oraclePrice.oracle_count > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
-                  {oraclePrice.oracle_count > 0 ? `${oraclePrice.oracle_count} / 8` : 'Not Reporting'}
+                <Typography variant="h4" fontWeight="bold" sx={{ color: oraclePrice.oracle_count > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
+                  {oraclePrice.oracle_count > 0 ? `${oraclePrice.oracle_count}/8 Online Reporting` : 'Not Reporting'}
                 </Typography>
-                {oraclePrice.oracle_count > 0 && (
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                    Reporting
-                  </Typography>
-                )}
                 <Typography variant="body2" fontWeight="bold" sx={{ mt: 1, color: oraclePrice.oracle_count >= 5 ? '#2e7d32' : '#ed6c02' }}>
                   5/8 needed for consensus
                 </Typography>
