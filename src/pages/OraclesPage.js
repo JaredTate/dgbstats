@@ -250,7 +250,7 @@ const OraclesPage = () => {
         <Grid container spacing={3}>
           <Grid item xs={12} md={4}>
             <Tooltip title="Consensus price from oracle network - median of all active oracle price feeds with outlier filtering" arrow placement="top">
-              <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help', minHeight: 140, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help', minHeight: 160, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <Typography variant="body2" color="text.secondary">DGB/USD Price</Typography>
                 <Typography variant="h3" fontWeight="bold" sx={{ color: oraclePrice.price_micro_usd > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
                   {formatPrice(oraclePrice.price_micro_usd)}
@@ -265,7 +265,7 @@ const OraclesPage = () => {
           </Grid>
           <Grid item xs={12} md={4}>
             <Tooltip title="Number of oracles contributing to network price consensus. Requires 5-of-8 for consensus on testnet" arrow placement="top">
-              <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help', minHeight: 140, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help', minHeight: 160, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <Typography variant="body2" color="text.secondary">Network Oracles</Typography>
                 <Typography variant="h3" fontWeight="bold" sx={{ color: oraclePrice.oracle_count > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
                   {oraclePrice.oracle_count > 0 ? `${oraclePrice.oracle_count}/8` : '--'}
@@ -281,7 +281,7 @@ const OraclesPage = () => {
           </Grid>
           <Grid item xs={12} md={4}>
             <Tooltip title="Block height when the oracle price was last updated. Price becomes stale after 20 blocks without update" arrow placement="top">
-              <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help', minHeight: 140, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help', minHeight: 160, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <Typography variant="body2" color="text.secondary">Last Update</Typography>
                 <Typography variant="h4" fontWeight="bold" sx={{ color: oraclePrice.last_update_height > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
                   {oraclePrice.last_update_height > 0 ? `Block ${oraclePrice.last_update_height.toLocaleString()}` : 'No Data'}
