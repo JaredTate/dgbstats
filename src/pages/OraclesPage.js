@@ -448,8 +448,8 @@ const OraclesPage = () => {
           </Typography>
           {oracles.length > 0 ? (
             <Chip
-              label={`${reportingCount} / ${oracles.length} Reporting`}
-              color={reportingCount >= 4 ? 'success' : 'warning'}
+              label={`${reportingCount} / ${oracles.length} Online Reporting`}
+              color={reportingCount >= 5 ? 'success' : 'warning'}
               size="small"
               sx={{ ml: 2 }}
             />
