@@ -140,6 +140,9 @@ const OraclesPage = () => {
   // Check if we have valid data
   const hasData = oraclePrice.oracle_count > 0 || oracles.length > 0;
 
+  // Count oracles that are actively reporting (consistent across page)
+  const reportingCount = oracles.filter(o => o.status === 'reporting').length;
+
   // Hero Section
   const HeroSection = () => (
     <Card
@@ -267,13 +270,13 @@ const OraclesPage = () => {
             <Tooltip title="Number of oracles contributing to network price consensus. Requires 5-of-8 for consensus on testnet" arrow placement="top">
               <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help', minHeight: 160, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <Typography variant="body2" color="text.secondary">Network Oracles</Typography>
-                <Typography variant="h3" fontWeight="bold" sx={{ color: oraclePrice.oracle_count > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
-                  {oraclePrice.oracle_count > 0 ? `${oraclePrice.oracle_count}/8` : '--'}
+                <Typography variant="h3" fontWeight="bold" sx={{ color: reportingCount > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
+                  {reportingCount > 0 ? `${reportingCount}/8` : '--'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {oraclePrice.oracle_count > 0 ? 'Online Reporting' : 'Not Reporting'}
+                  {reportingCount > 0 ? 'Online Reporting' : 'Not Reporting'}
                 </Typography>
-                <Typography variant="body2" fontWeight="bold" sx={{ mt: 1, color: oraclePrice.oracle_count >= 5 ? '#2e7d32' : '#ed6c02' }}>
+                <Typography variant="body2" fontWeight="bold" sx={{ mt: 1, color: reportingCount >= 5 ? '#2e7d32' : '#ed6c02' }}>
                   5/8 needed for consensus
                 </Typography>
               </Box>
@@ -437,8 +440,6 @@ const OraclesPage = () => {
 
   // Oracle List Table
   const OracleListSection = () => {
-    const reportingCount = oracles.filter(o => o.status === 'reporting').length;
-
     return (
       <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
