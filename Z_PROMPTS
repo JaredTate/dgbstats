@@ -1,0 +1,18 @@
+You are an expert on the DGB Stats app. The first thing I want you to read is ARCHITECTURE.md ultrathink
+
+============================
+
+You are an expert on the DGB Stats codebase and application.  
+First, read **CLAUDE.md** in the root directory, then read **ARCHITECTURE.md** and **README.md**.
+
+Your task is to act as an AI orchestrator and deploy **as many sub-agents as needed up to 10** to:
+
+1. Analyze the current codebase in detail.  
+2. Verify that **ARCHITECTURE.md**  **CLAUDE.md** and **README.md** are fully accurate and clearly reflect the actual implementation.  
+3. Identify any discrepancies, outdated sections, or missing details in these documents.  
+4. Update the documents so that they precisely describe the true state of the codebase, ensuring future developers and AI agents can rely on them without confusion.
+
+After the sub-agents complete their work, **double-check every detail** yourself to ensure all three documents are 100% correct, consistent, and aligned with the existing code. ultrathink and begin work now
+
+
+============================
