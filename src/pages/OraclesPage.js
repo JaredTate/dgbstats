@@ -271,9 +271,17 @@ const OraclesPage = () => {
                   {oraclePrice.oracle_count > 0 ? `${oraclePrice.oracle_count} / 8` : 'Not Reporting'}
                 </Typography>
                 {oraclePrice.oracle_count > 0 && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    Reporting
+                  </Typography>
+                )}
+                <Typography variant="body2" fontWeight="bold" sx={{ mt: 1, color: oraclePrice.oracle_count >= 5 ? '#2e7d32' : '#ed6c02' }}>
+                  5/8 needed for consensus
+                </Typography>
+                {oraclePrice.oracle_count > 0 && (
                   <Chip
-                    label={oraclePrice.oracle_count >= 4 ? 'consensus' : 'no consensus'}
-                    color={oraclePrice.oracle_count >= 4 ? 'success' : 'warning'}
+                    label={oraclePrice.oracle_count >= 5 ? 'consensus' : 'no consensus'}
+                    color={oraclePrice.oracle_count >= 5 ? 'success' : 'warning'}
                     size="small"
                     sx={{ mt: 1 }}
                   />
