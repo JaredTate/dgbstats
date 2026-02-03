@@ -83,32 +83,42 @@ Network-specific layouts wrap page content with appropriate headers, footers, an
 ```
 src/components/
 ├── MainnetLayout.js    # Mainnet wrapper with blue theme
-└── TestnetLayout.js    # Testnet wrapper with orange theme
+└── TestnetLayout.js    # Testnet wrapper with green theme
 ```
 
 **MainnetLayout.js**:
-- Full navigation menu (all 14 items)
-- Blue themed Header and Footer
+- Full navigation menu (12 internal pages + external links)
+- Blue themed Header and Footer (#002352)
 - Standard DigiByte branding
 
 **TestnetLayout.js**:
-- Reduced navigation menu (no Pools, Downloads, Roadmap)
-- Green themed Header and Footer
+- Modified navigation menu (no Pools, Downloads, Roadmap; adds Oracles, DD Stats)
+- Green themed Header and Footer (#2e7d32)
 - "TESTNET" visual indicators
 - Testnet-specific branding
 
-### Network Data Hook
+### Network Data Hooks
 
-For components that need network-aware data fetching:
+For components that need network-aware data fetching, `src/hooks/useNetworkData.js` exports 5 specialized hooks:
 
 **Location**: `src/hooks/useNetworkData.js`
 
+**Available Hooks**:
+| Hook | Returns | Purpose |
+|------|---------|---------|
+| `useBlockchainInfo()` | `{ data, loading, error, refetch }` | Fetch blockchain info |
+| `useChainTxStats()` | `{ data, loading, error }` | Fetch chain tx stats |
+| `useTxOutsetInfo()` | `{ data, loading, error }` | Fetch UTXO set info |
+| `useBlockReward()` | `{ data, loading, error }` | Fetch current block reward |
+| `useNetworkWebSocket(onMessage)` | `{ connected }` | WebSocket connection |
+
 ```javascript
-import { useNetworkData } from '../hooks/useNetworkData';
+import { useBlockchainInfo, useNetworkWebSocket } from '../hooks/useNetworkData';
 
 const MyComponent = () => {
-  const { data, loading, error, refetch } = useNetworkData('/api/endpoint');
-  // Automatically uses correct network URLs
+  const { data, loading, error, refetch } = useBlockchainInfo();
+  const { connected } = useNetworkWebSocket((msg) => console.log(msg));
+  // Automatically uses correct network URLs via NetworkContext
 };
 ```
 
@@ -135,20 +145,22 @@ dgbstats/                          # Root directory
 │   ├── config.js                  # API/WebSocket URL configuration
 │   ├── utils.js                   # Utility functions
 │   │
-│   ├── pages/                     # Page Components (13 pages)
+│   ├── pages/                     # Page Components (15 pages)
 │   │   ├── HomePage.js            # Main dashboard
 │   │   ├── BlocksPage.js          # Block explorer
 │   │   ├── TxsPage.js             # Transaction analytics
-│   │   ├── PoolsPage.js           # Mining pool distribution
+│   │   ├── PoolsPage.js           # Mining pool distribution (mainnet only)
 │   │   ├── AlgosPage.js           # Algorithm statistics
 │   │   ├── HashratePage.js        # Network hashrate
 │   │   ├── DifficultiesPage.js    # Difficulty tracking
 │   │   ├── NodesPage.js           # Geographic node map
 │   │   ├── SupplyPage.js          # Supply economics
 │   │   ├── TaprootPage.js         # Taproot activation status
-│   │   ├── DownloadsPage.js       # Core wallet downloads
-│   │   ├── RoadmapPage.js         # Development roadmap
-│   │   └── DigiDollarPage.js      # DigiDollar explainer
+│   │   ├── DownloadsPage.js       # Core wallet downloads (mainnet only)
+│   │   ├── RoadmapPage.js         # Development roadmap (mainnet only)
+│   │   ├── DigiDollarPage.js      # DigiDollar explainer
+│   │   ├── OraclesPage.js         # Oracle network status (testnet only)
+│   │   └── DDStatsPage.js         # DigiDollar stats (testnet only)
 │   │
 │   ├── context/                   # React Context Providers
 │   │   └── NetworkContext.js      # Network (mainnet/testnet) context
@@ -221,7 +233,7 @@ dgbstats/                          # Root directory
 
 ### 2. Page Components (`src/pages/`)
 
-The application consists of 13 pages organized by functionality:
+The application consists of **15 pages** organized by functionality:
 
 #### Core Analytics Pages
 | Page | Route | Purpose |
@@ -244,9 +256,15 @@ The application consists of 13 pages organized by functionality:
 #### Information Pages
 | Page | Route | Purpose |
 |------|-------|---------|
-| **DownloadsPage** | `/downloads` | GitHub releases and download stats |
-| **RoadmapPage** | `/roadmap` | Development timeline with phases |
+| **DownloadsPage** | `/downloads` | GitHub releases and download stats (mainnet only) |
+| **RoadmapPage** | `/roadmap` | Development timeline with phases (mainnet only) |
 | **DigiDollarPage** | `/digidollar` | Stablecoin concept and collateral info |
+
+#### Testnet-Only Pages
+| Page | Route | Purpose |
+|------|-------|---------|
+| **OraclesPage** | `/testnet/oracles` | DigiDollar oracle network monitoring |
+| **DDStatsPage** | `/testnet/ddstats` | DigiDollar network-wide statistics |
 
 ### 3. Component Architecture (`src/components/`)
 
@@ -402,12 +420,19 @@ DigiByte Stats - Site Navigation Structure
 │   └── Downloads (/downloads) ───────── GitHub releases
 │       └── Platform-specific stats
 │
-└── 🗺️ Future
-    ├── Roadmap (/roadmap) ───────────── Development timeline
-    │   └── DigiDollar phases
+├── 🗺️ Future
+│   ├── Roadmap (/roadmap) ───────────── Development timeline
+│   │   └── DigiDollar phases
+│   │
+│   └── DigiDollar (/digidollar) ─────── Stablecoin explainer
+│       └── Collateral requirements
+│
+└── 🧪 Testnet-Only (under /testnet/*)
+    ├── Oracles (/testnet/oracles) ───── Oracle network status
+    │   └── DGB/USD price feeds
     │
-    └── DigiDollar (/digidollar) ─────── Stablecoin explainer
-        └── Collateral requirements
+    └── DD Stats (/testnet/ddstats) ──── DigiDollar stats
+        └── System health, collateral, supply
 ```
 
 ### Navigation Flow Patterns
@@ -458,19 +483,21 @@ Header AppBar (Reduced):
 ├── Difficulties
 ├── Hashrate
 ├── Nodes
-├── Taproot
+├── Oracles
+├── DD Stats
+├── DigiDollar
 ├── DigiHash (external)
 └── DigiByte.org (external)
 
-Note: Pools, Downloads, and Roadmap are not available on testnet
+Note: Pools, Downloads, and Roadmap are not available on testnet; Oracles and DD Stats are testnet-exclusive
 ```
 
 #### Mobile Navigation (Drawer)
 ```
 Hamburger Menu → Drawer slides in
 ├── [Same items as corresponding desktop navigation]
-├── Mainnet: Full 14-item menu
-├── Testnet: Reduced menu (no Pools, Downloads, Roadmap)
+├── Mainnet: 12 internal items + external links
+├── Testnet: 11 internal items (no Pools/Downloads/Roadmap, adds Oracles/DD Stats)
 └── Closes on selection
 ```
 
@@ -667,8 +694,8 @@ npm run build         # Create optimized build in /build
 
 ### Environment Configuration
 ```javascript
-// config.js
-export default {
+// config.js (currently hardcoded to development)
+const config = {
   development: {
     apiBaseUrl: 'http://localhost:5001',
     wsBaseUrl: 'ws://localhost:5002'
@@ -677,8 +704,14 @@ export default {
     apiBaseUrl: 'https://digibyte.io',
     wsBaseUrl: 'wss://digibyte.io/ws'
   }
-}
+};
+const env = 'development'; // Currently hardcoded
+export default config[env];
 ```
+
+**Note**: Network-specific configuration (mainnet/testnet) is managed by `src/context/NetworkContext.js`:
+- Mainnet WebSocket: port 5002
+- Testnet WebSocket: port 5003
 
 ### Deployment Requirements
 - Node.js 14.x or higher (tested with 21.7.2)
@@ -703,13 +736,13 @@ export default {
 ## Architecture Summary
 
 ### Key Statistics
-- **Pages**: 13 total (analytics, network, economics, information)
+- **Pages**: 15 total (13 mainnet, 12 testnet, 2 testnet-exclusive)
 - **Components**: 5 reusable (Header, Footer, XIcon, MainnetLayout, TestnetLayout)
 - **Context Providers**: 1 (NetworkContext)
-- **Custom Hooks**: 5 (in useNetworkData.js)
+- **Custom Hooks**: 5 named exports in useNetworkData.js (useBlockchainInfo, useChainTxStats, useTxOutsetInfo, useBlockReward, useNetworkWebSocket)
 - **Utilities**: 3 functions (formatNumber, numberWithCommas, useWidth)
-- **Unit/Integration Tests**: 18 test files (314 tests)
-- **E2E Tests**: 21 spec files (1,112 tests across 7 browsers)
+- **Unit/Integration Tests**: 18 test files
+- **E2E Tests**: 21 spec files across 7 browser configurations
 - **Dependencies**: 35+ production packages
 - **Technologies**: React 17, MUI 5, D3.js 7, Chart.js 4
 

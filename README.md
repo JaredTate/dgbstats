@@ -12,9 +12,11 @@ A comprehensive real-time blockchain statistics dashboard for the DigiByte netwo
 
 ### 📈 Analytics Pages
 
+**15 pages total** (13 mainnet, 12 testnet, 2 testnet-exclusive)
+
 1. **Home** - Main dashboard with key metrics and softfork status
 2. **Blocks** - Real-time block explorer with mining details
-3. **Mining Pools** - Pool distribution analysis with interactive charts
+3. **Mining Pools** - Pool distribution analysis with interactive charts (mainnet only)
 4. **Algorithms** - Multi-algorithm mining statistics (SHA256, Scrypt, Skein, Qubit, Odocrypt)
 5. **Hashrate** - Network hashrate trends and analysis
 6. **Difficulties** - Mining difficulty tracking per algorithm
@@ -22,9 +24,11 @@ A comprehensive real-time blockchain statistics dashboard for the DigiByte netwo
 8. **Supply** - Supply economics, emission rate, and distribution metrics
 9. **Transactions** - Transaction volume and fee analytics
 10. **Taproot** - Network upgrade activation monitoring
-11. **Downloads** - DigiByte Core wallet download statistics
-12. **Roadmap** - Development priorities and upcoming features
+11. **Downloads** - DigiByte Core wallet download statistics (mainnet only)
+12. **Roadmap** - Development priorities and upcoming features (mainnet only)
 13. **DigiDollar** - Decentralized stablecoin concept and collateral system
+14. **Oracles** - DigiDollar oracle network status and price feeds (testnet only)
+15. **DD Stats** - DigiDollar network-wide statistics dashboard (testnet only)
 
 ### 🌐 Network Support
 
@@ -125,14 +129,26 @@ const rpcUrl = 'http://127.0.0.1:14022';
 
 ### 3. Frontend Configuration
 
-The frontend configuration is in `src/config.js`:
+The frontend configuration is in `src/config.js` (currently hardcoded to development):
 
 ```javascript
 const config = {
-  apiBaseUrl: process.env.REACT_APP_API_URL || 'http://localhost:5001',
-  wsBaseUrl: process.env.REACT_APP_WS_URL || 'ws://localhost:5002'
+  development: {
+    apiBaseUrl: 'http://localhost:5001',
+    wsBaseUrl: 'ws://localhost:5002'
+  },
+  production: {
+    apiBaseUrl: 'https://digibyte.io',
+    wsBaseUrl: 'wss://digibyte.io/ws'
+  }
 };
+const env = 'development'; // Currently hardcoded
+export default config[env];
 ```
+
+Network-specific configuration (mainnet/testnet) is managed by `src/context/NetworkContext.js`:
+- Mainnet WebSocket: port 5002
+- Testnet WebSocket: port 5003
 
 ## Running the Application
 
@@ -159,10 +175,10 @@ npm start
 ```
 dgbstats/
 ├── src/
-│   ├── pages/          # Page components (13 pages)
+│   ├── pages/          # Page components (15 pages)
 │   ├── components/     # Reusable components (Header, Footer, Layouts)
 │   ├── context/        # React Context providers (NetworkContext)
-│   ├── hooks/          # Custom hooks (useNetworkData)
+│   ├── hooks/          # Custom hooks (5 hooks in useNetworkData.js)
 │   ├── tests/          # Test suites (unit, integration, mocks)
 │   ├── config.js       # API configuration
 │   ├── utils.js        # Utility functions

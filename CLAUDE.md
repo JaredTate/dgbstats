@@ -23,6 +23,10 @@ DigiByte Stats is a comprehensive React-based web application that provides real
 
 ## Application Pages
 
+The application has **15 pages** total: 13 available on mainnet and 12 on testnet (with 2 testnet-exclusive pages).
+
+### Mainnet Pages
+
 ### 1. **HomePage** (`/`)
 Main dashboard displaying key DigiByte statistics including:
 - Current block height and blockchain info
@@ -38,13 +42,12 @@ Real-time block explorer showing:
 - Block rewards and sizes
 - Miner addresses and pools
 
-### 3. **PoolsPage** (`/pools`)
+### 3. **PoolsPage** (`/pools`) - Mainnet Only
 Mining pool distribution analysis featuring:
 - Interactive donut chart of pool market share
 - Multi-block and single-block miners
 - Pool identification and statistics
 - Real-time updates as blocks are mined
-- **Note**: TAP route activation status removed (already activated)
 
 ### 4. **AlgosPage** (`/algos`)
 Mining algorithm statistics displaying:
@@ -96,19 +99,45 @@ Taproot activation monitoring:
 - Activation timeline
 - Network upgrade progress
 
-### 11. **DownloadsPage** (`/downloads`)
+### 11. **DownloadsPage** (`/downloads`) - Mainnet Only
 DigiByte Core download statistics:
 - Download counts by version
 - Platform distribution (Windows, Mac, Linux)
 - Historical download trends
 - Latest release information
 
-### 12. **RoadmapPage** (`/roadmap`)
+### 12. **RoadmapPage** (`/roadmap`) - Mainnet Only
 Development roadmap displaying:
 - Current development priorities
 - Upcoming features and improvements
 - Community proposals
 - Technical debt items
+
+### 13. **DigiDollarPage** (`/digidollar`)
+DigiDollar stablecoin explainer:
+- Use cases and benefits
+- Collateral tier system
+- Implementation details
+- How DigiDollar works
+
+### Testnet-Only Pages
+
+### 14. **OraclesPage** (`/testnet/oracles`) - Testnet Only
+DigiDollar oracle network monitoring:
+- Oracle status and health
+- DGB/USD price feeds
+- 24-hour price range and volatility
+- Oracle configuration details
+- Reporting status for each oracle
+
+### 15. **DDStatsPage** (`/testnet/ddstats`) - Testnet Only
+DigiDollar network statistics dashboard:
+- System health percentage
+- Total collateral locked (DGB)
+- Total DD supply
+- Oracle price information
+- ERR tier status
+- Active positions count
 
 ## Design System
 
@@ -146,12 +175,18 @@ Border Radius: 8px (buttons), 12px (cards)
 ### File Structure
 ```
 src/
-├── pages/           # Page components
-├── components/      # Reusable components (Header, Footer, etc.)
-├── utils/           # Utility functions (formatNumber, etc.)
+├── pages/           # Page components (15 pages)
+├── components/      # Reusable components (Header, Footer, Layouts)
+├── context/         # React Context providers (NetworkContext)
+├── hooks/           # Custom hooks (useNetworkData.js with 5 hooks)
+├── utils.js         # Utility functions (formatNumber, numberWithCommas, useWidth)
 ├── tests/           # Test suites
 │   ├── unit/       # Component unit tests
+│   │   ├── pages/  # Page-specific tests
+│   │   ├── components/ # Component tests
+│   │   └── context/ # Context tests
 │   ├── integration/ # Integration tests
+│   ├── mocks/      # MSW handlers and mock data
 │   └── utils/      # Test utilities
 ├── config.js        # Configuration (API URLs, WebSocket endpoints)
 └── App.js          # Main application component with routing
@@ -215,10 +250,32 @@ npm run test:all      # All tests
 
 ## Deployment Notes
 
-### Environment Variables
+### Configuration
+The frontend configuration is in `src/config.js`. Currently hardcoded to development mode:
+```javascript
+const config = {
+  development: {
+    apiBaseUrl: 'http://localhost:5001',
+    wsBaseUrl: 'ws://localhost:5002'
+  },
+  production: {
+    apiBaseUrl: 'https://digibyte.io',
+    wsBaseUrl: 'wss://digibyte.io/ws'
+  }
+};
+const env = 'development'; // Currently hardcoded
+export default config[env];
+```
+
+Network-specific configuration (mainnet/testnet) is handled by `src/context/NetworkContext.js`:
+- Mainnet WebSocket: `ws://localhost:5002`
+- Testnet WebSocket: `ws://localhost:5003`
+
+### Default Ports
 - `PORT`: Frontend server port (default: 3005)
-- `REACT_APP_API_URL`: Backend API URL
-- `REACT_APP_WS_URL`: WebSocket server URL
+- Backend API: port 5001
+- Mainnet WebSocket: port 5002
+- Testnet WebSocket: port 5003
 
 ### Build Process
 ```bash
@@ -259,6 +316,9 @@ npm run build         # Production build
 
 ## Important Notes
 
+- **Network Support**: Application supports both mainnet (`/`) and testnet (`/testnet/*`) with separate WebSocket connections and theming
+- **Testnet-Only Features**: OraclesPage and DDStatsPage are exclusive to testnet for DigiDollar development
+- **Mainnet-Only Features**: PoolsPage, DownloadsPage, and RoadmapPage are not available on testnet
 - **TAP Route Status**: TAP route soft fork has been successfully activated and buried. References to TAP route signaling have been removed from the UI.
 - **Mobile First**: Always test on mobile viewports first
 - **Accessibility**: Maintain WCAG 2.1 AA compliance
