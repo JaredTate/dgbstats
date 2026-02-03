@@ -268,7 +268,7 @@ describe('OraclesPage', () => {
       });
 
       // Use getAllByText since these may appear multiple times
-      const consensus = screen.getAllByText(/4-of-8 oracle consensus/);
+      const consensus = screen.getAllByText(/5-of-8 oracle consensus/);
       expect(consensus.length).toBeGreaterThan(0);
       expect(screen.getByText(/10 oracle slots/)).toBeInTheDocument();
       expect(screen.getByText(/Price updates every 15 seconds/)).toBeInTheDocument();
@@ -306,7 +306,7 @@ describe('OraclesPage', () => {
       // Check for testnet-specific text
       const phaseTwo = screen.getAllByText(/Phase Two/);
       expect(phaseTwo.length).toBeGreaterThan(0);
-      const consensus = screen.getAllByText(/4-of-8/);
+      const consensus = screen.getAllByText(/5-of-8/);
       expect(consensus.length).toBeGreaterThan(0);
     });
   });

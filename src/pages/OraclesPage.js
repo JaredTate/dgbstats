@@ -264,7 +264,7 @@ const OraclesPage = () => {
             </Tooltip>
           </Grid>
           <Grid item xs={12} md={4}>
-            <Tooltip title="Number of oracles contributing to network price consensus. Requires 4-of-8 for consensus on testnet" arrow placement="top">
+            <Tooltip title="Number of oracles contributing to network price consensus. Requires 5-of-8 for consensus on testnet" arrow placement="top">
               <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help' }}>
                 <Typography variant="body2" color="text.secondary">Network Oracles</Typography>
                 <Typography variant="h3" fontWeight="bold" sx={{ color: oraclePrice.oracle_count > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
@@ -305,7 +305,7 @@ const OraclesPage = () => {
       {isTestnet && (
         <Box sx={{ mt: 2, p: 1.5, backgroundColor: 'rgba(46, 125, 50, 0.08)', borderRadius: '8px', textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
-            <strong>Phase Two:</strong> 4-of-8 oracle consensus | Mainnet: 8-of-15 threshold signatures
+            <strong>Phase Two:</strong> 5-of-8 oracle consensus | Mainnet: 8-of-15 threshold signatures
           </Typography>
         </Box>
       )}
@@ -616,7 +616,7 @@ const OraclesPage = () => {
         <Box sx={{ mt: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
           <Typography variant="body2" color="text.secondary">
             <strong>Price Format:</strong> Oracle prices use micro-USD format where 1,000,000 = $1.00.
-            This ensures exact arithmetic with no floating-point errors. Consensus requires 4-of-8 oracles on testnet.
+            This ensures exact arithmetic with no floating-point errors. Consensus requires 5-of-8 oracles on testnet.
           </Typography>
         </Box>
         </>
@@ -639,7 +639,7 @@ const OraclesPage = () => {
               Phase Two (Testnet)
             </Typography>
             <Box component="ul" sx={{ pl: 2, m: 0 }}>
-              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>4-of-8 oracle consensus</Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>5-of-8 oracle consensus</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>10 oracle slots (IDs 0-9)</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Price updates every 15 seconds</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Compact 22-byte storage per block</Typography>
