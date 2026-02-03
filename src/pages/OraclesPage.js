@@ -36,6 +36,11 @@ const EMPTY_ORACLE_PRICE = {
   volatility: 0
 };
 
+// Oracle name mapping for cases where daemon returns "Unknown"
+const ORACLE_NAMES = {
+  7: 'LookInto'  // Oracle 7 - newest oracle added
+};
+
 /**
  * OraclesPage Component - DigiDollar Oracle Network Status (Testnet Only)
  *
@@ -85,22 +90,23 @@ const OraclesPage = () => {
         volatility: priceData.volatility || 0
       });
 
-      // Merge oracle data from getalloracleprices (live status) with getoracles (pubkeys)
-      const mappedOracles = (allOraclePricesData.oracles || []).map(oracle => {
-        // Find matching config data to get pubkey
-        const configData = oraclesConfigData.find(o => o.oracle_id === oracle.oracle_id) || {};
+      // Use getoracles (config with all oracles) as base, merge price data from getalloracleprices
+      // This ensures we show ALL oracles even if they haven't reported yet
+      const mappedOracles = (oraclesConfigData || []).map(configOracle => {
+        // Find matching price data from getalloracleprices
+        const priceOracle = (allOraclePricesData.oracles || []).find(o => o.oracle_id === configOracle.oracle_id) || {};
         return {
-          oracle_id: oracle.oracle_id,
-          name: oracle.name,
-          pubkey: configData.pubkey || '',
-          endpoint: oracle.endpoint,
-          price_micro_usd: oracle.price_micro_usd || 0,
-          price_usd: oracle.price_usd || 0,
-          timestamp: oracle.timestamp || 0,
-          deviation_pct: oracle.deviation_pct || 0,
-          signature_valid: oracle.signature_valid,
-          status: oracle.status || 'no_data',
-          is_running: oracle.status === 'reporting'
+          oracle_id: configOracle.oracle_id,
+          name: configOracle.name !== 'Unknown' ? configOracle.name : (ORACLE_NAMES[configOracle.oracle_id] || `Oracle ${configOracle.oracle_id}`),
+          pubkey: configOracle.pubkey || '',
+          endpoint: configOracle.endpoint,
+          price_micro_usd: priceOracle.price_micro_usd || 0,
+          price_usd: priceOracle.price_usd || 0,
+          timestamp: priceOracle.timestamp || 0,
+          deviation_pct: priceOracle.deviation_pct || 0,
+          signature_valid: priceOracle.signature_valid || false,
+          status: priceOracle.status || 'no_data',
+          is_running: priceOracle.status === 'reporting'
         };
       });
 
