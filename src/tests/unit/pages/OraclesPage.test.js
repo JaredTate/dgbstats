@@ -16,7 +16,7 @@ const mockOraclePrice = {
   volatility: 2.5
 };
 
-// Mock data for getalloracleprices endpoint
+// Mock data for getalloracleprices endpoint (all 8 oracles returned after Core fix)
 const mockAllOraclePrices = {
   block_height: 2000,
   consensus_price_micro_usd: 50000,
@@ -32,6 +32,7 @@ const mockAllOraclePrices = {
     { oracle_id: 4, name: 'Shenger', endpoint: 'oracle5.digibyte.io:12030', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
     { oracle_id: 5, name: 'Ycagel', endpoint: 'oracle6.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064186, deviation_pct: 0, signature_valid: true, status: 'reporting' },
     { oracle_id: 6, name: 'Aussie', endpoint: 'oracle7.digibyte.io:12030', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
+    { oracle_id: 7, name: 'LookInto', endpoint: 'oracle8.digibyte.io:12030', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
   ]
 };
 
@@ -303,6 +304,165 @@ describe('OraclesPage', () => {
       expect(screen.getByText(/Min: \$0.0001\/DGB/)).toBeInTheDocument();
       expect(screen.getByText(/Max: \$100.00\/DGB/)).toBeInTheDocument();
       expect(screen.getByText(/Valid for 20 blocks/)).toBeInTheDocument();
+    });
+  });
+
+  describe('Stale/Fresh Status', () => {
+    it('should display Fresh chip when is_stale is false', async () => {
+      // mockOraclePrice already has is_stale: false
+      await act(async () => {
+        renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Fresh')).toBeInTheDocument();
+      });
+    });
+
+    it('should display Stale chip when is_stale is true', async () => {
+      const stalePrice = { ...mockOraclePrice, is_stale: true };
+      global.fetch = vi.fn((url) => {
+        if (url.includes('getoracleprice')) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(stalePrice) });
+        }
+        if (url.includes('getalloracleprices')) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(mockAllOraclePrices) });
+        }
+        if (url.includes('getoracles')) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(mockOracles) });
+        }
+        return Promise.reject(new Error('Unknown endpoint'));
+      });
+
+      await act(async () => {
+        renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Stale')).toBeInTheDocument();
+      });
+    });
+
+    it('should display last update block height', async () => {
+      await act(async () => {
+        renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Block 2,000')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Oracle 7 (LookInto)', () => {
+    it('should display all 8 oracles including LookInto', async () => {
+      await act(async () => {
+        renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('LookInto')).toBeInTheDocument();
+        expect(screen.getByText('oracle8.digibyte.io:12030')).toBeInTheDocument();
+      });
+    });
+
+    it('should show LookInto with no data status', async () => {
+      await act(async () => {
+        renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      });
+
+      await waitFor(() => {
+        // LookInto should be in the table with no_data status
+        expect(screen.getByText('LookInto')).toBeInTheDocument();
+        // Should have 3 "no data" chips (Shenger, Aussie, LookInto)
+        const noDataChips = screen.getAllByText('no data');
+        expect(noDataChips.length).toBe(3);
+      });
+    });
+
+    it('should correctly count 5 reporting oracles out of 8 total', async () => {
+      await act(async () => {
+        renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      });
+
+      await waitFor(() => {
+        // 5 oracles reporting (IDs 0,1,2,3,5), 3 no data (IDs 4,6,7)
+        expect(screen.getByText('5/8')).toBeInTheDocument();
+        expect(screen.getByText('Online Reporting')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Reporting Count Accuracy', () => {
+    it('should count 6/8 when 6 oracles are reporting', async () => {
+      const sixReporting = {
+        ...mockAllOraclePrices,
+        oracle_count: 6,
+        oracles: mockAllOraclePrices.oracles.map(o =>
+          o.oracle_id === 4 ? { ...o, price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064185, signature_valid: true, status: 'reporting' } : o
+        )
+      };
+
+      global.fetch = vi.fn((url) => {
+        if (url.includes('getoracleprice')) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve({ ...mockOraclePrice, oracle_count: 6 }) });
+        }
+        if (url.includes('getalloracleprices')) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(sixReporting) });
+        }
+        if (url.includes('getoracles')) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(mockOracles) });
+        }
+        return Promise.reject(new Error('Unknown endpoint'));
+      });
+
+      await act(async () => {
+        renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('6/8')).toBeInTheDocument();
+      });
+    });
+
+    it('should show reporting count from getalloracleprices not getoracleprice', async () => {
+      // getoracleprice says 3 but getalloracleprices data shows 5 reporting
+      const mismatchPrice = { ...mockOraclePrice, oracle_count: 3 };
+
+      global.fetch = vi.fn((url) => {
+        if (url.includes('getoracleprice')) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(mismatchPrice) });
+        }
+        if (url.includes('getalloracleprices')) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(mockAllOraclePrices) });
+        }
+        if (url.includes('getoracles')) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(mockOracles) });
+        }
+        return Promise.reject(new Error('Unknown endpoint'));
+      });
+
+      await act(async () => {
+        renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      });
+
+      await waitFor(() => {
+        // Frontend counts from getalloracleprices data, not getoracleprice oracle_count
+        expect(screen.getByText('5/8')).toBeInTheDocument();
+      });
+    });
+
+    it('should show 5 reporting chips and 3 no data chips', async () => {
+      await act(async () => {
+        renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      });
+
+      await waitFor(() => {
+        const reportingChips = screen.getAllByText('reporting');
+        expect(reportingChips.length).toBe(5);
+        const noDataChips = screen.getAllByText('no data');
+        expect(noDataChips.length).toBe(3);
+      });
     });
   });
 
