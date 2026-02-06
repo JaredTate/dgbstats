@@ -340,7 +340,7 @@ const DDStatsPage = () => {
                     NETWORK DD SUPPLY
                   </Typography>
                   <Typography variant="h3" fontWeight="bold">
-                    {formatDD(ddStats.total_dd_supply)} DD
+                    {formatDD(ddStats.total_dd_supply)}
                   </Typography>
                 </Paper>
               </Tooltip>
