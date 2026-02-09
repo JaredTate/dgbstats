@@ -249,8 +249,8 @@ const DDStatsPage = () => {
         </Box>
       </Box>
 
-      {/* Error Alert */}
-      {error && (
+      {/* Error Alert - only show when no data is available */}
+      {error && !hasData && (
         <Alert severity="warning" sx={{ mx: 2, mt: 2 }}>
           {error}
         </Alert>

@@ -199,8 +199,8 @@ const OraclesPage = () => {
   // Current Price Card
   const CurrentPriceCard = () => (
     <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px', borderTop: `4px solid ${isTestnet ? '#4caf50' : '#0066cc'}` }}>
-      {/* Error Alert */}
-      {error && (
+      {/* Error Alert - only show when no data is available */}
+      {error && !hasData && (
         <Alert severity="warning" sx={{ mb: 2 }}>
           {error}
         </Alert>
