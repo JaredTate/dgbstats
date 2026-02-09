@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container, Typography, Box, Grid, Card, CardContent,
   Divider, Chip, Table, TableBody, TableCell, TableContainer,
@@ -19,9 +19,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import KeyIcon from '@mui/icons-material/Key';
 import SendIcon from '@mui/icons-material/Send';
 import VerifiedIcon from '@mui/icons-material/Verified';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import { useNetwork } from '../context/NetworkContext';
-import config from '../config';
 
 // Empty initial state - no mock data
 const EMPTY_ORACLE_PRICE = {
@@ -46,9 +44,10 @@ const ORACLE_NAMES = {
  *
  * Displays real-time information about the decentralized oracle network
  * that provides DGB/USD price feeds for the DigiDollar system.
+ * Receives data via WebSocket push from the backend.
  */
 const OraclesPage = () => {
-  const { theme: networkTheme, isTestnet } = useNetwork();
+  const { theme: networkTheme, isTestnet, wsBaseUrl } = useNetwork();
 
   // State for oracle data - start empty, no mock data
   const [oraclePrice, setOraclePrice] = useState(EMPTY_ORACLE_PRICE);
@@ -57,79 +56,74 @@ const OraclesPage = () => {
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
 
-  // Fetch oracle data from API
-  const fetchOracleData = useCallback(async () => {
-    try {
-      setError(null);
-
-      // Fetch oracle price and detailed oracle data in parallel
-      const [priceResponse, allOraclePricesResponse, oraclesConfigResponse] = await Promise.all([
-        fetch(`${config.apiBaseUrl}/api/testnet/getoracleprice`),
-        fetch(`${config.apiBaseUrl}/api/testnet/getalloracleprices`),
-        fetch(`${config.apiBaseUrl}/api/testnet/getoracles`)
-      ]);
-
-      if (!priceResponse.ok || !allOraclePricesResponse.ok) {
-        throw new Error('Failed to fetch oracle data from API');
-      }
-
-      const priceData = await priceResponse.json();
-      const allOraclePricesData = await allOraclePricesResponse.json();
-      const oraclesConfigData = oraclesConfigResponse.ok ? await oraclesConfigResponse.json() : [];
-
-      // Update state with real price data
-      setOraclePrice({
-        price_micro_usd: priceData.price_micro_usd || 0,
-        price_usd: priceData.price_usd || 0,
-        oracle_count: priceData.oracle_count || 0,
-        status: priceData.status || 'unknown',
-        last_update_height: priceData.last_update_height || 0,
-        is_stale: priceData.is_stale || false,
-        '24h_high': priceData['24h_high'] || 0,
-        '24h_low': priceData['24h_low'] || 0,
-        volatility: priceData.volatility || 0
-      });
-
-      // Use getoracles (config with all oracles) as base, merge price data from getalloracleprices
-      // This ensures we show ALL oracles even if they haven't reported yet
-      const mappedOracles = (oraclesConfigData || []).map(configOracle => {
-        // Find matching price data from getalloracleprices
-        const priceOracle = (allOraclePricesData.oracles || []).find(o => o.oracle_id === configOracle.oracle_id) || {};
-        return {
-          oracle_id: configOracle.oracle_id,
-          name: configOracle.name !== 'Unknown' ? configOracle.name : (ORACLE_NAMES[configOracle.oracle_id] || `Oracle ${configOracle.oracle_id}`),
-          pubkey: configOracle.pubkey || '',
-          endpoint: configOracle.endpoint,
-          price_micro_usd: priceOracle.price_micro_usd || 0,
-          price_usd: priceOracle.price_usd || 0,
-          timestamp: priceOracle.timestamp || 0,
-          deviation_pct: priceOracle.deviation_pct || 0,
-          signature_valid: priceOracle.signature_valid || false,
-          status: priceOracle.status || 'no_data',
-          is_running: priceOracle.status === 'reporting'
-        };
-      });
-
-      setOracles(mappedOracles);
-      setLastUpdated(new Date());
-      setLoading(false);
-    } catch (err) {
-      console.error('Error fetching oracle data:', err);
-      setError('Unable to fetch live oracle data. Network may be unavailable.');
-      setLoading(false);
-      // Keep existing data as fallback
-    }
-  }, []);
-
-  // Initial data fetch and refresh interval
+  // WebSocket connection for real-time oracle data
   useEffect(() => {
-    fetchOracleData();
+    const socket = new WebSocket(wsBaseUrl);
 
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchOracleData, 30000);
+    socket.onopen = () => {
+      console.log('WebSocket connection established for oracles page');
+    };
 
-    return () => clearInterval(interval);
-  }, [fetchOracleData]);
+    socket.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.type === 'oracleData') {
+          const { price: priceData, allPrices: allOraclePricesData, oracles: oraclesConfigData } = message.data;
+
+          // Update state with real price data
+          setOraclePrice({
+            price_micro_usd: priceData.price_micro_usd || 0,
+            price_usd: priceData.price_usd || 0,
+            oracle_count: priceData.oracle_count || 0,
+            status: priceData.status || 'unknown',
+            last_update_height: priceData.last_update_height || 0,
+            is_stale: priceData.is_stale || false,
+            '24h_high': priceData['24h_high'] || 0,
+            '24h_low': priceData['24h_low'] || 0,
+            volatility: priceData.volatility || 0
+          });
+
+          // Use getoracles (config with all oracles) as base, merge price data from getalloracleprices
+          const mappedOracles = (oraclesConfigData || []).map(configOracle => {
+            const priceOracle = (allOraclePricesData.oracles || []).find(o => o.oracle_id === configOracle.oracle_id) || {};
+            return {
+              oracle_id: configOracle.oracle_id,
+              name: configOracle.name !== 'Unknown' ? configOracle.name : (ORACLE_NAMES[configOracle.oracle_id] || `Oracle ${configOracle.oracle_id}`),
+              pubkey: configOracle.pubkey || '',
+              endpoint: configOracle.endpoint,
+              price_micro_usd: priceOracle.price_micro_usd || 0,
+              price_usd: priceOracle.price_usd || 0,
+              timestamp: priceOracle.timestamp || 0,
+              deviation_pct: priceOracle.deviation_pct || 0,
+              signature_valid: priceOracle.signature_valid || false,
+              status: priceOracle.status || 'no_data',
+              is_running: priceOracle.status === 'reporting'
+            };
+          });
+
+          setOracles(mappedOracles);
+          setLastUpdated(new Date());
+          setLoading(false);
+          setError(null);
+        }
+      } catch (err) {
+        console.error('Error processing oracle WebSocket message:', err);
+      }
+    };
+
+    socket.onerror = () => {
+      setError('Unable to connect to oracle data feed. Network may be unavailable.');
+      setLoading(false);
+    };
+
+    socket.onclose = (event) => {
+      if (event.code !== 1000) {
+        console.log('Oracle WebSocket connection closed, code:', event.code);
+      }
+    };
+
+    return () => socket.close();
+  }, [wsBaseUrl]);
 
   // Format price from micro-USD to display format
   const formatPrice = (microUsd) => {
@@ -225,16 +219,6 @@ const OraclesPage = () => {
               Updated: {lastUpdated.toLocaleTimeString()}
             </Typography>
           )}
-          <Tooltip title="Refresh data">
-            <IconButton
-              onClick={fetchOracleData}
-              disabled={loading}
-              size="small"
-              sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}
-            >
-              {loading ? <CircularProgress size={20} /> : <RefreshIcon />}
-            </IconButton>
-          </Tooltip>
         </Box>
       </Box>
 

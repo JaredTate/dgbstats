@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, waitFor, act } from '@testing-library/react';
 import DDStatsPage from '../../../pages/DDStatsPage';
-import { renderWithProviders } from '../../utils/testUtils';
+import { renderWithProviders, createWebSocketMock, waitForAsync } from '../../utils/testUtils';
 
-// Mock data for API responses
+// Mock data for WebSocket responses
+// Backend sends: { type: 'ddStatsData', data: { stats, oraclePrice } }
 const mockDDStats = {
   health_percentage: 852,
   health_status: 'healthy',
@@ -26,7 +27,6 @@ const mockDDStats = {
   }
 };
 
-// Mock getoracleprice response
 const mockOraclePrice = {
   price_micro_usd: 50000,
   price_usd: 0.05,
@@ -54,42 +54,45 @@ const mockEmergencyStats = {
   }
 };
 
+// Combined message that backend sends via WebSocket
+const mockDDStatsMessage = {
+  type: 'ddStatsData',
+  data: {
+    stats: mockDDStats,
+    oraclePrice: mockOraclePrice
+  }
+};
+
+// Helper to send DD stats data via WebSocket
+function sendDDStatsData(ws, overrides = {}) {
+  const data = {
+    ...mockDDStatsMessage.data,
+    ...overrides
+  };
+  ws.receiveMessage({ type: 'ddStatsData', data });
+}
+
 describe('DDStatsPage', () => {
-  let originalFetch;
+  let wsSetup;
+  let mockWebSocket;
+  let webSocketInstances;
 
   beforeEach(() => {
-    // Store original fetch
-    originalFetch = global.fetch;
-
-    // Mock fetch
-    global.fetch = vi.fn((url) => {
-      if (url.includes('getdigidollarstats')) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve(mockDDStats)
-        });
-      }
-      if (url.includes('getoracleprice')) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve(mockOraclePrice)
-        });
-      }
-      return Promise.reject(new Error('Unknown endpoint'));
-    });
+    wsSetup = createWebSocketMock();
+    mockWebSocket = wsSetup.MockWebSocket;
+    webSocketInstances = wsSetup.instances;
+    global.WebSocket = mockWebSocket;
   });
 
   afterEach(() => {
-    // Restore original fetch
-    global.fetch = originalFetch;
-    vi.clearAllTimers();
+    webSocketInstances.forEach(ws => ws.close());
+    wsSetup.clearInstances();
+    vi.clearAllMocks();
   });
 
   describe('Rendering', () => {
     it('should render the hero section with title and description', async () => {
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
 
       expect(screen.getByText('DigiDollar Testnet Stats')).toBeInTheDocument();
       expect(screen.getByText('Real-Time Network Health & Statistics')).toBeInTheDocument();
@@ -97,35 +100,27 @@ describe('DDStatsPage', () => {
     });
 
     it('should render the network status card header', async () => {
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
 
       expect(screen.getByText('Network DigiDollar Status')).toBeInTheDocument();
     });
 
     it('should render the DCA card', async () => {
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
 
       expect(screen.getByText('Dynamic Collateral Adjustment (DCA)')).toBeInTheDocument();
       expect(screen.getByText(/DCA automatically adjusts collateral requirements/)).toBeInTheDocument();
     });
 
     it('should render the ERR card', async () => {
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
 
       expect(screen.getByText('Emergency Redemption Ratio (ERR)')).toBeInTheDocument();
       expect(screen.getByText(/ERR increases DD burn requirements/)).toBeInTheDocument();
     });
 
     it('should render the quick stats grid', async () => {
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
 
       expect(screen.getByText('Total DD Supply')).toBeInTheDocument();
       expect(screen.getByText('DGB Locked')).toBeInTheDocument();
@@ -134,78 +129,110 @@ describe('DDStatsPage', () => {
     });
 
     it('should render the system health explainer', async () => {
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
 
       expect(screen.getByText('How System Health Works')).toBeInTheDocument();
-      // Use getAllByText since "Network Collateralization" appears multiple times
       const collateralizationTexts = screen.getAllByText(/Network Collateralization/);
       expect(collateralizationTexts.length).toBeGreaterThan(0);
       expect(screen.getByText('Health Thresholds:')).toBeInTheDocument();
     });
   });
 
-  describe('Data Fetching', () => {
-    it('should fetch DD stats on mount', async () => {
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+  describe('WebSocket Connection', () => {
+    it('should establish WebSocket connection on mount', async () => {
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
 
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/testnet/getdigidollarstats'));
-        expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/testnet/getoracleprice'));
-      });
+      await waitForAsync();
+
+      expect(mockWebSocket).toHaveBeenCalledWith('ws://localhost:5003');
+      expect(webSocketInstances.length).toBe(1);
+      expect(webSocketInstances[0].readyState).toBe(WebSocket.OPEN);
     });
 
-    it('should display fetched health percentage', async () => {
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
+    it('should close WebSocket connection on unmount', async () => {
+      const { unmount } = renderWithProviders(<DDStatsPage />, { network: 'testnet' });
+
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      unmount();
+
+      expect(ws.readyState).toBe(WebSocket.CLOSED);
+    });
+
+    it('should update data on subsequent ddStatsData messages', async () => {
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      // Send initial data
+      sendDDStatsData(ws);
+
+      await waitFor(() => {
+        const healthTexts = screen.getAllByText(/852%/);
+        expect(healthTexts.length).toBeGreaterThan(0);
+      });
+
+      // Send updated data with different health
+      sendDDStatsData(ws, {
+        stats: { ...mockDDStats, health_percentage: 900 }
       });
 
       await waitFor(() => {
-        // Health percentage should appear multiple times (in different places)
+        const healthTexts = screen.getAllByText(/900%/);
+        expect(healthTexts.length).toBeGreaterThan(0);
+      });
+    });
+  });
+
+  describe('Data Display', () => {
+    it('should display fetched health percentage', async () => {
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      sendDDStatsData(ws);
+
+      await waitFor(() => {
         const healthTexts = screen.getAllByText(/852%/);
         expect(healthTexts.length).toBeGreaterThan(0);
       });
     });
 
     it('should display fetched oracle price', async () => {
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
 
-      // Wait for loading to complete and check for price display
+      sendDDStatsData(ws);
+
       await waitFor(() => {
-        // Check that DGB/USD Price label is visible
         const priceLabels = screen.getAllByText(/DGB\/USD Price/);
         expect(priceLabels.length).toBeGreaterThan(0);
-        // Check that a dollar amount is shown (from default or fetched data)
         const priceText = screen.getAllByText(/\$0\.00/);
         expect(priceText.length).toBeGreaterThan(0);
       }, { timeout: 3000 });
     });
 
-    it('should show error message when API fails', async () => {
-      global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
+    it('should show error message when WebSocket fails', async () => {
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
 
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+      ws.triggerError(new Error('Connection failed'));
 
       await waitFor(() => {
-        expect(screen.getByText(/Unable to fetch live DigiDollar stats/)).toBeInTheDocument();
+        expect(screen.getByText(/Unable to connect to DigiDollar stats feed/)).toBeInTheDocument();
       });
     });
 
-    it('should fall back to mock data when API fails', async () => {
-      global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
+    it('should fall back to default state when WebSocket errors', async () => {
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
 
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+      ws.triggerError(new Error('Connection failed'));
 
-      // Should still render with default/mock data
       await waitFor(() => {
         expect(screen.getByText('DigiDollar Testnet Stats')).toBeInTheDocument();
       });
@@ -214,9 +241,11 @@ describe('DDStatsPage', () => {
 
   describe('DCA Tiers', () => {
     it('should display current DCA tier status', async () => {
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      sendDDStatsData(ws);
 
       await waitFor(() => {
         expect(screen.getByText(/Current Tier: HEALTHY/)).toBeInTheDocument();
@@ -224,21 +253,20 @@ describe('DDStatsPage', () => {
     });
 
     it('should display DCA multiplier', async () => {
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      sendDDStatsData(ws);
 
       await waitFor(() => {
-        // Look for DCA Level with multiplier - the value appears in the component
         const multiplierTexts = screen.getAllByText(/1\.0x/);
         expect(multiplierTexts.length).toBeGreaterThan(0);
       });
     });
 
     it('should display all DCA tier chips', async () => {
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
 
       expect(screen.getByText(/≥150%: 1.0x/)).toBeInTheDocument();
       expect(screen.getByText(/120-149%: 1.2x/)).toBeInTheDocument();
@@ -249,9 +277,11 @@ describe('DDStatsPage', () => {
 
   describe('ERR Status', () => {
     it('should show ERR as inactive when system is healthy', async () => {
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      sendDDStatsData(ws);
 
       await waitFor(() => {
         expect(screen.getByText(/Status: INACTIVE/)).toBeInTheDocument();
@@ -260,24 +290,12 @@ describe('DDStatsPage', () => {
     });
 
     it('should show ERR as active during emergency', async () => {
-      global.fetch = vi.fn((url) => {
-        if (url.includes('getdigidollarstats')) {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve(mockEmergencyStats)
-          });
-        }
-        if (url.includes('getoracleprice')) {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve(mockOraclePrice)
-          });
-        }
-        return Promise.reject(new Error('Unknown endpoint'));
-      });
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
 
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
+      sendDDStatsData(ws, {
+        stats: mockEmergencyStats
       });
 
       await waitFor(() => {
@@ -289,9 +307,11 @@ describe('DDStatsPage', () => {
 
   describe('Network Status', () => {
     it('should display HEALTHY status chip when healthy', async () => {
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      sendDDStatsData(ws);
 
       await waitFor(() => {
         const healthyChips = screen.getAllByText('HEALTHY');
@@ -300,24 +320,12 @@ describe('DDStatsPage', () => {
     });
 
     it('should display EMERGENCY status chip during emergency', async () => {
-      global.fetch = vi.fn((url) => {
-        if (url.includes('getdigidollarstats')) {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve(mockEmergencyStats)
-          });
-        }
-        if (url.includes('getoracleprice')) {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve(mockOraclePrice)
-          });
-        }
-        return Promise.reject(new Error('Unknown endpoint'));
-      });
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
 
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
+      sendDDStatsData(ws, {
+        stats: mockEmergencyStats
       });
 
       await waitFor(() => {
@@ -329,33 +337,33 @@ describe('DDStatsPage', () => {
 
   describe('Supply and Collateral Display', () => {
     it('should display formatted DD supply', async () => {
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      sendDDStatsData(ws);
 
       await waitFor(() => {
-        // $10,430.06 DD formatted
-        expect(screen.getByText('$10,430.06 DD')).toBeInTheDocument();
+        const ddSupplyTexts = screen.getAllByText('$10,430.06 DD');
+        expect(ddSupplyTexts.length).toBeGreaterThan(0);
       });
     });
 
     it('should display formatted DGB locked', async () => {
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      sendDDStatsData(ws);
 
       await waitFor(() => {
-        // 14,762,213.45 DGB formatted
         expect(screen.getByText('14,762,213.45 DGB')).toBeInTheDocument();
       });
     });
 
     it('should display collateralization progress bar', async () => {
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
 
-      // Use getAllByText since "Network Collateralization" appears multiple times
       const collateralizationTexts = screen.getAllByText(/Network Collateralization/);
       expect(collateralizationTexts.length).toBeGreaterThan(0);
       expect(screen.getByText(/Minimum required: 100%/)).toBeInTheDocument();
@@ -364,11 +372,8 @@ describe('DDStatsPage', () => {
 
   describe('Health Thresholds Explainer', () => {
     it('should display all health threshold levels', async () => {
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
 
-      // Text appears in multiple places (DCA tier chips and explainer), so use getAllByText
       const healthy150 = screen.getAllByText(/≥150%/);
       expect(healthy150.length).toBeGreaterThan(0);
       expect(screen.getByText(/- Healthy: Normal operations/)).toBeInTheDocument();
@@ -381,9 +386,7 @@ describe('DDStatsPage', () => {
     });
 
     it('should show health calculation formula', async () => {
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
 
       expect(screen.getByText(/Health % = \(Total DGB Locked × DGB Price\) \/ Total DD Supply × 100/)).toBeInTheDocument();
     });
@@ -391,25 +394,22 @@ describe('DDStatsPage', () => {
 
   describe('Network Context', () => {
     it('should apply testnet styling', async () => {
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
 
-      // Check for testnet-specific text
       expect(screen.getByText('DigiDollar Testnet Stats')).toBeInTheDocument();
     });
   });
 
   describe('Oracle Count', () => {
     it('should display active oracle count', async () => {
-      await act(async () => {
-        renderWithProviders(<DDStatsPage />, { network: 'testnet' });
-      });
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      sendDDStatsData(ws);
 
       await waitFor(() => {
-        // The component shows oracle count - default is 7 or from API
-        // After fetch, should show 4 running oracles
-        const oracleCountElements = screen.getAllByText(/[47]/);
+        const oracleCountElements = screen.getAllByText(/[45]/);
         expect(oracleCountElements.length).toBeGreaterThan(0);
       });
     });

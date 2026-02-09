@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container, Typography, Box, Grid, Card, CardContent,
   Divider, Chip, LinearProgress, Paper, Alert, Tooltip,
@@ -15,9 +15,7 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import SecurityIcon from '@mui/icons-material/Security';
 import SpeedIcon from '@mui/icons-material/Speed';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import { useNetwork } from '../context/NetworkContext';
-import config from '../config';
 
 // Empty initial state - no mock data
 const EMPTY_DD_STATS = {
@@ -50,9 +48,10 @@ const EMPTY_DD_STATS = {
  * - System health and collateralization ratio
  * - DCA and ERR tier status
  * - Oracle price information
+ * Receives data via WebSocket push from the backend.
  */
 const DDStatsPage = () => {
-  const { theme: networkTheme, isTestnet } = useNetwork();
+  const { theme: networkTheme, isTestnet, wsBaseUrl } = useNetwork();
 
   // State for DD stats - start empty, no mock data
   const [ddStats, setDdStats] = useState(EMPTY_DD_STATS);
@@ -61,61 +60,61 @@ const DDStatsPage = () => {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [oracleCount, setOracleCount] = useState(0); // Track active oracles separately
 
-  // Fetch DD stats from API
-  const fetchDDStats = useCallback(async () => {
-    try {
-      setError(null);
-
-      // Fetch DD stats and oracle price in parallel
-      const [statsResponse, oraclePriceResponse] = await Promise.all([
-        fetch(`${config.apiBaseUrl}/api/testnet/getdigidollarstats`),
-        fetch(`${config.apiBaseUrl}/api/testnet/getoracleprice`)
-      ]);
-
-      if (!statsResponse.ok) {
-        throw new Error('Failed to fetch DigiDollar stats from API');
-      }
-
-      const statsData = await statsResponse.json();
-
-      // Map API response to expected format - no fallback to mock data
-      setDdStats({
-        health_percentage: statsData.health_percentage || 0,
-        health_status: statsData.health_status || 'unavailable',
-        total_collateral_dgb: (statsData.total_collateral_dgb || 0),
-        total_dd_supply: statsData.total_dd_supply || 0, // in cents
-        oracle_price_micro_usd: statsData.oracle_price_micro_usd || 0,
-        oracle_price_cents: statsData.oracle_price_cents || 0,
-        is_emergency: statsData.is_emergency || false,
-        active_positions: statsData.active_positions || 0,
-        dca_tier: statsData.dca_tier || EMPTY_DD_STATS.dca_tier,
-        err_tier: statsData.err_tier || EMPTY_DD_STATS.err_tier
-      });
-
-      // Get network oracle count from getoracleprice
-      if (oraclePriceResponse.ok) {
-        const oraclePriceData = await oraclePriceResponse.json();
-        setOracleCount(oraclePriceData.oracle_count || 0);
-      }
-
-      setLastUpdated(new Date());
-      setLoading(false);
-    } catch (err) {
-      console.error('Error fetching DD stats:', err);
-      setError('Unable to fetch live DigiDollar stats. Network may be unavailable.');
-      setLoading(false);
-    }
-  }, []);
-
-  // Initial data fetch and refresh interval
+  // WebSocket connection for real-time DD stats data
   useEffect(() => {
-    fetchDDStats();
+    const socket = new WebSocket(wsBaseUrl);
 
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchDDStats, 30000);
+    socket.onopen = () => {
+      console.log('WebSocket connection established for DD stats page');
+    };
 
-    return () => clearInterval(interval);
-  }, [fetchDDStats]);
+    socket.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.type === 'ddStatsData') {
+          const { stats: statsData, oraclePrice: oraclePriceData } = message.data;
+
+          // Map response to expected format
+          setDdStats({
+            health_percentage: statsData.health_percentage || 0,
+            health_status: statsData.health_status || 'unavailable',
+            total_collateral_dgb: (statsData.total_collateral_dgb || 0),
+            total_dd_supply: statsData.total_dd_supply || 0,
+            oracle_price_micro_usd: statsData.oracle_price_micro_usd || 0,
+            oracle_price_cents: statsData.oracle_price_cents || 0,
+            is_emergency: statsData.is_emergency || false,
+            active_positions: statsData.active_positions || 0,
+            dca_tier: statsData.dca_tier || EMPTY_DD_STATS.dca_tier,
+            err_tier: statsData.err_tier || EMPTY_DD_STATS.err_tier
+          });
+
+          // Get network oracle count from oraclePrice
+          if (oraclePriceData) {
+            setOracleCount(oraclePriceData.oracle_count || 0);
+          }
+
+          setLastUpdated(new Date());
+          setLoading(false);
+          setError(null);
+        }
+      } catch (err) {
+        console.error('Error processing DD stats WebSocket message:', err);
+      }
+    };
+
+    socket.onerror = () => {
+      setError('Unable to connect to DigiDollar stats feed. Network may be unavailable.');
+      setLoading(false);
+    };
+
+    socket.onclose = (event) => {
+      if (event.code !== 1000) {
+        console.log('DD stats WebSocket connection closed, code:', event.code);
+      }
+    };
+
+    return () => socket.close();
+  }, [wsBaseUrl]);
 
   // Format helpers - show "Not Reporting" when no data
   const formatDGB = (amount) => {
@@ -239,16 +238,6 @@ const DDStatsPage = () => {
               {lastUpdated.toLocaleTimeString()}
             </Typography>
           )}
-          <Tooltip title="Refresh data">
-            <IconButton
-              onClick={fetchDDStats}
-              disabled={loading}
-              size="small"
-              sx={{ color: 'white' }}
-            >
-              {loading ? <CircularProgress size={20} color="inherit" /> : <RefreshIcon />}
-            </IconButton>
-          </Tooltip>
           <Chip
             label={ddStats.is_emergency ? 'EMERGENCY' : ddStats.health_status.toUpperCase()}
             sx={{
