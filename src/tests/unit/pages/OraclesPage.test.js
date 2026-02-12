@@ -488,4 +488,68 @@ describe('OraclesPage', () => {
       expect(consensus.length).toBeGreaterThan(0);
     });
   });
+
+  describe('DigiDollar Activation Banner', () => {
+    it('should show activation banner when DigiDollar is not active', async () => {
+      renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      ws.receiveMessage({ type: 'ddDeploymentData', data: { status: 'started' } });
+
+      expect(screen.getByText(/DigiDollar is not active yet/)).toBeInTheDocument();
+      expect(screen.getByText('STARTED')).toBeInTheDocument();
+      expect(screen.getByText('Track Activation →')).toBeInTheDocument();
+    });
+
+    it('should not show activation banner when DigiDollar is active', async () => {
+      renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      ws.receiveMessage({ type: 'ddDeploymentData', data: { status: 'active' } });
+
+      expect(screen.queryByText(/DigiDollar is not active yet/)).not.toBeInTheDocument();
+    });
+
+    it('should not show activation banner before deployment data arrives', async () => {
+      renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      await waitForAsync();
+
+      expect(screen.queryByText(/DigiDollar is not active yet/)).not.toBeInTheDocument();
+    });
+
+    it('should show DEFINED stage in banner during defined phase', async () => {
+      renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      ws.receiveMessage({ type: 'ddDeploymentData', data: { status: 'defined' } });
+
+      expect(screen.getByText(/DigiDollar is not active yet/)).toBeInTheDocument();
+      expect(screen.getByText('DEFINED')).toBeInTheDocument();
+    });
+
+    it('should show LOCKED IN stage in banner during locked_in phase', async () => {
+      renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      ws.receiveMessage({ type: 'ddDeploymentData', data: { status: 'locked_in' } });
+
+      expect(screen.getByText(/DigiDollar is not active yet/)).toBeInTheDocument();
+      expect(screen.getByText('LOCKED IN')).toBeInTheDocument();
+    });
+
+    it('should have a link to the activation page', async () => {
+      renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      ws.receiveMessage({ type: 'ddDeploymentData', data: { status: 'started' } });
+
+      const link = screen.getByText('Track Activation →');
+      expect(link.closest('a')).toHaveAttribute('href', '/testnet/activation');
+    });
+  });
 });
