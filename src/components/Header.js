@@ -29,6 +29,7 @@ const Header = () => {
     { text: 'Difficulties', path: '/testnet/difficulties' },
     { text: 'Hashrate', path: '/testnet/hashrate' },
     { text: 'Nodes', path: '/testnet/nodes' },
+    { text: 'Activation', path: '/testnet/activation' },
     { text: 'Oracles', path: '/testnet/oracles' },
     { text: 'DD Stats', path: '/testnet/ddstats' },
     { text: 'DigiDollar', path: '/testnet/digidollar' },

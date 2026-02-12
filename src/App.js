@@ -21,6 +21,7 @@ import RoadmapPage from './pages/RoadmapPage';
 import DigiDollarPage from './pages/DigiDollarPage';
 import OraclesPage from './pages/OraclesPage';
 import DDStatsPage from './pages/DDStatsPage';
+import DDActivationPage from './pages/DDActivationPage';
 
 // Create a custom theme with DigiByte colors
 const theme = createTheme({
@@ -171,6 +172,7 @@ const App = () => {
               <Route path="difficulties" element={<DifficultiesPage />} />
               <Route path="hashrate" element={<HashratePage />} />
               <Route path="nodes" element={<NodesPage />} />
+              <Route path="activation" element={<DDActivationPage />} />
               <Route path="oracles" element={<OraclesPage />} />
               <Route path="ddstats" element={<DDStatsPage />} />
               <Route path="digidollar" element={<DigiDollarPage />} />
