@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Container, Typography, Box, Grid, Card, CardContent,
   Divider, Chip, LinearProgress, Paper, Alert, Tooltip,
-  IconButton, CircularProgress
+  IconButton, CircularProgress, Button
 } from '@mui/material';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import LockIcon from '@mui/icons-material/Lock';
@@ -15,6 +15,7 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import SecurityIcon from '@mui/icons-material/Security';
 import SpeedIcon from '@mui/icons-material/Speed';
+import { Link as RouterLink } from 'react-router-dom';
 import { useNetwork } from '../context/NetworkContext';
 
 // Empty initial state - no mock data
@@ -59,6 +60,7 @@ const DDStatsPage = () => {
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [oracleCount, setOracleCount] = useState(0); // Track active oracles separately
+  const [ddDeploymentStatus, setDdDeploymentStatus] = useState(null);
 
   // WebSocket connection for real-time DD stats data
   useEffect(() => {
@@ -71,6 +73,9 @@ const DDStatsPage = () => {
     socket.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
+        if (message.type === 'ddDeploymentData') {
+          setDdDeploymentStatus(message.data.status);
+        }
         if (message.type === 'ddStatsData') {
           const { stats: statsData, oraclePrice: oraclePriceData } = message.data;
 
@@ -577,9 +582,29 @@ const DDStatsPage = () => {
     </Card>
   );
 
+  const NotActiveBanner = () => {
+    if (!ddDeploymentStatus || ddDeploymentStatus === 'active') return null;
+    return (
+      <Alert
+        severity="info"
+        sx={{ mb: 3, borderRadius: '12px' }}
+        action={
+          <Button color="inherit" size="small" component={RouterLink} to="/testnet/activation">
+            Track Activation →
+          </Button>
+        }
+      >
+        <Typography variant="body1">
+          <strong>DigiDollar is not active yet.</strong> Currently in the <strong>{ddDeploymentStatus.toUpperCase().replace('_', ' ')}</strong> stage of BIP9 activation.
+        </Typography>
+      </Alert>
+    );
+  };
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <HeroSection />
+      <NotActiveBanner />
       <NetworkStatusCard />
       <QuickStatsGrid />
       <ProtectionTiersCard />

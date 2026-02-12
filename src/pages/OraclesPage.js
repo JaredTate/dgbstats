@@ -19,6 +19,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import KeyIcon from '@mui/icons-material/Key';
 import SendIcon from '@mui/icons-material/Send';
 import VerifiedIcon from '@mui/icons-material/Verified';
+import { Link as RouterLink } from 'react-router-dom';
 import { useNetwork } from '../context/NetworkContext';
 
 // Empty initial state - no mock data
@@ -55,6 +56,7 @@ const OraclesPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [ddDeploymentStatus, setDdDeploymentStatus] = useState(null);
 
   // WebSocket connection for real-time oracle data
   useEffect(() => {
@@ -67,6 +69,9 @@ const OraclesPage = () => {
     socket.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
+        if (message.type === 'ddDeploymentData') {
+          setDdDeploymentStatus(message.data.status);
+        }
         if (message.type === 'oracleData') {
           const { price: priceData, allPrices: allOraclePricesData, oracles: oraclesConfigData } = message.data;
 
@@ -659,9 +664,29 @@ const OraclesPage = () => {
     </Card>
   );
 
+  const NotActiveBanner = () => {
+    if (!ddDeploymentStatus || ddDeploymentStatus === 'active') return null;
+    return (
+      <Alert
+        severity="info"
+        sx={{ mb: 3, borderRadius: '12px' }}
+        action={
+          <Button color="inherit" size="small" component={RouterLink} to="/testnet/activation">
+            Track Activation →
+          </Button>
+        }
+      >
+        <Typography variant="body1">
+          <strong>DigiDollar is not active yet.</strong> Currently in the <strong>{ddDeploymentStatus.toUpperCase().replace('_', ' ')}</strong> stage of BIP9 activation.
+        </Typography>
+      </Alert>
+    );
+  };
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <HeroSection />
+      <NotActiveBanner />
       <CurrentPriceCard />
       <OracleListSection />
       <WhatAreOraclesSection />
