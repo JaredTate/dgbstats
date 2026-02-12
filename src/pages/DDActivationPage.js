@@ -9,6 +9,7 @@ import HourglassTopIcon from '@mui/icons-material/HourglassTop';
 import LockIcon from '@mui/icons-material/Lock';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { useNetwork } from '../context/NetworkContext';
+import IntegrationGuides from '../components/IntegrationGuides';
 
 /**
  * BIP9 activation parameters for DigiDollar on each network
@@ -559,6 +560,7 @@ const DDActivationPage = () => {
       <StageFlow />
       <BIP9Explanation />
       <TechnicalParameters />
+      <IntegrationGuides />
     </Container>
   );
 };

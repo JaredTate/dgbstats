@@ -17,6 +17,7 @@ import SecurityIcon from '@mui/icons-material/Security';
 import SpeedIcon from '@mui/icons-material/Speed';
 import { Link as RouterLink } from 'react-router-dom';
 import { useNetwork } from '../context/NetworkContext';
+import IntegrationGuides from '../components/IntegrationGuides';
 
 // Empty initial state - no mock data
 const EMPTY_DD_STATS = {
@@ -609,6 +610,7 @@ const DDStatsPage = () => {
       <QuickStatsGrid />
       <ProtectionTiersCard />
       <SystemHealthExplainer />
+      <IntegrationGuides />
     </Container>
   );
 };

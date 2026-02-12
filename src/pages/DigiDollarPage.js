@@ -29,6 +29,7 @@ import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import HomeIcon from '@mui/icons-material/Home';
 import SendIcon from '@mui/icons-material/Send';
+import IntegrationGuides from '../components/IntegrationGuides';
 
 /**
  * DigiDollarPage Component - Explainer for the DigiDollar Decentralized Stablecoin
@@ -1501,6 +1502,7 @@ const DigiDollarPage = () => {
         <ProtectionSystemSection />
         <RoadmapSection />
         <UseCasesSection />
+        <IntegrationGuides />
         <ResourcesSection />
       </Container>
     </Box>

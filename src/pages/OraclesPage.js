@@ -21,6 +21,7 @@ import SendIcon from '@mui/icons-material/Send';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import { Link as RouterLink } from 'react-router-dom';
 import { useNetwork } from '../context/NetworkContext';
+import IntegrationGuides from '../components/IntegrationGuides';
 
 // Empty initial state - no mock data
 const EMPTY_ORACLE_PRICE = {
@@ -692,6 +693,7 @@ const OraclesPage = () => {
       <WhatAreOraclesSection />
       <BecomeOracleSection />
       <TechnicalSection />
+      <IntegrationGuides />
     </Container>
   );
 };
