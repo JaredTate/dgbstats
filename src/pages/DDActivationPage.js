@@ -112,7 +112,9 @@ const DDActivationPage = () => {
 
   const status = deploymentInfo.status || 'defined';
   const isActive = status === 'active' || deploymentInfo.enabled;
-  const progress = deploymentInfo.progress_percent || 0;
+  const signalingBlocks = deploymentInfo.signaling_blocks || 0;
+  const periodBlocks = deploymentInfo.period_blocks || params.activationWindow;
+  const progress = periodBlocks > 0 ? (signalingBlocks / periodBlocks) * 100 : 0;
 
   const blocksIntoWindow = currentHeight > 0 ? currentHeight % params.activationWindow : 0;
   const currentWindow = currentHeight > 0 ? Math.floor(currentHeight / params.activationWindow) : 0;

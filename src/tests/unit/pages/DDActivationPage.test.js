@@ -317,15 +317,16 @@ describe('DDActivationPage', () => {
       });
     });
 
-    it('should show progress percentage (64.3%)', async () => {
+    it('should show progress percentage (45.0%) based on signaling/period', async () => {
       renderWithProviders(<DDActivationPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
 
       sendDeploymentData(ws, mockDeploymentStarted);
 
+      // 90 signaling / 200 period = 45.0%
       await waitFor(() => {
-        expect(screen.getByText('64.3%')).toBeInTheDocument();
+        expect(screen.getByText('45.0%')).toBeInTheDocument();
       });
     });
 
