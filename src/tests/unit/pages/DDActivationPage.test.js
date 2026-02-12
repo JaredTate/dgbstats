@@ -95,7 +95,7 @@ describe('DDActivationPage', () => {
     it('should render hero section with title "DigiDollar Activation"', async () => {
       renderWithProviders(<DDActivationPage />, { network: 'testnet' });
 
-      expect(screen.getByText('DigiDollar Activation')).toBeInTheDocument();
+      expect(screen.getByText('DigiDollar Testnet Activation')).toBeInTheDocument();
     });
 
     it('should render "BIP9 Soft Fork Activation Tracker" subtitle', async () => {

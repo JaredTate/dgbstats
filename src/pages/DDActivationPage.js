@@ -158,7 +158,7 @@ const DDActivationPage = () => {
               fontSize: { xs: '1.8rem', sm: '2.3rem', md: '2.8rem' }
             }}
           >
-            DigiDollar Activation
+            DigiDollar {isTestnet ? 'Testnet ' : ''}Activation
           </Typography>
         </Box>
 
