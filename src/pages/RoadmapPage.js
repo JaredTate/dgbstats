@@ -17,6 +17,7 @@ import UpdateIcon from '@mui/icons-material/Update';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import TokenIcon from '@mui/icons-material/Token';
 import SpeedIcon from '@mui/icons-material/Speed';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import { format } from 'date-fns';
 import config from '../config';
 import { keyframes } from '@mui/material';
@@ -53,7 +54,7 @@ const RoadmapPage = () => {
   // Roadmap data structure for the next three years
   const initialRoadmapData = {
     lastUpdated: new Date().toISOString(),
-    overallProgress: 45, // 45% overall progress as of September 2025
+    overallProgress: 55, // Updated Feb 2026 - Phase 1-3 complete, Phase 4 in progress
     phases: [
       {
         id: 'phase1',
@@ -142,11 +143,11 @@ const RoadmapPage = () => {
         id: 'phase2',
         title: 'DigiDollar Implementation Specs',
         subtitle: 'Initial Design Phase',
-        timeRange: 'June - October 2025',
+        timeRange: 'June - November 2025',
         startDate: '2025-06-01',
         endDate: '2025-11-30',
-        status: 'in-progress',
-        progress: 91,
+        status: 'completed',
+        progress: 100,
         icon: <AccountBalanceIcon />,
         color: '#ff9800',
         description: 'Creating the complete technical implementation specifications for DigiDollar, a decentralized stablecoin leveraging Taproot on the DigiByte blockchain.',
@@ -247,8 +248,9 @@ const RoadmapPage = () => {
             id: 'finalize-technical-spec',
             title: 'Finalize Technical Specification',
             date: '2025-11-30',
-            status: 'pending',
-            description: 'Complete DigiDollar Implementation Specification for development'
+            status: 'completed',
+            description: 'Complete DigiDollar Implementation Specification for development',
+            completionDate: '2025-11-30'
           }
         ]
       },
@@ -259,14 +261,14 @@ const RoadmapPage = () => {
         timeRange: 'October 2025 - February 2026',
         startDate: '2025-10-01',
         endDate: '2026-02-28',
-        status: 'in-progress',
-        progress: 40,
+        status: 'completed',
+        progress: 100,
         icon: <TokenIcon />,
-        color: '#666666',
-        description: 'Implementation of DigiDollar v9.26 with new opcodes, oracle system, and Taproot-based stablecoin functionality.',
+        color: '#4caf50',
+        description: 'Implementation of DigiDollar v9.26 with new opcodes, oracle system, and Taproot-based stablecoin functionality. DigiDollar is now active on testnet with 1,850+ tests passing (311 functional + 1,539 C++ unit tests).',
         keyFeatures: [
           '💻 OP_DIGIDOLLAR implementation',
-          '🔧 Oracle network deployment',
+          '🔧 Oracle network (Phase Two - 5-of-8 consensus)',
           '🧪 MAST & Taproot integration',
           '🔐 Consensus rule updates'
         ],
@@ -284,7 +286,7 @@ const RoadmapPage = () => {
             title: 'Time-Locked Collateral Mechanism',
             date: '2025-11-05',
             status: 'completed',
-            description: 'Implement sliding collateral ratios: 400% (30 days) to 100% (10 years)',
+            description: 'Implement 10-tier sliding collateral ratios: 500% (30 days) to 200% (10 years)',
             completionDate: '2025-11-05'
           },
           {
@@ -299,93 +301,115 @@ const RoadmapPage = () => {
             id: 'oracle-price-feeds',
             title: 'Oracle Price Feed Implementation',
             date: '2025-12-01',
-            status: 'pending',
-            description: 'Implement DNS-based price feeds and exchange data aggregation'
+            status: 'completed',
+            description: '7 exchange APIs (Binance, KuCoin, Gate.io, HTX, Crypto.com, CoinGecko, CoinMarketCap) with Phase Two 5-of-8 consensus',
+            completionDate: '2026-01-15'
           },
           {
             id: 'mast-implementation',
             title: 'MAST Implementation',
             date: '2025-12-15',
-            status: 'pending',
-            description: 'Build Merkle tree redemption paths with hidden script branches'
+            status: 'completed',
+            description: 'Merkle tree with 2 redemption paths (Normal + ERR) using CLTV timelocks',
+            completionDate: '2025-12-20'
           },
           {
             id: 'advanced-features',
             title: 'Advanced Features',
             date: '2026-01-01',
-            status: 'pending',
-            description: 'Key path optimization, PSBT support, batch verification'
+            status: 'completed',
+            description: 'Key path optimization, PSBT support, batch verification, DCA/ERR/Volatility protection',
+            completionDate: '2026-01-20'
           },
           {
             id: 'wallet-enhancement',
             title: 'Wallet Enhancement',
             date: '2026-01-15',
             status: 'completed',
-            description: 'GUI integration, privacy indicators, DigiDollar transaction support',
+            description: 'GUI integration (7 tabs), privacy indicators, DigiDollar transaction support',
             completionDate: '2025-11-04'
           },
           {
             id: 'consensus-validation-rules',
             title: 'Consensus Validation Rules',
             date: '2026-02-15',
-            status: 'pending',
-            description: 'Implement new transaction validation rules for DigiDollar'
+            status: 'completed',
+            description: 'New transaction validation rules for DigiDollar (MINT, TRANSFER, REDEEM)',
+            completionDate: '2026-01-30'
           },
           {
             id: 'digidollar-testnet',
-            title: 'DigiDollar Testnet Deployment',
+            title: 'DigiDollar Testnet Activation',
             date: '2026-02-20',
-            status: 'pending',
-            description: 'DigiDollar fully functional on testnet with validation'
+            status: 'completed',
+            description: 'DigiDollar fully functional on testnet with oracle price feeds and 5-of-8 consensus',
+            completionDate: '2026-02-01'
           },
           {
             id: 'initial-release',
-            title: 'Initial Release',
+            title: 'Testnet Release v9.26.0-RC18',
             date: '2026-02-28',
-            status: 'pending',
-            description: 'Initial v9.26 release with DigiDollar functionality'
+            status: 'completed',
+            description: 'Latest testnet release candidate with DigiDollar functionality, 1,850+ tests passing',
+            completionDate: '2026-02-12'
           }
         ]
       },
       {
         id: 'phase4',
-        title: 'DigiByte v9.26 DigiDollar Soft Fork',
-        subtitle: 'Mainnet Activation',
-        timeRange: 'March - June 2026',
+        title: 'DigiByte v9.26 Mainnet Release & Activation',
+        subtitle: 'May 1, 2026 - Mainnet Launch',
+        timeRange: 'March 2026 - May 2028',
         startDate: '2026-03-01',
-        endDate: '2026-06-30',
-        status: 'pending',
-        progress: 0,
+        endDate: '2028-05-01',
+        status: 'in-progress',
+        progress: 15,
         icon: <SpeedIcon />,
-        color: '#666666',
-        description: 'DigiDollar soft fork activation with new consensus rules and opcodes for DigiByte v9.26.',
+        color: '#ff9800',
+        description: 'DigiByte v9.26 mainnet release on May 1, 2026. Miners can begin signaling for DigiDollar activation starting May 1st. Activation window: May 1, 2026 through May 1, 2028. This is the world\'s first truly decentralized stablecoin on a UTXO blockchain.',
         keyFeatures: [
-          '🚀 DigiByte v9.26 mainnet release',
-          '🔄 Soft fork implementation',
-          '⛏️ Miner signaling process',
-          '✅ Consensus activation'
+          '🚀 v9.26 mainnet release: May 1, 2026',
+          '⛏️ Miner signaling begins May 1, 2026',
+          '🗳️ 75% miner threshold required',
+          '📅 Activation window: May 1, 2026 → May 1, 2028'
         ],
         milestones: [
           {
             id: 'v9.26-rc1',
             title: 'DigiByte v9.26 Release Candidate 1',
-            date: '2026-03-01',
-            status: 'pending',
-            description: 'First release candidate with OP_DIGIDOLLAR and consensus changes'
-          },
-          {
-            id: 'mining-pool-coordination',
-            title: 'Mining Pool Coordination',
-            date: '2026-03-15',
-            status: 'pending',
-            description: 'Coordinate with mining pools for BIP9 soft fork signaling'
+            date: '2025-12-01',
+            status: 'completed',
+            description: 'First release candidate with OP_DIGIDOLLAR and consensus changes',
+            completionDate: '2025-12-01'
           },
           {
             id: 'v9.26-rc2',
-            title: 'DigiByte v9.26 Release Candidate 2',
-            date: '2026-04-01',
+            title: 'DigiByte v9.26 Release Candidate 18 (Current)',
+            date: '2026-02-12',
+            status: 'completed',
+            description: 'Latest testnet release candidate (v9.26.0-RC18) with all DigiDollar features',
+            completionDate: '2026-02-12'
+          },
+          {
+            id: 'oracle-phase2-testnet',
+            title: '8-of-15 Oracle Testnet Validation',
+            date: '2026-03-15',
             status: 'pending',
-            description: 'Second release candidate with performance optimizations'
+            description: 'Complete 8-of-15 oracle consensus validation on testnet (currently 5-of-8)'
+          },
+          {
+            id: 'security-pen-testing',
+            title: 'Security & Penetration Testing',
+            date: '2026-03-30',
+            status: 'pending',
+            description: 'Comprehensive security audit and penetration testing of DigiDollar consensus rules'
+          },
+          {
+            id: 'mining-pool-coordination',
+            title: 'Mining Pool & Exchange Outreach',
+            date: '2026-03-15',
+            status: 'in-progress',
+            description: 'Coordinate with mining pools, wallets, and exchanges for v9.26 upgrade'
           },
           {
             id: 'node-upgrade-campaign',
@@ -395,46 +419,53 @@ const RoadmapPage = () => {
             description: 'Community outreach for node operators to upgrade to v9.26'
           },
           {
-            id: 'v9.26-final-release',
-            title: 'DigiByte v9.26 Final Release',
-            date: '2026-05-01',
-            status: 'pending',
-            description: 'Final release with all DigiDollar features and opcodes'
-          },
-          {
             id: 'bip9-parameters',
             title: 'BIP9 Activation Parameters',
             date: '2026-04-20',
             status: 'pending',
-            description: 'Set soft fork activation parameters and start block height'
+            description: 'Set soft fork activation parameters: start May 1, 2026, timeout May 1, 2028'
+          },
+          {
+            id: 'v9.26-final-release',
+            title: '🚀 DigiByte v9.26 Mainnet Release',
+            date: '2026-05-01',
+            status: 'pending',
+            description: 'Official mainnet release with DigiDollar - miners can start signaling for activation'
           },
           {
             id: 'signaling-period-start',
-            title: 'Miner Signaling Period Begins',
+            title: '⛏️ Miner Signaling Period Begins',
             date: '2026-05-01',
             status: 'pending',
-            description: 'Start of 2016-block signaling periods for soft fork'
+            description: 'BIP9 signaling begins - miners vote on DigiDollar activation'
           },
           {
             id: 'signaling-threshold',
             title: '75% Signaling Threshold',
-            date: '2026-05-20',
+            date: '2026-06-01',
             status: 'pending',
-            description: 'Monitor for 75% miner support over difficulty period'
+            description: 'Monitor for 75% miner support across signaling periods'
           },
           {
             id: 'soft-fork-lock-in',
             title: 'Soft Fork Lock-In',
-            date: '2026-06-01',
+            date: '2026-07-01',
             status: 'pending',
-            description: 'Soft fork locks in after meeting activation threshold'
+            description: 'Soft fork locks in after meeting 75% activation threshold'
           },
           {
             id: 'digidollar-activation',
-            title: 'DigiDollar Soft Fork Activation',
-            date: '2026-06-30',
+            title: '✅ DigiDollar Mainnet Activation',
+            date: '2026-08-01',
             status: 'pending',
-            description: 'DigiDollar consensus rules activate on mainnet'
+            description: 'DigiDollar consensus rules activate on mainnet - first decentralized stablecoin on UTXO blockchain goes live'
+          },
+          {
+            id: 'activation-window-end',
+            title: 'Activation Window Closes',
+            date: '2028-05-01',
+            status: 'pending',
+            description: 'End of BIP9 activation window (May 1, 2026 → May 1, 2028)'
           }
         ]
       },
@@ -458,11 +489,11 @@ const RoadmapPage = () => {
         ],
         milestones: [
           {
-            id: 'hard-fork-activation',
-            title: 'Successful DigiDollar Hard Fork Activation',
+            id: 'soft-fork-activation',
+            title: 'Successful DigiDollar Soft Fork Activation',
             date: '2026-07-01',
             status: 'pending',
-            description: 'DigiDollar hard fork successfully activated on mainnet'
+            description: 'DigiDollar soft fork successfully activated on mainnet'
           },
           {
             id: 'first-digidollars-minted',
@@ -854,6 +885,136 @@ const RoadmapPage = () => {
         </Typography>
       </Paper>
     </Box>
+  );
+
+  /**
+   * DigiDollar Launch Banner - Celebration announcement for May 1, 2026
+   */
+  const DigiDollarLaunchBanner = () => (
+    <Card
+      elevation={8}
+      sx={{
+        mb: 6,
+        borderRadius: '16px',
+        overflow: 'hidden',
+        background: 'linear-gradient(135deg, #002352 0%, #0066cc 50%, #002352 100%)',
+        border: '3px solid #ffb74d',
+        position: 'relative'
+      }}
+    >
+      <CardContent sx={{ p: { xs: 3, md: 4 }, textAlign: 'center' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2, gap: 2 }}>
+          <RocketLaunchIcon sx={{ fontSize: { xs: '2rem', md: '3rem' }, color: '#ffb74d' }} />
+          <Typography
+            variant="h3"
+            fontWeight="900"
+            sx={{
+              color: 'white',
+              fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+              textShadow: '0 2px 10px rgba(0,0,0,0.3)'
+            }}
+          >
+            DigiDollar v9.26 Mainnet Release
+          </Typography>
+          <RocketLaunchIcon sx={{ fontSize: { xs: '2rem', md: '3rem' }, color: '#ffb74d' }} />
+        </Box>
+
+        <Typography
+          variant="h4"
+          fontWeight="bold"
+          sx={{
+            color: '#ffb74d',
+            mb: 2,
+            fontSize: { xs: '1.3rem', sm: '1.6rem', md: '2rem' }
+          }}
+        >
+          May 1, 2026
+        </Typography>
+
+        <Divider sx={{ maxWidth: '200px', mx: 'auto', mb: 2, borderColor: 'rgba(255,183,77,0.5)', borderWidth: 2 }} />
+
+        <Typography
+          variant="h6"
+          sx={{
+            color: 'rgba(255,255,255,0.95)',
+            mb: 2,
+            fontWeight: 600,
+            fontSize: { xs: '0.95rem', md: '1.15rem' }
+          }}
+        >
+          World's First Truly Decentralized Stablecoin on a UTXO Blockchain
+        </Typography>
+
+        <Grid container spacing={2} justifyContent="center" sx={{ mb: 2 }}>
+          <Grid item xs={12} sm={4}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 1.5,
+                backgroundColor: 'rgba(255,255,255,0.1)',
+                borderRadius: '8px',
+                border: '1px solid rgba(255,255,255,0.2)'
+              }}
+            >
+              <Typography variant="body2" sx={{ color: '#ffb74d', fontWeight: 'bold' }}>
+                Miner Signaling Begins
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                May 1, 2026
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 1.5,
+                backgroundColor: 'rgba(255,255,255,0.1)',
+                borderRadius: '8px',
+                border: '1px solid rgba(255,255,255,0.2)'
+              }}
+            >
+              <Typography variant="body2" sx={{ color: '#ffb74d', fontWeight: 'bold' }}>
+                Activation Window
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                May 1, 2026 → May 1, 2028
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 1.5,
+                backgroundColor: 'rgba(255,255,255,0.1)',
+                borderRadius: '8px',
+                border: '1px solid rgba(255,255,255,0.2)'
+              }}
+            >
+              <Typography variant="body2" sx={{ color: '#ffb74d', fontWeight: 'bold' }}>
+                Threshold Required
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                75% Miner Support
+              </Typography>
+            </Paper>
+          </Grid>
+        </Grid>
+
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'rgba(255,255,255,0.8)',
+            fontStyle: 'italic',
+            maxWidth: '700px',
+            mx: 'auto'
+          }}
+        >
+          DigiDollar activated on testnet. Reach out to mining pools, wallets & exchanges to support v9.26 upgrade.
+        </Typography>
+      </CardContent>
+    </Card>
   );
 
   /**
@@ -1514,6 +1675,7 @@ const RoadmapPage = () => {
         ) : (
           <>
             <HeroSection />
+            <DigiDollarLaunchBanner />
             {!isMobile && <TimelineVisualization />}
             <PhaseCards />
             

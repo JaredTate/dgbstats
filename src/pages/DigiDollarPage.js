@@ -38,13 +38,14 @@ import SendIcon from '@mui/icons-material/Send';
  */
 const DigiDollarPage = () => {
 
-  // Collateral requirements data (9-tier system)
+  // Collateral requirements data (10-tier system)
   const collateralData = [
     { period: '1 hour', ratio: '1000%', dgbFor100: '1000 DGB', undercollateralized: '90% drop', testOnly: true },
     { period: '30 days', ratio: '500%', dgbFor100: '500 DGB', undercollateralized: '80% drop' },
     { period: '3 months', ratio: '400%', dgbFor100: '400 DGB', undercollateralized: '75% drop' },
     { period: '6 months', ratio: '350%', dgbFor100: '350 DGB', undercollateralized: '71.4% drop' },
     { period: '1 year', ratio: '300%', dgbFor100: '300 DGB', undercollateralized: '66.7% drop' },
+    { period: '2 years', ratio: '275%', dgbFor100: '275 DGB', undercollateralized: '63.6% drop' },
     { period: '3 years', ratio: '250%', dgbFor100: '250 DGB', undercollateralized: '60% drop' },
     { period: '5 years', ratio: '225%', dgbFor100: '225 DGB', undercollateralized: '55.6% drop' },
     { period: '7 years', ratio: '212%', dgbFor100: '212 DGB', undercollateralized: '52.8% drop' },
@@ -133,9 +134,9 @@ const DigiDollarPage = () => {
           }}
         >
           <Typography variant="body2">
-            <strong>Status:</strong> Implementation is <strong>85% complete</strong> with 50,000+ lines of functional,
-            tested code. Currently in active development on testnet/regtest with 442+ tests passing.
-            Oracle system is ~70% complete (Phase One).
+            <strong>Status:</strong> Implementation is <strong>95% complete</strong> with 50,000+ lines of functional,
+            tested code. Currently active on testnet with <strong>1,850+ tests passing</strong> (311 functional tests + 1,539 C++ unit tests).
+            Oracle system is in <strong>Phase Two</strong> with 5-of-8 consensus active on testnet.
           </Typography>
         </Alert>
       </CardContent>
@@ -184,19 +185,19 @@ const DigiDollarPage = () => {
               Simple Explanation
             </Typography>
             <Typography variant="body1" paragraph>
-              DigiDollar is a proposed stable digital currency that would always equal $1 USD,
-              created by locking up DigiByte (DGB) as collateral. DGB would become a
+              DigiDollar is a stable digital currency that equals $1 USD,
+              created by locking up DigiByte (DGB) as collateral. DGB becomes the
               strategic reserve asset - with only 21 billion max supply (just 1.94 DGB per person
               on Earth), it's a truly finite asset backing the stability of DigiDollars.
             </Typography>
             <Typography variant="body1" paragraph>
-              Unlike traditional stablecoins backed by bank accounts, DigiDollar would be
+              Unlike traditional stablecoins backed by bank accounts, DigiDollar is
               the world's first truly decentralized stablecoin on a UTXO blockchain.
-              No company or bank would control it.
+              No company or bank controls it.
             </Typography>
             <Typography variant="body1" sx={{ fontWeight: 600, color: '#002352' }}>
-              Most importantly: Everything would happen directly in your DigiByte Core wallet -
-              you would never give up control of your private keys or trust a third party.
+              Most importantly: Everything happens directly in your DigiByte Core wallet -
+              you never give up control of your private keys or trust a third party.
             </Typography>
           </Paper>
         </Grid>
@@ -604,7 +605,7 @@ const DigiDollarPage = () => {
 
       <Alert severity="info" sx={{ mt: 2 }}>
         <Typography variant="body2">
-          <strong>Note:</strong> 9-tier collateral system ranging from 200% (10 years) to 500% (30 days).
+          <strong>Note:</strong> 10-tier collateral system ranging from 200% (10 years) to 500% (30 days).
           The 1-hour 1000% tier is for regtest/testnet testing only. The "Undercollateralized After" column
           shows how much DGB price can drop before position becomes undercollateralized.
         </Typography>
@@ -711,7 +712,7 @@ const DigiDollarPage = () => {
         }}
       >
         <Typography variant="body2">
-          <strong>Revolutionary Architecture:</strong> DigiDollar would be the world's first truly
+          <strong>Revolutionary Architecture:</strong> DigiDollar is the world's first truly
           decentralized stablecoin built natively on a UTXO (Unspent Transaction Output) blockchain.
           All operations occur directly in DigiByte Core wallet - users maintain complete control
           of their private keys throughout the entire process.
@@ -735,7 +736,7 @@ const DigiDollarPage = () => {
               <ListItemIcon><SecurityIcon sx={{ color: '#002352' }} /></ListItemIcon>
               <ListItemText
                 primary="Decentralized Oracles"
-                secondary="Phase One: 7 exchange APIs, 1-of-1 consensus (testnet). Phase Two: 3-of-10 testnet, 8-of-15 mainnet"
+                secondary="Phase Two active: 5-of-8 consensus on testnet. Mainnet: 8-of-15 Schnorr threshold signatures"
               />
             </ListItem>
             <ListItem>
@@ -843,7 +844,7 @@ const DigiDollarPage = () => {
                 <ListItemIcon><SecurityIcon sx={{ color: '#0066cc' }} /></ListItemIcon>
                 <ListItemText
                   primary="Oracle Validation"
-                  secondary="Phase One: 1-of-1 consensus (testnet/regtest). Phase Two: 3-of-10 testnet, 8-of-15 mainnet"
+                  secondary="Phase Two active: 5-of-8 consensus on testnet. Mainnet: 8-of-15 Schnorr threshold signatures"
                 />
               </ListItem>
               <ListItem>
@@ -898,9 +899,9 @@ const DigiDollarPage = () => {
                 2. Oracle Verification
               </Typography>
               <Typography variant="body2">
-                Phase One: 7 exchange APIs (Binance, KuCoin, Gate.io, HTX,
-                Crypto.com, CoinGecko, CoinMarketCap) with 1-of-1 consensus.
-                Phase Two: 3-of-10 testnet, 8-of-15 mainnet Schnorr signatures.
+                8 oracles with 5-of-8 consensus active on testnet.
+                7 exchange APIs (Binance, KuCoin, Gate.io, HTX,
+                Crypto.com, CoinGecko, CoinMarketCap). Mainnet: 8-of-15 Schnorr threshold signatures.
               </Typography>
             </Box>
           </Grid>
@@ -1161,10 +1162,10 @@ const DigiDollarPage = () => {
                 DigiDollar Implementation Specs
               </Typography>
               <Chip
-                label="IN PROGRESS"
+                label="95% COMPLETE"
                 size="small"
                 sx={{
-                  backgroundColor: '#ff9800',
+                  backgroundColor: '#4caf50',
                   color: 'white',
                   fontWeight: 'bold'
                 }}
@@ -1172,7 +1173,7 @@ const DigiDollarPage = () => {
             </Box>
 
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Implementation Phase - 85% Complete
+              Implementation Phase - 95% Complete
             </Typography>
 
             <Box sx={{ mb: 3, maxHeight: '400px', overflowY: 'auto' }}>
@@ -1185,72 +1186,72 @@ const DigiDollarPage = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <CheckCircleIcon sx={{ color: '#4caf50', mr: 1, fontSize: '1.2rem' }} />
                 <Typography variant="body2">
-                  <strong>9-Tier Collateral System</strong> - Complete
+                  <strong>10-Tier Collateral System</strong> - Complete
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <CheckCircleIcon sx={{ color: '#4caf50', mr: 1, fontSize: '1.2rem' }} />
                 <Typography variant="body2">
-                  <strong>Minting Process (Fully Refactored)</strong> - 95% Complete
+                  <strong>Minting Process (Fully Refactored)</strong> - Complete
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <CheckCircleIcon sx={{ color: '#4caf50', mr: 1, fontSize: '1.2rem' }} />
                 <Typography variant="body2">
-                  <strong>Send/Receive DigiDollars</strong> - 98%/90% Complete
+                  <strong>Send/Receive DigiDollars</strong> - Complete
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <CheckCircleIcon sx={{ color: '#4caf50', mr: 1, fontSize: '1.2rem' }} />
                 <Typography variant="body2">
-                  <strong>Complete Wallet UI (7 Tabs)</strong> - 100% Complete
+                  <strong>Complete Wallet UI (7 Tabs)</strong> - Complete
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <CheckCircleIcon sx={{ color: '#4caf50', mr: 1, fontSize: '1.2rem' }} />
                 <Typography variant="body2">
-                  <strong>Network-Wide UTXO Tracking</strong> - 100% Complete
+                  <strong>Network-Wide UTXO Tracking</strong> - Complete
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <CheckCircleIcon sx={{ color: '#4caf50', mr: 1, fontSize: '1.2rem' }} />
+                <Typography variant="body2">
+                  <strong>Redemption System</strong> - Complete
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <CheckCircleIcon sx={{ color: '#4caf50', mr: 1, fontSize: '1.2rem' }} />
+                <Typography variant="body2">
+                  <strong>DCA/ERR/Volatility Protection</strong> - Complete
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <CheckCircleIcon sx={{ color: '#4caf50', mr: 1, fontSize: '1.2rem' }} />
+                <Typography variant="body2">
+                  <strong>Oracle System (Phase Two)</strong> - 5-of-8 Consensus Active on Testnet
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <ConstructionIcon sx={{ color: '#ff9800', mr: 1, fontSize: '1.2rem' }} />
                 <Typography variant="body2" color="text.secondary">
-                  <strong>Redemption System</strong> - 75% Complete
+                  <strong>Mainnet Oracle Validation (8-of-15)</strong> - In Progress
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <ConstructionIcon sx={{ color: '#ff9800', mr: 1, fontSize: '1.2rem' }} />
                 <Typography variant="body2" color="text.secondary">
-                  <strong>DCA/ERR/Volatility Protection</strong> - 70% Complete
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <ConstructionIcon sx={{ color: '#ff9800', mr: 1, fontSize: '1.2rem' }} />
-                <Typography variant="body2" color="text.secondary">
-                  <strong>Oracle Price Feeds (Phase One)</strong> - 70% Complete
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <ConstructionIcon sx={{ color: '#666', mr: 1, fontSize: '1.2rem' }} />
-                <Typography variant="body2" color="text.secondary">
-                  Mainnet Oracle Validation - Pending
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <ConstructionIcon sx={{ color: '#666', mr: 1, fontSize: '1.2rem' }} />
-                <Typography variant="body2" color="text.secondary">
-                  Oracle Phase Two (3-of-10/8-of-15) - Pending
+                  <strong>Final Mainnet Hardening</strong> - In Progress
                 </Typography>
               </Box>
             </Box>
 
             <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
-              6/11 milestones completed • 3 in progress • 2 pending
+              9/11 milestones completed • 2 in progress • 1,850+ tests passing
             </Typography>
 
-            <Alert severity="warning" sx={{ mt: 2 }}>
+            <Alert severity="info" sx={{ mt: 2 }}>
               <Typography variant="caption">
-                <strong>FOCUS:</strong> Complete Redemption System & Enable Mainnet Oracle Validation
+                <strong>TARGET:</strong> Mainnet release v9.26 on May 1, 2026 - Miners can start signaling for activation
               </Typography>
             </Alert>
           </Paper>
@@ -1269,13 +1270,13 @@ const DigiDollarPage = () => {
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h5" fontWeight="bold" color="#002352">
-                DigiByte v9.26 DigiDollar Release (Testnet)
+                DigiByte v9.26 DigiDollar Release
               </Typography>
               <Chip
-                label="IN PROGRESS"
+                label="TESTNET ACTIVE"
                 size="small"
                 sx={{
-                  backgroundColor: '#ff9800',
+                  backgroundColor: '#4caf50',
                   color: 'white',
                   fontWeight: 'bold'
                 }}
@@ -1283,7 +1284,7 @@ const DigiDollarPage = () => {
             </Box>
 
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Oracle System - 70% Complete (Phase One)
+              Oracle System - Phase Two Active (5-of-8 Consensus on Testnet)
             </Typography>
 
             <List dense sx={{ pl: 0, maxHeight: '400px', overflowY: 'auto' }}>
@@ -1323,30 +1324,30 @@ const DigiDollarPage = () => {
                 />
               </ListItem>
               <ListItem sx={{ pl: 0 }}>
+                <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50', fontSize: '1.2rem' }} /></ListItemIcon>
+                <ListItemText
+                  primary="Phase Two Oracle Consensus (5-of-8)"
+                  secondary="Active on testnet - 8 oracles, 5-of-8 consensus required"
+                />
+              </ListItem>
+              <ListItem sx={{ pl: 0 }}>
+                <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50', fontSize: '1.2rem' }} /></ListItemIcon>
+                <ListItemText
+                  primary="DigiDollar Activated on Testnet"
+                  secondary="Complete - v9.26.0-RC18, fully functional with oracle price feeds"
+                />
+              </ListItem>
+              <ListItem sx={{ pl: 0 }}>
                 <ListItemIcon><ConstructionIcon sx={{ color: '#ff9800', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
-                  primary="Mainnet Oracle Validation"
-                  secondary="In Progress - Currently disabled (returns true)"
-                />
-              </ListItem>
-              <ListItem sx={{ pl: 0 }}>
-                <ListItemIcon><ConstructionIcon sx={{ color: '#666', fontSize: '1.2rem' }} /></ListItemIcon>
-                <ListItemText
-                  primary="Phase Two: Multi-Oracle Consensus"
-                  secondary="Pending - 3-of-10 testnet, 8-of-15 mainnet"
-                />
-              </ListItem>
-              <ListItem sx={{ pl: 0 }}>
-                <ListItemIcon><ConstructionIcon sx={{ color: '#666', fontSize: '1.2rem' }} /></ListItemIcon>
-                <ListItemText
-                  primary="Fix Broken Exchange APIs"
-                  secondary="Pending - Coinbase, Kraken, Messari, Bittrex/Poloniex"
+                  primary="Mainnet Release Preparation"
+                  secondary="In Progress - Target: May 1, 2026 mainnet release"
                 />
               </ListItem>
             </List>
 
             <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
-              5/8 milestones completed • 1 in progress • 2 pending
+              7/8 milestones completed • 1 in progress • Mainnet release: May 1, 2026
             </Typography>
           </Paper>
         </Grid>
@@ -1354,8 +1355,9 @@ const DigiDollarPage = () => {
 
       <Alert severity="success" sx={{ mt: 3 }}>
         <Typography variant="body2">
-          <strong>Current Status:</strong> DigiDollar is 85% complete, Oracle system ~70% complete (Phase One).
-          DigiDollar is active on v9.26 testnet/regtest. Mainnet (v8.26.2) release pending final validation.
+          <strong>Current Status:</strong> DigiDollar is 95% complete with 1,850+ tests passing. Oracle system
+          in Phase Two with 5-of-8 consensus active on testnet. DigiDollar activated on testnet (v9.26.0-RC18).
+          Mainnet release targeted for <strong>May 1, 2026</strong> with activation window through May 1, 2028.
           For complete details and all other upgrades, see the full{' '}
           <a href="/roadmap" style={{ color: '#0066cc', fontWeight: 'bold' }}>
             DigiByte Roadmap
