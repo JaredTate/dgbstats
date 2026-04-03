@@ -201,7 +201,7 @@ const RoadmapPage = () => {
             title: 'Oracle Network Architecture',
             date: '2025-10-12',
             status: 'completed',
-            description: 'Design 15-oracle system with 8-of-15 Schnorr threshold signatures',
+            description: 'Design 11-oracle system with 6-of-11 MuSig2 aggregate signing',
             completionDate: '2025-10-12'
           },
           {
@@ -268,7 +268,7 @@ const RoadmapPage = () => {
         description: 'Implementation of DigiDollar v9.26 with new opcodes, oracle system, and Taproot-based stablecoin functionality. DigiDollar is now active on testnet with 1,850+ tests passing (311 functional + 1,539 C++ unit tests).',
         keyFeatures: [
           '💻 OP_DIGIDOLLAR implementation',
-          '🔧 Oracle network (Phase Two - 5-of-9 consensus)',
+          '🔧 Oracle network (Phase Two - 6-of-11 MuSig2 consensus)',
           '🧪 MAST & Taproot integration',
           '🔐 Consensus rule updates'
         ],
@@ -302,7 +302,7 @@ const RoadmapPage = () => {
             title: 'Oracle Price Feed Implementation',
             date: '2025-12-01',
             status: 'completed',
-            description: '7 exchange APIs (Binance, KuCoin, Gate.io, HTX, Crypto.com, CoinGecko, CoinMarketCap) with Phase Two 5-of-9 consensus',
+            description: '7 exchange APIs (Binance, KuCoin, Gate.io, HTX, Crypto.com, CoinGecko, CoinMarketCap) with Phase Two 6-of-11 consensus',
             completionDate: '2026-01-15'
           },
           {
@@ -342,7 +342,7 @@ const RoadmapPage = () => {
             title: 'DigiDollar Testnet Activation',
             date: '2026-02-20',
             status: 'completed',
-            description: 'DigiDollar fully functional on testnet with oracle price feeds and 5-of-9 consensus',
+            description: 'DigiDollar fully functional on testnet with oracle price feeds and 6-of-11 consensus',
             completionDate: '2026-02-01'
           },
           {
@@ -392,10 +392,10 @@ const RoadmapPage = () => {
           },
           {
             id: 'oracle-phase2-testnet',
-            title: '8-of-15 Oracle Testnet Validation',
+            title: '6-of-11 MuSig2 Oracle Testnet Validation',
             date: '2026-03-15',
             status: 'pending',
-            description: 'Complete 8-of-15 oracle consensus validation on testnet (currently 5-of-9)'
+            description: 'Complete 6-of-11 oracle consensus validation on testnet'
           },
           {
             id: 'security-pen-testing',
