@@ -36,9 +36,21 @@ const EMPTY_ORACLE_PRICE = {
   volatility: 0
 };
 
-// Oracle name mapping for cases where daemon returns "Unknown"
+// RC27 active oracle configuration — 6-of-11 consensus
+// The getoracles RPC returns 30 legacy entries (vOracleNodes), but only
+// IDs 0-10 are active under the 6-of-11 MuSig2 quorum. Filter in the
+// data mapping below so the UI never displays stale legacy entries.
+const ACTIVE_ORACLE_COUNT = 11;
+const MAX_ACTIVE_ORACLE_ID = 10; // IDs 0 through 10
+const ORACLE_THRESHOLD = 6;     // consensus requires 6-of-11
+
+// Oracle name mapping for cases where daemon returns "Unknown".
+// The node's vOracleNodes list uses placeholder keys for IDs 9 and 10;
+// their real-world operator names must be supplied here.
 const ORACLE_NAMES = {
-  7: 'LookInto'  // Oracle 7 - newest oracle added
+  7: 'LookInto',        // Oracle 7
+  9: 'ChopperBrian',    // Oracle 9 — added in RC27
+  10: 'Ogilvie'         // Oracle 10 — added in RC27
 };
 
 /**
@@ -107,7 +119,11 @@ const OraclesPage = () => {
             };
           });
 
-          setOracles(mappedOracles);
+          // RC27: Only show active oracles (IDs 0 through MAX_ACTIVE_ORACLE_ID).
+          // The getoracles RPC returns 30 legacy vOracleNode entries but consensus
+          // uses ACTIVE_ORACLE_COUNT (11). Discard anything beyond that.
+          const activeOracles = mappedOracles.filter(o => o.oracle_id <= MAX_ACTIVE_ORACLE_ID);
+          setOracles(activeOracles);
           setLastUpdated(new Date());
           setLoading(false);
           setError(null);
@@ -267,7 +283,7 @@ const OraclesPage = () => {
                   {reportingCount > 0 ? 'Online Reporting' : 'Not Reporting'}
                 </Typography>
                 <Typography variant="body2" fontWeight="bold" sx={{ mt: 1, color: reportingCount >= 6 ? '#2e7d32' : '#ed6c02' }}>
-                  6/{oracles.length || 11} needed for consensus
+                  {ORACLE_THRESHOLD}/{oracles.length || ACTIVE_ORACLE_COUNT} needed for consensus
                 </Typography>
               </Box>
             </Tooltip>
@@ -296,7 +312,7 @@ const OraclesPage = () => {
       {isTestnet && (
         <Box sx={{ mt: 2, p: 1.5, backgroundColor: 'rgba(46, 125, 50, 0.08)', borderRadius: '8px', textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
-            <strong>Phase Two:</strong> 6-of-{oracles.length || 11} oracle consensus | MuSig2 aggregate signing (v0x03)
+            <strong>Phase Two:</strong> {ORACLE_THRESHOLD}-of-{oracles.length || ACTIVE_ORACLE_COUNT} oracle consensus | MuSig2 aggregate signing (v0x03)
           </Typography>
         </Box>
       )}
@@ -605,7 +621,7 @@ const OraclesPage = () => {
         <Box sx={{ mt: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
           <Typography variant="body2" color="text.secondary">
             <strong>Price Format:</strong> Oracle prices use micro-USD format where 1,000,000 = $1.00.
-            This ensures exact arithmetic with no floating-point errors. Consensus requires 6-of-{oracles.length || 11} oracles on testnet.
+            This ensures exact arithmetic with no floating-point errors. Consensus requires {ORACLE_THRESHOLD}-of-{oracles.length || ACTIVE_ORACLE_COUNT} oracles on testnet.
           </Typography>
         </Box>
         </>
