@@ -40,7 +40,7 @@ describe('DigiDollarPage', () => {
       renderWithProviders(<DigiDollarPage />);
 
       expect(screen.getByText('Simple Explanation')).toBeInTheDocument();
-      expect(screen.getByText(/proposed stable digital currency that would always equal \$1 USD/)).toBeInTheDocument();
+      expect(screen.getByText(/stable digital currency that equals \$1 USD/)).toBeInTheDocument();
     });
 
     it('should render the key benefits', () => {

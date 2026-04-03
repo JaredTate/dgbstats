@@ -147,7 +147,7 @@ describe('OraclesPage', () => {
 
       expect(screen.getByText('Technical Specifications')).toBeInTheDocument();
       expect(screen.getByText('Phase Two (Testnet)')).toBeInTheDocument();
-      expect(screen.getByText('Phase Two (Mainnet)')).toBeInTheDocument();
+      expect(screen.getByText('Mainnet (Planned)')).toBeInTheDocument();
       expect(screen.getByText('Price Validation Limits:')).toBeInTheDocument();
     });
 
@@ -316,9 +316,10 @@ describe('OraclesPage', () => {
     it('should display phase two testnet specifications', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
 
-      const consensus = screen.getAllByText(/5-of-8 oracle consensus/);
+      const consensus = screen.getAllByText(/6-of-11 oracle consensus/);
       expect(consensus.length).toBeGreaterThan(0);
-      expect(screen.getByText(/10 oracle slots/)).toBeInTheDocument();
+      expect(screen.getByText(/11 oracle slots/)).toBeInTheDocument();
+      expect(screen.getByText(/MuSig2 aggregate signing \(v0x03\) with individual fallback \(v0x02\)/)).toBeInTheDocument();
       expect(screen.getByText(/Price updates every 15 seconds/)).toBeInTheDocument();
       const schnorr = screen.getAllByText(/BIP-340 Schnorr signatures/);
       expect(schnorr.length).toBeGreaterThan(0);
@@ -327,9 +328,10 @@ describe('OraclesPage', () => {
     it('should display phase two mainnet specifications', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
 
-      expect(screen.getByText(/8-of-15 Schnorr threshold signatures/)).toBeInTheDocument();
-      expect(screen.getByText(/30 oracle slots/)).toBeInTheDocument();
-      expect(screen.getByText(/15 active oracles per epoch/)).toBeInTheDocument();
+      const musig2 = screen.getAllByText(/MuSig2 aggregate signing \(v0x03\)/);
+      expect(musig2.length).toBeGreaterThan(0);
+      expect(screen.getByText(/Expanded oracle network/)).toBeInTheDocument();
+      expect(screen.getByText(/BIP9 activation for deployment/)).toBeInTheDocument();
     });
 
     it('should display price validation limits', async () => {
@@ -484,7 +486,7 @@ describe('OraclesPage', () => {
 
       const phaseTwo = screen.getAllByText(/Phase Two/);
       expect(phaseTwo.length).toBeGreaterThan(0);
-      const consensus = screen.getAllByText(/5-of-8/);
+      const consensus = screen.getAllByText(/6-of-11/);
       expect(consensus.length).toBeGreaterThan(0);
     });
   });
