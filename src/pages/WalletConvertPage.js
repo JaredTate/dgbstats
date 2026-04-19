@@ -12,12 +12,19 @@ import BackupIcon from '@mui/icons-material/Backup';
 import SettingsIcon from '@mui/icons-material/Settings';
 
 // ─── Application ID map ────────────────────────────────────────────
+// Application ID = big-endian of pchMessageStart for that network
+// (see src/kernel/chainparams.cpp and src/wallet/sqlite.cpp).
 export const APPLICATION_IDS = {
   mainnet:       0xFAC3B6DA,
-  'testnet19/20': 0xFCD1B8E2,
-  testnet21:     0xFDD2B9E3,
+  'testnet19/20': 0xFCD1B8E2, // RC27 and earlier
+  testnet21:     0xFDD2B9E3, // RC28
+  testnet23:     0xFDD2B9E4, // RC29 / RC30 — current testnet
   regtest:       0xFABFB5DA
 };
+
+// The network the tool currently migrates INTO by default. Bump this
+// whenever a new testnet reset ships.
+export const CURRENT_TESTNET = 'testnet23';
 
 const ID_TO_NETWORK = Object.fromEntries(
   Object.entries(APPLICATION_IDS).map(([k, v]) => [v, k])
@@ -71,7 +78,7 @@ const WalletConvertPage = () => {
   const [fileName, setFileName] = useState('');
   const [currentAppId, setCurrentAppId] = useState(null);
   const [currentNetwork, setCurrentNetwork] = useState('');
-  const [targetNetwork, setTargetNetwork] = useState('testnet21');
+  const [targetNetwork, setTargetNetwork] = useState(CURRENT_TESTNET);
   const [error, setError] = useState('');
   const [converted, setConverted] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -139,7 +146,7 @@ const WalletConvertPage = () => {
   };
 
   const networkColor = (net) => {
-    if (net === 'testnet21') return '#4caf50';
+    if (net === CURRENT_TESTNET) return '#4caf50';
     if (net.startsWith('testnet')) return '#ff9800';
     if (net === 'mainnet') return '#002352';
     if (net === 'regtest') return '#9c27b0';
@@ -180,8 +187,10 @@ const WalletConvertPage = () => {
           </Typography>
           <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 2, borderColor: '#4caf50', borderWidth: 2 }} />
           <Typography variant="body1" sx={{ maxWidth: '800px', mx: 'auto', color: '#555' }}>
-            Patch the SQLite application_id bytes in a wallet.dat file to migrate between testnet versions.
-            Use this when copying an oracle wallet from one testnet to another.
+            Patch the SQLite <code>application_id</code> bytes in a wallet.dat file to migrate between testnet versions.
+            Use this when copying an oracle wallet from one testnet to another —
+            RC30 ships a new genesis block and new network magic bytes (<code>0xFDD2B9E4</code>, testnet23),
+            so oracle wallets from RC28 or earlier will be rejected until they are converted.
           </Typography>
         </CardContent>
       </Card>

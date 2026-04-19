@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import WalletConvertPage, {
   APPLICATION_IDS,
+  CURRENT_TESTNET,
   detectNetwork,
   readApplicationId,
   patchApplicationId
@@ -46,12 +47,30 @@ describe('Wallet Converter — pure helpers', () => {
     expect(readApplicationId(buf)).toBe(0xFDD2B9E3);
   });
 
+  it('readApplicationId reads testnet23 (RC30) id', () => {
+    const buf = makeFakeSqlite(0xFDD2B9E4);
+    expect(readApplicationId(buf)).toBe(0xFDD2B9E4);
+  });
+
+  it('APPLICATION_IDS.testnet23 matches the RC30 pchMessageStart (FD D2 B9 E4)', () => {
+    expect(APPLICATION_IDS.testnet23).toBe(0xFDD2B9E4);
+  });
+
+  it('CURRENT_TESTNET points at testnet23 for RC30', () => {
+    expect(CURRENT_TESTNET).toBe('testnet23');
+    expect(APPLICATION_IDS[CURRENT_TESTNET]).toBe(0xFDD2B9E4);
+  });
+
   it('detectNetwork identifies testnet19/20', () => {
     expect(detectNetwork(0xFCD1B8E2)).toBe('testnet19/20');
   });
 
   it('detectNetwork identifies testnet21', () => {
     expect(detectNetwork(0xFDD2B9E3)).toBe('testnet21');
+  });
+
+  it('detectNetwork identifies testnet23 (RC30)', () => {
+    expect(detectNetwork(0xFDD2B9E4)).toBe('testnet23');
   });
 
   it('detectNetwork identifies mainnet', () => {
@@ -71,6 +90,20 @@ describe('Wallet Converter — pure helpers', () => {
     const patched = patchApplicationId(buf, APPLICATION_IDS.testnet21);
     const dv = new DataView(patched);
     expect(dv.getUint32(68, false)).toBe(0xFDD2B9E3);
+  });
+
+  it('patchApplicationId converts an RC28 testnet21 wallet to RC30 testnet23', () => {
+    const buf = makeFakeSqlite(0xFDD2B9E3);
+    const patched = patchApplicationId(buf, APPLICATION_IDS.testnet23);
+    const dv = new DataView(patched);
+    expect(dv.getUint32(68, false)).toBe(0xFDD2B9E4);
+  });
+
+  it('testnet21 → testnet23 round-trip preserves all other bytes', () => {
+    const original = makeFakeSqlite(0xFDD2B9E3);
+    const toT23 = patchApplicationId(original, APPLICATION_IDS.testnet23);
+    const back = patchApplicationId(toT23, APPLICATION_IDS.testnet21);
+    expect(Array.from(new Uint8Array(back))).toEqual(Array.from(new Uint8Array(original)));
   });
 
   it('patchApplicationId preserves all other bytes', () => {
@@ -148,6 +181,21 @@ describe('Wallet Converter — real fixture files', () => {
     const origU8 = new Uint8Array(buf);
     const roundU8 = new Uint8Array(backToT20);
     expect(Array.from(roundU8)).toEqual(Array.from(origU8));
+  });
+
+  it('real testnet21 fixture → testnet23 writes RC30 magic at offset 68-71', () => {
+    const buf = loadFixture('wallet-testnet21.dat');
+    const patched = patchApplicationId(buf, APPLICATION_IDS.testnet23);
+    const dv = new DataView(patched);
+    expect(dv.getUint32(68, false)).toBe(0xFDD2B9E4);
+  });
+
+  it('real testnet21 fixture → testnet23 preserves file size and SQLite header', () => {
+    const buf = loadFixture('wallet-testnet21.dat');
+    const patched = patchApplicationId(buf, APPLICATION_IDS.testnet23);
+    expect(patched.byteLength).toBe(buf.byteLength);
+    const header = new Uint8Array(patched, 0, 16);
+    expect(Array.from(header)).toEqual(Array.from(SQLITE_HEADER));
   });
 });
 
