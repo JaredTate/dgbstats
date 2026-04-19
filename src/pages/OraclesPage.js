@@ -8,6 +8,7 @@ import {
 import SensorsIcon from '@mui/icons-material/Sensors';
 import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
+import HourglassTopIcon from '@mui/icons-material/HourglassTop';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import UpdateIcon from '@mui/icons-material/Update';
 import SecurityIcon from '@mui/icons-material/Security';
@@ -36,21 +37,27 @@ const EMPTY_ORACLE_PRICE = {
   volatility: 0
 };
 
-// RC27 active oracle configuration — 6-of-11 consensus
+// RC30 active oracle configuration — 9-of-17 consensus
 // The getoracles RPC returns 30 legacy entries (vOracleNodes), but only
-// IDs 0-10 are active under the 6-of-11 MuSig2 quorum. Filter in the
+// IDs 0-16 are active under the 9-of-17 MuSig2 quorum. Filter in the
 // data mapping below so the UI never displays stale legacy entries.
-const ACTIVE_ORACLE_COUNT = 11;
-const MAX_ACTIVE_ORACLE_ID = 10; // IDs 0 through 10
-const ORACLE_THRESHOLD = 6;     // consensus requires 6-of-11
+const ACTIVE_ORACLE_COUNT = 17;
+const MAX_ACTIVE_ORACLE_ID = 16; // IDs 0 through 16
+const ORACLE_THRESHOLD = 9;     // consensus requires 9-of-17
 
 // Oracle name mapping for cases where daemon returns "Unknown".
 // The node's vOracleNodes list uses placeholder keys for IDs 9 and 10;
 // their real-world operator names must be supplied here.
 const ORACLE_NAMES = {
   7: 'LookInto',        // Oracle 7
-  9: 'ChopperBrian',    // Oracle 9 — added in RC27
-  10: 'Ogilvie'         // Oracle 10 — added in RC27
+  9: 'Ogilvie',         // Oracle 9
+  10: 'ChopperBrian',   // Oracle 10
+  11: 'hallvardo',      // Oracle 11
+  12: 'DaPunzy',        // Oracle 12 — active in RC30
+  13: 'DigiByteForce',  // Oracle 13
+  14: 'Neel',           // Oracle 14 — active in RC30
+  15: 'DigiSwarm',      // Oracle 15 — active in RC30
+  16: 'GTO90'           // Oracle 16 — active in RC30
 };
 
 /**
@@ -119,9 +126,9 @@ const OraclesPage = () => {
             };
           });
 
-          // RC27: Only show active oracles (IDs 0 through MAX_ACTIVE_ORACLE_ID).
-          // The getoracles RPC returns 30 legacy vOracleNode entries but consensus
-          // uses ACTIVE_ORACLE_COUNT (11). Discard anything beyond that.
+          // RC30: Only show active oracles (IDs 0 through MAX_ACTIVE_ORACLE_ID).
+          // The getoracles RPC may still expose legacy vOracleNode entries but consensus
+          // uses ACTIVE_ORACLE_COUNT (17). Discard anything beyond that.
           const activeOracles = mappedOracles.filter(o => o.oracle_id <= MAX_ACTIVE_ORACLE_ID);
           setOracles(activeOracles);
           setLastUpdated(new Date());
@@ -249,6 +256,14 @@ const OraclesPage = () => {
           <CircularProgress size={40} sx={{ color: isTestnet ? '#2e7d32' : '#002352' }} />
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>Loading oracle data...</Typography>
         </Box>
+      ) : !hasData && ddDeploymentStatus && ddDeploymentStatus !== 'active' ? (
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <HourglassTopIcon sx={{ fontSize: '3rem', color: '#9e9e9e', mb: 1 }} />
+          <Typography variant="h6" color="text.secondary">Oracle Network Waiting for Activation</Typography>
+          <Typography variant="body2" color="text.secondary">
+            DigiDollar is currently in the {ddDeploymentStatus.toUpperCase().replace('_', ' ')} stage, so live oracle price reporting is not available yet.
+          </Typography>
+        </Box>
       ) : !hasData && error ? (
         <Box sx={{ textAlign: 'center', py: 4 }}>
           <CloudOffIcon sx={{ fontSize: '3rem', color: '#9e9e9e', mb: 1 }} />
@@ -273,7 +288,7 @@ const OraclesPage = () => {
             </Tooltip>
           </Grid>
           <Grid item xs={12} md={4}>
-            <Tooltip title="Number of oracles contributing to network price consensus. Requires 6-of-11 for consensus on testnet" arrow placement="top">
+            <Tooltip title="Number of oracles contributing to network price consensus. Requires 9-of-17 for consensus on testnet" arrow placement="top">
               <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help', minHeight: 160, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <Typography variant="body2" color="text.secondary">Network Oracles</Typography>
                 <Typography variant="h3" fontWeight="bold" sx={{ color: reportingCount > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
@@ -282,7 +297,7 @@ const OraclesPage = () => {
                 <Typography variant="body2" color="text.secondary">
                   {reportingCount > 0 ? 'Online Reporting' : 'Not Reporting'}
                 </Typography>
-                <Typography variant="body2" fontWeight="bold" sx={{ mt: 1, color: reportingCount >= 6 ? '#2e7d32' : '#ed6c02' }}>
+                <Typography variant="body2" fontWeight="bold" sx={{ mt: 1, color: reportingCount >= ORACLE_THRESHOLD ? '#2e7d32' : '#ed6c02' }}>
                   {ORACLE_THRESHOLD}/{oracles.length || ACTIVE_ORACLE_COUNT} needed for consensus
                 </Typography>
               </Box>
@@ -456,7 +471,7 @@ const OraclesPage = () => {
           {oracles.length > 0 ? (
             <Chip
               label={`${reportingCount} / ${oracles.length} Online Reporting`}
-              color={reportingCount >= 6 ? 'success' : 'warning'}
+              color={reportingCount >= ORACLE_THRESHOLD ? 'success' : 'warning'}
               size="small"
               sx={{ ml: 2 }}
             />
@@ -644,8 +659,8 @@ const OraclesPage = () => {
               Phase Two (Testnet)
             </Typography>
             <Box component="ul" sx={{ pl: 2, m: 0 }}>
-              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>6-of-11 oracle consensus</Typography>
-              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>11 oracle slots (IDs 0-10)</Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>9-of-17 oracle consensus</Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>17 oracle slots (IDs 0-16)</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>MuSig2 aggregate signing (v0x03) with individual fallback (v0x02)</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Price updates every 15 seconds</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Compact 22-byte storage per block</Typography>

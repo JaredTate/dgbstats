@@ -19,18 +19,18 @@ describe('RoadmapPage oracle consensus copy', () => {
     vi.clearAllMocks();
   });
 
-  it('shows updated 6-of-11 MuSig2 references', async () => {
+  it('shows updated 9-of-17 MuSig2 references', async () => {
     renderWithProviders(<RoadmapPage />, { network: 'testnet' });
     await waitForAsync();
 
     await waitFor(() => {
-      expect(screen.getByText(/Design 11-oracle system with 6-of-11 MuSig2 aggregate signing/i)).toBeInTheDocument();
-      expect(screen.getByText(/Oracle network \(Phase Two - 6-of-11 MuSig2 consensus\)/i)).toBeInTheDocument();
-      expect(screen.getByText(/with Phase Two 6-of-11 consensus/i)).toBeInTheDocument();
-      expect(screen.getByText(/oracle price feeds and 6-of-11 consensus/i)).toBeInTheDocument();
-      const validationMatches = screen.getAllByText(/6-of-11 MuSig2 Oracle Testnet Validation/i);
+      expect(screen.getByText(/Design 17-oracle system with 9-of-17 MuSig2 aggregate signing/i)).toBeInTheDocument();
+      expect(screen.getByText(/Oracle network \(Phase Two - 9-of-17 MuSig2 consensus\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/with Phase Two 9-of-17 consensus/i)).toBeInTheDocument();
+      expect(screen.getByText(/oracle price feeds and 9-of-17 consensus/i)).toBeInTheDocument();
+      const validationMatches = screen.getAllByText(/9-of-17 MuSig2 Oracle Testnet Validation/i);
       expect(validationMatches.length).toBeGreaterThan(0);
-      expect(screen.getByText(/Complete 6-of-11 oracle consensus validation on testnet/i)).toBeInTheDocument();
+      expect(screen.getByText(/Complete 9-of-17 oracle consensus validation on testnet/i)).toBeInTheDocument();
     });
   });
 });
