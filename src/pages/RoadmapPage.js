@@ -347,11 +347,11 @@ const RoadmapPage = () => {
           },
           {
             id: 'initial-release',
-            title: 'Testnet Release v9.26.0-RC18',
-            date: '2026-02-28',
+            title: 'Testnet Release v9.26.0-RC30',
+            date: '2026-04-19',
             status: 'completed',
-            description: 'Latest testnet release candidate with DigiDollar functionality, 1,850+ tests passing',
-            completionDate: '2026-02-12'
+            description: 'Final testnet release candidate before mainnet with full DigiDollar functionality and 9-of-17 oracle consensus',
+            completionDate: '2026-04-19'
           }
         ]
       },
@@ -384,11 +384,11 @@ const RoadmapPage = () => {
           },
           {
             id: 'v9.26-rc2',
-            title: 'DigiByte v9.26 Release Candidate 18 (Current)',
-            date: '2026-02-12',
+            title: 'DigiByte v9.26 Release Candidate 30 (Current)',
+            date: '2026-04-19',
             status: 'completed',
-            description: 'Latest testnet release candidate (v9.26.0-RC18) with all DigiDollar features',
-            completionDate: '2026-02-12'
+            description: 'Final testnet release candidate (v9.26.0-RC30) — final 9-of-17 MuSig2 oracle config before mainnet',
+            completionDate: '2026-04-19'
           },
           {
             id: 'oracle-phase2-testnet',
