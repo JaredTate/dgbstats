@@ -1252,7 +1252,7 @@ const DigiDollarPage = () => {
 
             <Alert severity="info" sx={{ mt: 2 }}>
               <Typography variant="caption">
-                <strong>TARGET:</strong> Mainnet release v9.26 on May 1, 2026 - Miners can start signaling for activation
+                <strong>TARGET:</strong> Mainnet release v9.26 May, 2026 - Miners can start signaling for activation
               </Typography>
             </Alert>
           </Paper>
@@ -1342,13 +1342,13 @@ const DigiDollarPage = () => {
                 <ListItemIcon><ConstructionIcon sx={{ color: '#ff9800', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
                   primary="Mainnet Release Preparation"
-                  secondary="In Progress - Target: May 1, 2026 mainnet release"
+                  secondary="In Progress - Target: May, 2026 mainnet release"
                 />
               </ListItem>
             </List>
 
             <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
-              7/8 milestones completed • 1 in progress • Mainnet release: May 1, 2026
+              7/8 milestones completed • 1 in progress • Mainnet release: May, 2026
             </Typography>
           </Paper>
         </Grid>
@@ -1358,7 +1358,7 @@ const DigiDollarPage = () => {
         <Typography variant="body2">
           <strong>Current Status:</strong> DigiDollar is 95% complete with 1,850+ tests passing. Oracle system
           in Phase Two with 9-of-17 MuSig2 consensus active on testnet23. DigiDollar activated on testnet (v9.26.0-RC30).
-          Mainnet release targeted for <strong>May 1, 2026</strong> with activation window through May 1, 2028.
+          Mainnet release targeted for <strong>May, 2026</strong> with activation window through May, 2028.
           For complete details and all other upgrades, see the full{' '}
           <a href="/roadmap" style={{ color: '#0066cc', fontWeight: 'bold' }}>
             DigiByte Roadmap

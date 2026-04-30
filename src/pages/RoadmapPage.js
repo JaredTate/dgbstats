@@ -358,7 +358,7 @@ const RoadmapPage = () => {
       {
         id: 'phase4',
         title: 'DigiByte v9.26 Mainnet Release & Activation',
-        subtitle: 'May 1, 2026 - Mainnet Launch',
+        subtitle: 'May, 2026 - Mainnet Launch',
         timeRange: 'March 2026 - May 2028',
         startDate: '2026-03-01',
         endDate: '2028-05-01',
@@ -366,12 +366,12 @@ const RoadmapPage = () => {
         progress: 15,
         icon: <SpeedIcon />,
         color: '#ff9800',
-        description: 'DigiByte v9.26 mainnet release on May 1, 2026. Miners can begin signaling for DigiDollar activation starting May 1st. Activation window: May 1, 2026 through May 1, 2028. This is the world\'s first truly decentralized stablecoin on a UTXO blockchain.',
+        description: 'DigiByte v9.26 mainnet release on May, 2026. Miners can begin signaling for DigiDollar activation starting May 1st. Activation window: May, 2026 through May, 2028. This is the world\'s first truly decentralized stablecoin on a UTXO blockchain.',
         keyFeatures: [
-          '🚀 v9.26 mainnet release: May 1, 2026',
-          '⛏️ Miner signaling begins May 1, 2026',
+          '🚀 v9.26 mainnet release: May, 2026',
+          '⛏️ Miner signaling begins May, 2026',
           '🗳️ 75% miner threshold required',
-          '📅 Activation window: May 1, 2026 → May 1, 2028'
+          '📅 Activation window: May, 2026 → May, 2028'
         ],
         milestones: [
           {
@@ -423,7 +423,7 @@ const RoadmapPage = () => {
             title: 'BIP9 Activation Parameters',
             date: '2026-04-20',
             status: 'pending',
-            description: 'Set soft fork activation parameters: start May 1, 2026, timeout May 1, 2028'
+            description: 'Set soft fork activation parameters: start May, 2026, timeout May, 2028'
           },
           {
             id: 'v9.26-final-release',
@@ -465,7 +465,7 @@ const RoadmapPage = () => {
             title: 'Activation Window Closes',
             date: '2028-05-01',
             status: 'pending',
-            description: 'End of BIP9 activation window (May 1, 2026 → May 1, 2028)'
+            description: 'End of BIP9 activation window (May, 2026 → May, 2028)'
           }
         ]
       },
@@ -888,7 +888,7 @@ const RoadmapPage = () => {
   );
 
   /**
-   * DigiDollar Launch Banner - Celebration announcement for May 1, 2026
+   * DigiDollar Launch Banner - Celebration announcement for May, 2026
    */
   const DigiDollarLaunchBanner = () => (
     <Card
@@ -928,7 +928,7 @@ const RoadmapPage = () => {
             fontSize: { xs: '1.3rem', sm: '1.6rem', md: '2rem' }
           }}
         >
-          May 1, 2026
+          May, 2026
         </Typography>
 
         <Divider sx={{ maxWidth: '200px', mx: 'auto', mb: 2, borderColor: 'rgba(255,183,77,0.5)', borderWidth: 2 }} />
@@ -960,7 +960,7 @@ const RoadmapPage = () => {
                 Miner Signaling Begins
               </Typography>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                May 1, 2026
+                May, 2026
               </Typography>
             </Paper>
           </Grid>
@@ -978,7 +978,7 @@ const RoadmapPage = () => {
                 Activation Window
               </Typography>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                May 1, 2026 → May 1, 2028
+                May, 2026 → May, 2028
               </Typography>
             </Paper>
           </Grid>
