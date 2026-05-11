@@ -15,16 +15,17 @@ import SettingsIcon from '@mui/icons-material/Settings';
 // Application ID = big-endian of pchMessageStart for that network
 // (see src/kernel/chainparams.cpp and src/wallet/sqlite.cpp).
 export const APPLICATION_IDS = {
-  mainnet:       0xFAC3B6DA,
+  mainnet:        0xFAC3B6DA,
   'testnet19/20': 0xFCD1B8E2, // RC27 and earlier
-  testnet21:     0xFDD2B9E3, // RC28
-  testnet23:     0xFDD2B9E4, // RC29 / RC30 — current testnet
-  regtest:       0xFABFB5DA
+  testnet21:      0xFDD2B9E3, // RC28
+  testnet23:      0xFDD2B9E4, // RC29 / RC30
+  testnet24:      0xFEC4B7E5, // RC34 — current testnet
+  regtest:        0xFABFB5DA
 };
 
 // The network the tool currently migrates INTO by default. Bump this
 // whenever a new testnet reset ships.
-export const CURRENT_TESTNET = 'testnet23';
+export const CURRENT_TESTNET = 'testnet24';
 
 const ID_TO_NETWORK = Object.fromEntries(
   Object.entries(APPLICATION_IDS).map(([k, v]) => [v, k])
@@ -189,8 +190,8 @@ const WalletConvertPage = () => {
           <Typography variant="body1" sx={{ maxWidth: '800px', mx: 'auto', color: '#555' }}>
             Patch the SQLite <code>application_id</code> bytes in a wallet.dat file to migrate between testnet versions.
             Use this when copying an oracle wallet from one testnet to another —
-            RC30 ships a new genesis block and new network magic bytes (<code>0xFDD2B9E4</code>, testnet23),
-            so oracle wallets from RC28 or earlier will be rejected until they are converted.
+            RC34 ships a new genesis block and new network magic bytes (<code>0xFEC4B7E5</code>, testnet24),
+            so oracle wallets from RC30 or earlier will be rejected until they are converted.
           </Typography>
         </CardContent>
       </Card>
