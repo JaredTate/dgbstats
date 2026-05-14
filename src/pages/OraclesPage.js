@@ -43,6 +43,8 @@ const ACTIVE_ORACLE_COUNT = 17;
 const MAX_ACTIVE_ORACLE_ID = 16; // IDs 0 through 16
 const ORACLE_THRESHOLD = 9;     // consensus requires 9-of-17
 const EXPECTED_MUSIG2_CONTEXT_VERSION = 2; // RC38 attempt/evidence-bound context protocol
+const ORACLE_EPOCH_BLOCKS = 40;
+const TARGET_BLOCK_SECONDS = 15;
 
 // Oracle name mapping for cases where daemon returns "Unknown".
 // The node's vOracleNodes list uses placeholder keys for IDs 9 and 10;
@@ -86,6 +88,20 @@ const formatTimestampAge = (timestamp) => {
   return formatAgeSeconds(Math.max(0, nowSeconds - value));
 };
 
+const formatDurationSeconds = (seconds) => {
+  const value = Number(seconds);
+  if (!Number.isFinite(value) || value <= 0) return '~0s';
+
+  const totalSeconds = Math.round(value);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const remainingSeconds = totalSeconds % 60;
+
+  if (hours > 0) return `~${hours}h ${minutes}m`;
+  if (minutes > 0) return `~${minutes}m ${remainingSeconds}s`;
+  return `~${remainingSeconds}s`;
+};
+
 const getHeartbeatChipColor = (status, signatureValid) => {
   if (status === 'fresh' && signatureValid) return 'success';
   if (status === 'stale') return 'warning';
@@ -110,6 +126,8 @@ const OraclesPage = () => {
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [ddDeploymentStatus, setDdDeploymentStatus] = useState(null);
+  const [ddDeploymentInfo, setDdDeploymentInfo] = useState(null);
+  const [oracleBlockHeight, setOracleBlockHeight] = useState(0);
 
   // WebSocket connection for real-time oracle data
   useEffect(() => {
@@ -124,10 +142,12 @@ const OraclesPage = () => {
         const message = JSON.parse(event.data);
         if (message.type === 'ddDeploymentData') {
           setDdDeploymentStatus(message.data.status);
+          setDdDeploymentInfo(message.data);
         }
         if (message.type === 'oracleData') {
           const { price: priceData, allPrices: allOraclePricesData, oracles: oraclesConfigData } = message.data;
           const allOraclePrices = (allOraclePricesData && allOraclePricesData.oracles) || [];
+          const currentBlockHeight = allOraclePricesData?.block_height || priceData?.block_height || priceData?.last_update_height || 0;
 
           // Update state with real price data
           setOraclePrice({
@@ -141,6 +161,7 @@ const OraclesPage = () => {
             '24h_low': priceData['24h_low'] || 0,
             volatility: priceData.volatility || 0
           });
+          setOracleBlockHeight(currentBlockHeight);
 
           // Use getoracles (config with all oracles) as base, merge price data from getalloracleprices
           const mappedOracles = (oraclesConfigData || []).map(configOracle => {
@@ -229,6 +250,49 @@ const OraclesPage = () => {
     freshHeartbeatCount >= ORACLE_THRESHOLD &&
     rc38ContextCount >= ORACLE_THRESHOLD &&
     selectedCount >= ORACLE_THRESHOLD;
+
+  const getOracleEpochInfo = () => {
+    const session = ddDeploymentInfo?.musig2_session || {};
+    const currentHeight = Number(oracleBlockHeight || oraclePrice.last_update_height || session.creation_height || 0);
+    const sessionEpoch = Number(session.epoch);
+    const epoch = Number.isFinite(sessionEpoch) && sessionEpoch >= 0
+      ? sessionEpoch
+      : (currentHeight > 0 ? Math.floor(currentHeight / ORACLE_EPOCH_BLOCKS) : null);
+
+    if (epoch === null) return null;
+
+    const sessionStartHeight = Number(session.creation_height);
+    const epochStartHeight = Number.isFinite(sessionStartHeight) && sessionStartHeight >= 0
+      ? sessionStartHeight
+      : epoch * ORACLE_EPOCH_BLOCKS;
+    const epochEndHeight = epochStartHeight + ORACLE_EPOCH_BLOCKS - 1;
+    const nextEpochHeight = epochEndHeight + 1;
+    const minedBlocks = currentHeight > 0
+      ? Math.max(0, Math.min(ORACLE_EPOCH_BLOCKS, currentHeight - epochStartHeight + 1))
+      : 0;
+    const blocksUntilNextEpoch = currentHeight > 0
+      ? Math.max(0, nextEpochHeight - currentHeight)
+      : ORACLE_EPOCH_BLOCKS;
+    const requiredSigners = Number(ddDeploymentInfo?.oracle_consensus_required) || ORACLE_THRESHOLD;
+
+    return {
+      epoch,
+      currentHeight,
+      epochStartHeight,
+      epochEndHeight,
+      nextEpochHeight,
+      minedBlocks,
+      blocksUntilNextEpoch,
+      estimatedSeconds: blocksUntilNextEpoch * TARGET_BLOCK_SECONDS,
+      progress: Math.min(100, Math.max(0, (minedBlocks / ORACLE_EPOCH_BLOCKS) * 100)),
+      sessionState: session.state || 'unknown',
+      nonceCount: Number(session.nonce_count) || 0,
+      partialSigCount: Number(session.partial_sig_count) || 0,
+      requiredSigners
+    };
+  };
+
+  const epochInfo = getOracleEpochInfo();
 
   const SitrepMetric = ({ label, value, detail, ok }) => (
     <Paper
@@ -483,6 +547,93 @@ const OraclesPage = () => {
       </Grid>
     </Card>
   );
+
+  const OracleEpochSection = () => {
+    if (!epochInfo) return null;
+
+    const stateLabel = epochInfo.sessionState.replace(/_/g, ' ');
+    const stateOk = epochInfo.sessionState === 'complete';
+
+    return (
+      <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px', borderTop: `4px solid ${stateOk ? '#2e7d32' : '#ed6c02'}` }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <HourglassTopIcon sx={{ fontSize: '2rem', color: stateOk ? '#2e7d32' : '#ed6c02', mr: 1 }} />
+            <Typography variant="h5" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
+              Oracle Epoch Clock
+            </Typography>
+          </Box>
+          <Chip
+            label={`MuSig2 ${stateLabel}`}
+            color={stateOk ? 'success' : 'warning'}
+            size="small"
+          />
+        </Box>
+
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Paper elevation={0} sx={{ p: 2, height: '100%', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
+              <Typography variant="body2" color="text.secondary">Current Epoch</Typography>
+              <Typography variant="h4" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
+                Epoch {epochInfo.epoch.toLocaleString()}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Current block {epochInfo.currentHeight.toLocaleString()}
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Paper elevation={0} sx={{ p: 2, height: '100%', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
+              <Typography variant="body2" color="text.secondary">Epoch Range</Typography>
+              <Typography variant="h6" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
+                Blocks {epochInfo.epochStartHeight.toLocaleString()}-{epochInfo.epochEndHeight.toLocaleString()}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {epochInfo.minedBlocks}/{ORACLE_EPOCH_BLOCKS} blocks observed
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Paper elevation={0} sx={{ p: 2, height: '100%', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
+              <Typography variant="body2" color="text.secondary">Next Epoch</Typography>
+              <Typography variant="h6" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
+                Next epoch: block {epochInfo.nextEpochHeight.toLocaleString()}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                {epochInfo.blocksUntilNextEpoch} blocks away
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {formatDurationSeconds(epochInfo.estimatedSeconds)}
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Paper elevation={0} sx={{ p: 2, height: '100%', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
+              <Typography variant="body2" color="text.secondary">Signing Progress</Typography>
+              <Typography variant="h6" fontWeight="bold" sx={{ color: stateOk ? '#2e7d32' : '#ed6c02', textTransform: 'capitalize' }}>
+                MuSig2 {stateLabel}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                Nonces {epochInfo.nonceCount}/{epochInfo.requiredSigners}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Signatures {epochInfo.partialSigCount}/{epochInfo.requiredSigners}
+              </Typography>
+            </Paper>
+          </Grid>
+        </Grid>
+
+        <Box sx={{ mt: 2 }}>
+          <LinearProgress
+            variant="determinate"
+            value={epochInfo.progress}
+            color={stateOk ? 'success' : 'warning'}
+            sx={{ height: 8, borderRadius: 4 }}
+          />
+        </Box>
+      </Card>
+    );
+  };
 
   // What Are Oracles Section
   const WhatAreOraclesSection = () => (
@@ -943,6 +1094,7 @@ const OraclesPage = () => {
       <HeroSection />
       <NotActiveBanner />
       <CurrentPriceCard />
+      <OracleEpochSection />
       <OracleSitrepSection />
       <OracleListSection />
       <WhatAreOraclesSection />

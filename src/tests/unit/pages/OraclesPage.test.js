@@ -10,7 +10,7 @@ const mockOraclePrice = {
   price_usd: 0.05,
   oracle_count: 9,
   status: 'active',
-  last_update_height: 2000,
+  last_update_height: 2025,
   is_stale: false,
   '24h_high': 5,
   '24h_low': 5,
@@ -18,7 +18,7 @@ const mockOraclePrice = {
 };
 
 const mockAllOraclePrices = {
-  block_height: 2000,
+  block_height: 2025,
   consensus_price_micro_usd: 50000,
   consensus_price_usd: 0.05,
   oracle_count: 9,
@@ -43,6 +43,19 @@ const mockAllOraclePrices = {
     { oracle_id: 15, name: 'DigiSwarm', endpoint: 'oracle16.digibyte.io:12031', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
     { oracle_id: 16, name: 'GTO90', endpoint: 'oracle17.digibyte.io:12031', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
   ]
+};
+
+const mockDeploymentInfo = {
+  status: 'active',
+  oracle_consensus_required: 9,
+  oracle_total_slots: 17,
+  musig2_session: {
+    epoch: 50,
+    state: 'complete',
+    nonce_count: 9,
+    partial_sig_count: 9,
+    creation_height: 2000
+  }
 };
 
 // Mock oracle config data (from getoracles RPC)
@@ -146,6 +159,16 @@ function sendOracleData(ws, overrides = {}) {
     ...overrides
   };
   ws.receiveMessage({ type: 'oracleData', data });
+}
+
+function sendDeploymentData(ws, overrides = {}) {
+  ws.receiveMessage({
+    type: 'ddDeploymentData',
+    data: {
+      ...mockDeploymentInfo,
+      ...overrides
+    }
+  });
 }
 
 describe('OraclesPage', () => {
@@ -497,7 +520,30 @@ describe('OraclesPage', () => {
       sendOracleData(ws);
 
       await waitFor(() => {
-        expect(screen.getByText('Block 2,000')).toBeInTheDocument();
+        expect(screen.getByText('Block 2,025')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Oracle Epoch Clock', () => {
+    it('should display current epoch, block range, countdown, and MuSig2 session progress', async () => {
+      renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      sendDeploymentData(ws);
+      sendOracleData(ws);
+
+      await waitFor(() => {
+        expect(screen.getByText('Oracle Epoch Clock')).toBeInTheDocument();
+        expect(screen.getByText('Epoch 50')).toBeInTheDocument();
+        expect(screen.getByText('Blocks 2,000-2,039')).toBeInTheDocument();
+        expect(screen.getByText('Next epoch: block 2,040')).toBeInTheDocument();
+        expect(screen.getByText('15 blocks away')).toBeInTheDocument();
+        expect(screen.getByText('~3m 45s')).toBeInTheDocument();
+        expect(screen.getAllByText('MuSig2 complete').length).toBeGreaterThan(0);
+        expect(screen.getByText('Nonces 9/9')).toBeInTheDocument();
+        expect(screen.getByText('Signatures 9/9')).toBeInTheDocument();
       });
     });
   });
