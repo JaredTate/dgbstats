@@ -31,6 +31,8 @@ describe('RoadmapPage oracle consensus copy', () => {
       const validationMatches = screen.getAllByText(/9-of-17 MuSig2 Oracle Testnet Validation/i);
       expect(validationMatches.length).toBeGreaterThan(0);
       expect(screen.getByText(/Complete 9-of-17 oracle consensus validation on testnet/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Testnet Release v9\.26\.0-RC38/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/Final testnet release candidate \(v9\.26\.0-RC38\)/i)).toBeInTheDocument();
     });
   });
 });

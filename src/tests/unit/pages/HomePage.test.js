@@ -78,6 +78,19 @@ describe('HomePage', () => {
       expect(loadingIndicators.length).toBeGreaterThan(0);
     });
 
+    it('should show RC38 as the latest testnet release', () => {
+      renderWithProviders(
+        <HomePage
+          numberWithCommas={(x) => x ? x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "0"}
+          formatNumber={(num) => num ? num.toLocaleString() : "0"}
+        />,
+        { network: 'testnet' }
+      );
+
+      expect(screen.getByText('Latest Version')).toBeInTheDocument();
+      expect(screen.getByText('v9.26.0-RC38')).toBeInTheDocument();
+    });
+
     it('should render algorithm difficulties card', async () => {
       // SKIPPED: HomePage has a bug where it doesn't check blockchainInfo.softforks before calling Object.entries()
       renderHomePage();

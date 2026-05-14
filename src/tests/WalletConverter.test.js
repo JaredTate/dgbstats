@@ -65,7 +65,7 @@ describe('Wallet Converter — pure helpers', () => {
     expect(APPLICATION_IDS.testnet24).toBe(0xFEC4B7E5);
   });
 
-  it('CURRENT_TESTNET points at testnet24 for RC34', () => {
+  it('CURRENT_TESTNET points at testnet24 for the current RC38 line', () => {
     expect(CURRENT_TESTNET).toBe('testnet24');
     expect(APPLICATION_IDS[CURRENT_TESTNET]).toBe(0xFEC4B7E5);
   });

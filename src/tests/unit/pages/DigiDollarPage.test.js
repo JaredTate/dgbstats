@@ -101,6 +101,16 @@ describe('DigiDollarPage', () => {
       expect(screen.getByText('MAST Implementation')).toBeInTheDocument();
     });
 
+    it('should show current RC38 testnet24 oracle network details', () => {
+      renderWithProviders(<DigiDollarPage />);
+
+      expect(screen.getAllByText(/testnet24/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/12031/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/v9\.26\.0-RC38/i).length).toBeGreaterThan(0);
+      expect(screen.queryByText(/testnet23/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/12030/i)).not.toBeInTheDocument();
+    });
+
     it('should render the roadmap phases', () => {
       renderWithProviders(<DigiDollarPage />);
 

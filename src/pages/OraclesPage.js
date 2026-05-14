@@ -35,7 +35,7 @@ const EMPTY_ORACLE_PRICE = {
   volatility: 0
 };
 
-// RC30 active oracle configuration — 9-of-17 consensus
+// Current active oracle configuration — 9-of-17 consensus
 // The getoracles RPC returns 30 legacy entries (vOracleNodes), but only
 // IDs 0-16 are active under the 9-of-17 MuSig2 quorum. Filter in the
 // data mapping below so the UI never displays stale legacy entries.
@@ -52,11 +52,11 @@ const ORACLE_NAMES = {
   9: 'Ogilvie',         // Oracle 9
   10: 'ChopperBrian',   // Oracle 10
   11: 'hallvardo',      // Oracle 11
-  12: 'DaPunzy',        // Oracle 12 — active in RC30
+  12: 'DaPunzy',        // Oracle 12
   13: 'DigiByteForce',  // Oracle 13
-  14: 'Neel',           // Oracle 14 — active in RC30
-  15: 'DigiSwarm',      // Oracle 15 — active in RC30
-  16: 'GTO90'           // Oracle 16 — active in RC30
+  14: 'Neel',           // Oracle 14
+  15: 'DigiSwarm',      // Oracle 15
+  16: 'GTO90'           // Oracle 16
 };
 
 const formatAgeSeconds = (seconds) => {
@@ -178,7 +178,7 @@ const OraclesPage = () => {
             };
           });
 
-          // RC30: Only show active oracles (IDs 0 through MAX_ACTIVE_ORACLE_ID).
+          // Only show active oracles (IDs 0 through MAX_ACTIVE_ORACLE_ID).
           // The getoracles RPC may still expose legacy vOracleNode entries but consensus
           // uses ACTIVE_ORACLE_COUNT (17). Discard anything beyond that.
           const activeOracles = mappedOracles.filter(o => o.oracle_id <= MAX_ACTIVE_ORACLE_ID);

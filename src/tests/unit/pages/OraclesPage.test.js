@@ -25,23 +25,23 @@ const mockAllOraclePrices = {
   required: 9,
   total_oracles: 17,
   oracles: [
-    { oracle_id: 0, name: 'Jared', endpoint: 'oracle1.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064194, deviation_pct: 0, signature_valid: true, status: 'reporting' },
-    { oracle_id: 1, name: 'Green Candle', endpoint: 'oracle2.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064192, deviation_pct: 0, signature_valid: true, status: 'reporting' },
-    { oracle_id: 2, name: 'Bastian', endpoint: 'oracle3.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064190, deviation_pct: 0, signature_valid: true, status: 'reporting' },
-    { oracle_id: 3, name: 'DanGB', endpoint: 'oracle4.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064188, deviation_pct: 0, signature_valid: true, status: 'reporting' },
-    { oracle_id: 4, name: 'Shenger', endpoint: 'oracle5.digibyte.io:12030', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
-    { oracle_id: 5, name: 'Ycagel', endpoint: 'oracle6.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064186, deviation_pct: 0, signature_valid: true, status: 'reporting' },
-    { oracle_id: 6, name: 'Aussie', endpoint: 'oracle7.digibyte.io:12030', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
-    { oracle_id: 7, name: 'LookInto', endpoint: 'oracle8.digibyte.io:12030', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
-    { oracle_id: 8, name: 'JohnnyLawDGB', endpoint: 'oracle9.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064184, deviation_pct: 0, signature_valid: true, status: 'reporting' },
-    { oracle_id: 9, name: 'Ogilvie', endpoint: 'oracle10.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064182, deviation_pct: 0, signature_valid: true, status: 'reporting' },
-    { oracle_id: 10, name: 'ChopperBrian', endpoint: 'oracle11.digibyte.io:12030', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
-    { oracle_id: 11, name: 'hallvardo', endpoint: 'oracle12.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064180, deviation_pct: 0, signature_valid: true, status: 'reporting' },
-    { oracle_id: 12, name: 'DaPunzy', endpoint: 'oracle13.digibyte.io:12030', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
-    { oracle_id: 13, name: 'DigiByteForce', endpoint: 'oracle14.digibyte.io:12030', price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064178, deviation_pct: 0, signature_valid: true, status: 'reporting' },
-    { oracle_id: 14, name: 'Neel', endpoint: 'oracle15.digibyte.io:12030', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
-    { oracle_id: 15, name: 'DigiSwarm', endpoint: 'oracle16.digibyte.io:12030', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
-    { oracle_id: 16, name: 'GTO90', endpoint: 'oracle17.digibyte.io:12030', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
+    { oracle_id: 0, name: 'Jared', endpoint: 'oracle1.digibyte.io:12031', price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064194, deviation_pct: 0, signature_valid: true, status: 'reporting' },
+    { oracle_id: 1, name: 'Green Candle', endpoint: 'oracle2.digibyte.io:12031', price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064192, deviation_pct: 0, signature_valid: true, status: 'reporting' },
+    { oracle_id: 2, name: 'Bastian', endpoint: 'oracle3.digibyte.io:12031', price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064190, deviation_pct: 0, signature_valid: true, status: 'reporting' },
+    { oracle_id: 3, name: 'DanGB', endpoint: 'oracle4.digibyte.io:12031', price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064188, deviation_pct: 0, signature_valid: true, status: 'reporting' },
+    { oracle_id: 4, name: 'Shenger', endpoint: 'oracle5.digibyte.io:12031', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
+    { oracle_id: 5, name: 'Ycagel', endpoint: 'oracle6.digibyte.io:12031', price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064186, deviation_pct: 0, signature_valid: true, status: 'reporting' },
+    { oracle_id: 6, name: 'Aussie', endpoint: 'oracle7.digibyte.io:12031', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
+    { oracle_id: 7, name: 'LookInto', endpoint: 'oracle8.digibyte.io:12031', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
+    { oracle_id: 8, name: 'JohnnyLawDGB', endpoint: 'oracle9.digibyte.io:12031', price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064184, deviation_pct: 0, signature_valid: true, status: 'reporting' },
+    { oracle_id: 9, name: 'Ogilvie', endpoint: 'oracle10.digibyte.io:12031', price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064182, deviation_pct: 0, signature_valid: true, status: 'reporting' },
+    { oracle_id: 10, name: 'ChopperBrian', endpoint: 'oracle11.digibyte.io:12031', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
+    { oracle_id: 11, name: 'hallvardo', endpoint: 'oracle12.digibyte.io:12031', price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064180, deviation_pct: 0, signature_valid: true, status: 'reporting' },
+    { oracle_id: 12, name: 'DaPunzy', endpoint: 'oracle13.digibyte.io:12031', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
+    { oracle_id: 13, name: 'DigiByteForce', endpoint: 'oracle14.digibyte.io:12031', price_micro_usd: 50000, price_usd: 0.05, timestamp: 1770064178, deviation_pct: 0, signature_valid: true, status: 'reporting' },
+    { oracle_id: 14, name: 'Neel', endpoint: 'oracle15.digibyte.io:12031', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
+    { oracle_id: 15, name: 'DigiSwarm', endpoint: 'oracle16.digibyte.io:12031', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
+    { oracle_id: 16, name: 'GTO90', endpoint: 'oracle17.digibyte.io:12031', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
   ]
 };
 
@@ -104,23 +104,23 @@ const heartbeatForOracle = (oracleId) => {
 };
 
 const mockOracles = [
-  { oracle_id: 0, name: 'Jared', pubkey: '03e1dce189a530c1fb39dcd9282cf5f9de0e4eb257344be9fd94ce27c06005e8c7', endpoint: 'oracle1.digibyte.io:12030', is_active: true, status: 'no_data' },
-  { oracle_id: 1, name: 'Green Candle', pubkey: '033dfb7a36ab40fa6fbc69b4b499eaa17bfa1958aa89ec248efc24b4c18694f990', endpoint: 'oracle2.digibyte.io:12030', is_active: true, status: 'no_data' },
-  { oracle_id: 2, name: 'Bastian', pubkey: '03172755a320cec96c981d46c86d79a03578d73406a25e89d8edc616a8f361cb5c', endpoint: 'oracle3.digibyte.io:12030', is_active: true, status: 'no_data' },
-  { oracle_id: 3, name: 'DanGB', pubkey: '03546c07ee9d21640c4b4e96e6954bd49c3ab5bcf36c6a512603ebf75f8609da0c', endpoint: 'oracle4.digibyte.io:12030', is_active: true, status: 'no_data' },
-  { oracle_id: 4, name: 'Shenger', pubkey: '039cef021f841794c1afc4e84d678f3c70dbe3a972330b2b6329852898443deb4f', endpoint: 'oracle5.digibyte.io:12030', is_active: true, status: 'no_data' },
-  { oracle_id: 5, name: 'Ycagel', pubkey: '0285016758856ed27388501a54031fa3a678df705bf811fb8bc9abd2d7cfb6d9f7', endpoint: 'oracle6.digibyte.io:12030', is_active: true, status: 'no_data' },
-  { oracle_id: 6, name: 'Aussie', pubkey: '02ec2122bab83d1199350d5bd3e5e88b305da873211b1876edd5170fbe9c7f962e', endpoint: 'oracle7.digibyte.io:12030', is_active: true, status: 'no_data' },
-  { oracle_id: 7, name: 'LookInto', pubkey: '0383b831f296bfd78940a8d1ee8868a692c7ccdb1b4b0250bffff47bc1ad91f7d0', endpoint: 'oracle8.digibyte.io:12030', is_active: true, status: 'no_data' },
-  { oracle_id: 8, name: 'JohnnyLawDGB', pubkey: '0289d5c588c8e0d311028f2f7e0db6df1a9fb0319c5e3b2cfc32efaee86538d250', endpoint: 'oracle9.digibyte.io:12030', is_active: true, status: 'no_data' },
-  { oracle_id: 9, name: 'Ogilvie', pubkey: '02028a52c7a3e8f22c44e356dcda43a0e24ed5e8e284c53c902599f0947763113c', endpoint: 'oracle10.digibyte.io:12030', is_active: true, status: 'no_data' },
-  { oracle_id: 10, name: 'ChopperBrian', pubkey: '03d2f9b0e00ed2fb0a93d04f12eb250b4adf2e4ac8335692c7942e4cba6e462484', endpoint: 'oracle11.digibyte.io:12030', is_active: true, status: 'no_data' },
-  { oracle_id: 11, name: 'Unknown', pubkey: '026b51d431df5d7f141cbececcf79edf3dd861c3b4069f0b11661a3eefacbba918', endpoint: 'oracle12.digibyte.io:12030', is_active: true, status: 'no_data' },
-  { oracle_id: 12, name: 'Unknown', pubkey: '033fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278', endpoint: 'oracle13.digibyte.io:12030', is_active: true, status: 'no_data' },
-  { oracle_id: 13, name: 'DigiByteForce', pubkey: '028527a891e224136950ff32ca212b45bc93f69fbb801c3b1ebedac52775f99e61', endpoint: 'oracle14.digibyte.io:12030', is_active: true, status: 'no_data' },
-  { oracle_id: 14, name: 'Unknown', pubkey: '03e629fa6598d732768f7c726b4b621285f9c3b85303900aa912017db7617d8bdb', endpoint: 'oracle15.digibyte.io:12030', is_active: true, status: 'no_data' },
-  { oracle_id: 15, name: 'Unknown', pubkey: '02f629fa6598d732768f7c726b4b621285f9c3b85303900aa912017db7617d811', endpoint: 'oracle16.digibyte.io:12030', is_active: true, status: 'no_data' },
-  { oracle_id: 16, name: 'Unknown', pubkey: '03a629fa6598d732768f7c726b4b621285f9c3b85303900aa912017db7617d822', endpoint: 'oracle17.digibyte.io:12030', is_active: true, status: 'no_data' },
+  { oracle_id: 0, name: 'Jared', pubkey: '03e1dce189a530c1fb39dcd9282cf5f9de0e4eb257344be9fd94ce27c06005e8c7', endpoint: 'oracle1.digibyte.io:12031', is_active: true, status: 'no_data' },
+  { oracle_id: 1, name: 'Green Candle', pubkey: '033dfb7a36ab40fa6fbc69b4b499eaa17bfa1958aa89ec248efc24b4c18694f990', endpoint: 'oracle2.digibyte.io:12031', is_active: true, status: 'no_data' },
+  { oracle_id: 2, name: 'Bastian', pubkey: '03172755a320cec96c981d46c86d79a03578d73406a25e89d8edc616a8f361cb5c', endpoint: 'oracle3.digibyte.io:12031', is_active: true, status: 'no_data' },
+  { oracle_id: 3, name: 'DanGB', pubkey: '03546c07ee9d21640c4b4e96e6954bd49c3ab5bcf36c6a512603ebf75f8609da0c', endpoint: 'oracle4.digibyte.io:12031', is_active: true, status: 'no_data' },
+  { oracle_id: 4, name: 'Shenger', pubkey: '039cef021f841794c1afc4e84d678f3c70dbe3a972330b2b6329852898443deb4f', endpoint: 'oracle5.digibyte.io:12031', is_active: true, status: 'no_data' },
+  { oracle_id: 5, name: 'Ycagel', pubkey: '0285016758856ed27388501a54031fa3a678df705bf811fb8bc9abd2d7cfb6d9f7', endpoint: 'oracle6.digibyte.io:12031', is_active: true, status: 'no_data' },
+  { oracle_id: 6, name: 'Aussie', pubkey: '02ec2122bab83d1199350d5bd3e5e88b305da873211b1876edd5170fbe9c7f962e', endpoint: 'oracle7.digibyte.io:12031', is_active: true, status: 'no_data' },
+  { oracle_id: 7, name: 'LookInto', pubkey: '0383b831f296bfd78940a8d1ee8868a692c7ccdb1b4b0250bffff47bc1ad91f7d0', endpoint: 'oracle8.digibyte.io:12031', is_active: true, status: 'no_data' },
+  { oracle_id: 8, name: 'JohnnyLawDGB', pubkey: '0289d5c588c8e0d311028f2f7e0db6df1a9fb0319c5e3b2cfc32efaee86538d250', endpoint: 'oracle9.digibyte.io:12031', is_active: true, status: 'no_data' },
+  { oracle_id: 9, name: 'Ogilvie', pubkey: '02028a52c7a3e8f22c44e356dcda43a0e24ed5e8e284c53c902599f0947763113c', endpoint: 'oracle10.digibyte.io:12031', is_active: true, status: 'no_data' },
+  { oracle_id: 10, name: 'ChopperBrian', pubkey: '03d2f9b0e00ed2fb0a93d04f12eb250b4adf2e4ac8335692c7942e4cba6e462484', endpoint: 'oracle11.digibyte.io:12031', is_active: true, status: 'no_data' },
+  { oracle_id: 11, name: 'Unknown', pubkey: '026b51d431df5d7f141cbececcf79edf3dd861c3b4069f0b11661a3eefacbba918', endpoint: 'oracle12.digibyte.io:12031', is_active: true, status: 'no_data' },
+  { oracle_id: 12, name: 'Unknown', pubkey: '033fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278', endpoint: 'oracle13.digibyte.io:12031', is_active: true, status: 'no_data' },
+  { oracle_id: 13, name: 'DigiByteForce', pubkey: '028527a891e224136950ff32ca212b45bc93f69fbb801c3b1ebedac52775f99e61', endpoint: 'oracle14.digibyte.io:12031', is_active: true, status: 'no_data' },
+  { oracle_id: 14, name: 'Unknown', pubkey: '03e629fa6598d732768f7c726b4b621285f9c3b85303900aa912017db7617d8bdb', endpoint: 'oracle15.digibyte.io:12031', is_active: true, status: 'no_data' },
+  { oracle_id: 15, name: 'Unknown', pubkey: '02f629fa6598d732768f7c726b4b621285f9c3b85303900aa912017db7617d811', endpoint: 'oracle16.digibyte.io:12031', is_active: true, status: 'no_data' },
+  { oracle_id: 16, name: 'Unknown', pubkey: '03a629fa6598d732768f7c726b4b621285f9c3b85303900aa912017db7617d822', endpoint: 'oracle17.digibyte.io:12031', is_active: true, status: 'no_data' },
   // Legacy entries beyond ID 16 — these should be FILTERED OUT by the frontend
   { oracle_id: 17, name: 'Unknown', pubkey: '03b629fa6598d732768f7c726b4b621285f9c3b85303900aa912017db7617d833', endpoint: 'oracle18.digidollar.org:9018', is_active: false, status: 'no_data' },
   { oracle_id: 18, name: 'Unknown', pubkey: '03c629fa6598d732768f7c726b4b621285f9c3b85303900aa912017db7617d844', endpoint: 'oracle19.digidollar.org:9019', is_active: false, status: 'no_data' },
@@ -388,8 +388,8 @@ describe('OraclesPage', () => {
       sendOracleData(ws);
 
       await waitFor(() => {
-        expect(screen.getByText('oracle1.digibyte.io:12030')).toBeInTheDocument();
-        expect(screen.getByText('oracle2.digibyte.io:12030')).toBeInTheDocument();
+        expect(screen.getByText('oracle1.digibyte.io:12031')).toBeInTheDocument();
+        expect(screen.getByText('oracle2.digibyte.io:12031')).toBeInTheDocument();
       });
     });
   });
@@ -503,7 +503,7 @@ describe('OraclesPage', () => {
   });
 
   describe('All 17 Active Oracles', () => {
-    it('should display all 17 oracles including new RC30 additions', async () => {
+    it('should display all 17 oracles including current active oracle slots', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
@@ -705,7 +705,7 @@ describe('OraclesPage', () => {
   // =====================================================================
   // GUARDRAIL TESTS — prevent regressions on oracle count and naming
   // =====================================================================
-  describe('Guardrails: Oracle Count & Naming (RC30)', () => {
+  describe('Guardrails: Oracle Count & Naming', () => {
     it('should NEVER display more than 17 oracles even when RPC returns 18+', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
