@@ -50,6 +50,59 @@ const mockAllOraclePrices = {
 // to test that the frontend correctly filters to active oracles only.
 // IDs 11-16 return name="Unknown" from the node in some builds — the ORACLE_NAMES
 // mapping in OraclesPage.js should supply their real names.
+const selectedOracleIds = new Set([0, 1, 2, 4, 5, 8, 9, 11, 13]);
+
+const heartbeatForOracle = (oracleId) => {
+  if (oracleId <= 9) {
+    return {
+      in_consensus: true,
+      selected_for_epoch: selectedOracleIds.has(oracleId),
+      is_running_locally: oracleId <= 1,
+      heartbeat_status: 'fresh',
+      software_version: 'v9.26.0-rc38',
+      client_version: 9260038,
+      p2p_protocol_version: 70017,
+      oracle_protocol_version: 1,
+      musig2_context_version: 2,
+      heartbeat_timestamp: 1770064200 - oracleId,
+      heartbeat_age_seconds: 180 + oracleId,
+      heartbeat_signature_valid: true
+    };
+  }
+
+  if (oracleId === 10) {
+    return {
+      in_consensus: true,
+      selected_for_epoch: false,
+      is_running_locally: false,
+      heartbeat_status: 'stale',
+      software_version: 'v9.26.0-rc37',
+      client_version: 9260037,
+      p2p_protocol_version: 70017,
+      oracle_protocol_version: 1,
+      musig2_context_version: 1,
+      heartbeat_timestamp: 1770060000,
+      heartbeat_age_seconds: 3720,
+      heartbeat_signature_valid: true
+    };
+  }
+
+  return {
+    in_consensus: oracleId <= 16,
+    selected_for_epoch: selectedOracleIds.has(oracleId),
+    is_running_locally: false,
+    heartbeat_status: 'unknown',
+    software_version: '',
+    client_version: 0,
+    p2p_protocol_version: 0,
+    oracle_protocol_version: 0,
+    musig2_context_version: 0,
+    heartbeat_timestamp: 0,
+    heartbeat_age_seconds: -1,
+    heartbeat_signature_valid: false
+  };
+};
+
 const mockOracles = [
   { oracle_id: 0, name: 'Jared', pubkey: '03e1dce189a530c1fb39dcd9282cf5f9de0e4eb257344be9fd94ce27c06005e8c7', endpoint: 'oracle1.digibyte.io:12030', is_active: true, status: 'no_data' },
   { oracle_id: 1, name: 'Green Candle', pubkey: '033dfb7a36ab40fa6fbc69b4b499eaa17bfa1958aa89ec248efc24b4c18694f990', endpoint: 'oracle2.digibyte.io:12030', is_active: true, status: 'no_data' },
@@ -71,7 +124,10 @@ const mockOracles = [
   // Legacy entries beyond ID 16 — these should be FILTERED OUT by the frontend
   { oracle_id: 17, name: 'Unknown', pubkey: '03b629fa6598d732768f7c726b4b621285f9c3b85303900aa912017db7617d833', endpoint: 'oracle18.digidollar.org:9018', is_active: false, status: 'no_data' },
   { oracle_id: 18, name: 'Unknown', pubkey: '03c629fa6598d732768f7c726b4b621285f9c3b85303900aa912017db7617d844', endpoint: 'oracle19.digidollar.org:9019', is_active: false, status: 'no_data' },
-];
+].map(oracle => ({
+  ...oracle,
+  ...heartbeatForOracle(oracle.oracle_id)
+}));
 
 // Combined message that backend sends via WebSocket
 const mockOracleDataMessage = {
@@ -219,7 +275,7 @@ describe('OraclesPage', () => {
       sendOracleData(ws);
 
       await waitFor(() => {
-        expect(screen.getByText('9/17')).toBeInTheDocument();
+        expect(screen.getAllByText('9/17').length).toBeGreaterThan(0);
       });
 
       // Send updated data with 8 reporting oracles (Shenger comes online)
@@ -237,7 +293,7 @@ describe('OraclesPage', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText('10/17')).toBeInTheDocument();
+        expect(screen.getAllByText('10/17').length).toBeGreaterThan(0);
       });
     });
   });
@@ -265,7 +321,7 @@ describe('OraclesPage', () => {
       sendOracleData(ws);
 
       await waitFor(() => {
-        expect(screen.getByText('9/17')).toBeInTheDocument();
+        expect(screen.getAllByText('9/17').length).toBeGreaterThan(0);
       });
     });
 
@@ -334,6 +390,43 @@ describe('OraclesPage', () => {
       await waitFor(() => {
         expect(screen.getByText('oracle1.digibyte.io:12030')).toBeInTheDocument();
         expect(screen.getByText('oracle2.digibyte.io:12030')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('RC38 Oracle Sitrep', () => {
+    it('should display signed heartbeat and MuSig2 context readiness counts', async () => {
+      renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      sendOracleData(ws);
+
+      await waitFor(() => {
+        expect(screen.getByText('Oracle Operator Sitrep')).toBeInTheDocument();
+        expect(screen.getByText('Fresh Heartbeats')).toBeInTheDocument();
+        expect(screen.getByText('RC38 MuSig2 Context')).toBeInTheDocument();
+        expect(screen.getByText('Selected This Epoch')).toBeInTheDocument();
+        expect(screen.getAllByText('10/17').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('9/17').length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should show per-oracle heartbeat age, software version, and epoch role', async () => {
+      renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      sendOracleData(ws);
+
+      await waitFor(() => {
+        expect(screen.getByText('Heartbeat / Version')).toBeInTheDocument();
+        expect(screen.getByText('Epoch Role')).toBeInTheDocument();
+        expect(screen.getAllByText('v9.26.0-rc38').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('MuSig2 ctx 2').length).toBeGreaterThan(0);
+        expect(screen.getByText('3m 0s ago')).toBeInTheDocument();
+        expect(screen.getAllByText('selected').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('standby').length).toBeGreaterThan(0);
       });
     });
   });
@@ -460,7 +553,7 @@ describe('OraclesPage', () => {
       sendOracleData(ws);
 
       await waitFor(() => {
-        expect(screen.getByText('9/17')).toBeInTheDocument();
+        expect(screen.getAllByText('9/17').length).toBeGreaterThan(0);
         expect(screen.getByText('Online Reporting')).toBeInTheDocument();
       });
     });
@@ -486,7 +579,7 @@ describe('OraclesPage', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText('10/17')).toBeInTheDocument();
+        expect(screen.getAllByText('10/17').length).toBeGreaterThan(0);
       });
     });
 
@@ -501,7 +594,7 @@ describe('OraclesPage', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText('9/17')).toBeInTheDocument();
+        expect(screen.getAllByText('9/17').length).toBeGreaterThan(0);
       });
     });
 
@@ -709,7 +802,7 @@ describe('OraclesPage', () => {
       sendOracleData(ws);
 
       await waitFor(() => {
-        expect(screen.getByText('9/17')).toBeInTheDocument();
+        expect(screen.getAllByText('9/17').length).toBeGreaterThan(0);
         expect(screen.queryByText(/\/15/)).not.toBeInTheDocument();
         expect(screen.queryByText(/\/8/)).not.toBeInTheDocument();
       });

@@ -3,16 +3,14 @@ import {
   Container, Typography, Box, Grid, Card, CardContent,
   Divider, Chip, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Paper, Alert, Button, LinearProgress,
-  Tooltip, IconButton, Link, CircularProgress
+  Tooltip, Link, CircularProgress
 } from '@mui/material';
 import SensorsIcon from '@mui/icons-material/Sensors';
 import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import HourglassTopIcon from '@mui/icons-material/HourglassTop';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import UpdateIcon from '@mui/icons-material/Update';
 import SecurityIcon from '@mui/icons-material/Security';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import GitHubIcon from '@mui/icons-material/GitHub';
@@ -44,6 +42,7 @@ const EMPTY_ORACLE_PRICE = {
 const ACTIVE_ORACLE_COUNT = 17;
 const MAX_ACTIVE_ORACLE_ID = 16; // IDs 0 through 16
 const ORACLE_THRESHOLD = 9;     // consensus requires 9-of-17
+const EXPECTED_MUSIG2_CONTEXT_VERSION = 2; // RC38 attempt/evidence-bound context protocol
 
 // Oracle name mapping for cases where daemon returns "Unknown".
 // The node's vOracleNodes list uses placeholder keys for IDs 9 and 10;
@@ -60,6 +59,40 @@ const ORACLE_NAMES = {
   16: 'GTO90'           // Oracle 16 — active in RC30
 };
 
+const formatAgeSeconds = (seconds) => {
+  const value = Number(seconds);
+  if (!Number.isFinite(value) || value < 0) return 'unknown';
+
+  const totalSeconds = Math.floor(value);
+  if (totalSeconds < 60) return `${totalSeconds}s ago`;
+
+  const minutes = Math.floor(totalSeconds / 60);
+  const remainingSeconds = totalSeconds % 60;
+  if (minutes < 60) return `${minutes}m ${remainingSeconds}s ago`;
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (hours < 24) return `${hours}h ${remainingMinutes}m ago`;
+
+  const days = Math.floor(hours / 24);
+  const remainingHours = hours % 24;
+  return `${days}d ${remainingHours}h ago`;
+};
+
+const formatTimestampAge = (timestamp) => {
+  const value = Number(timestamp);
+  if (!Number.isFinite(value) || value <= 0) return 'unknown';
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  return formatAgeSeconds(Math.max(0, nowSeconds - value));
+};
+
+const getHeartbeatChipColor = (status, signatureValid) => {
+  if (status === 'fresh' && signatureValid) return 'success';
+  if (status === 'stale') return 'warning';
+  if (status === 'invalid_signature') return 'error';
+  return 'default';
+};
+
 /**
  * OraclesPage Component - DigiDollar Oracle Network Status (Testnet Only)
  *
@@ -68,7 +101,7 @@ const ORACLE_NAMES = {
  * Receives data via WebSocket push from the backend.
  */
 const OraclesPage = () => {
-  const { theme: networkTheme, isTestnet, wsBaseUrl } = useNetwork();
+  const { isTestnet, wsBaseUrl } = useNetwork();
 
   // State for oracle data - start empty, no mock data
   const [oraclePrice, setOraclePrice] = useState(EMPTY_ORACLE_PRICE);
@@ -94,6 +127,7 @@ const OraclesPage = () => {
         }
         if (message.type === 'oracleData') {
           const { price: priceData, allPrices: allOraclePricesData, oracles: oraclesConfigData } = message.data;
+          const allOraclePrices = (allOraclePricesData && allOraclePricesData.oracles) || [];
 
           // Update state with real price data
           setOraclePrice({
@@ -110,19 +144,37 @@ const OraclesPage = () => {
 
           // Use getoracles (config with all oracles) as base, merge price data from getalloracleprices
           const mappedOracles = (oraclesConfigData || []).map(configOracle => {
-            const priceOracle = (allOraclePricesData.oracles || []).find(o => o.oracle_id === configOracle.oracle_id) || {};
+            const priceOracle = allOraclePrices.find(o => o.oracle_id === configOracle.oracle_id) || {};
+            const priceMicroUsd = priceOracle.price_micro_usd ?? configOracle.last_price_micro_usd ?? 0;
+            const priceUsd = priceOracle.price_usd ?? configOracle.last_price_usd ?? 0;
+            const lastPriceTimestamp = priceOracle.timestamp ?? configOracle.last_update ?? 0;
+            const priceStatus = priceOracle.status || configOracle.status || 'no_data';
+
             return {
               oracle_id: configOracle.oracle_id,
               name: configOracle.name !== 'Unknown' ? configOracle.name : (ORACLE_NAMES[configOracle.oracle_id] || `Oracle ${configOracle.oracle_id}`),
               pubkey: configOracle.pubkey || '',
               endpoint: configOracle.endpoint,
-              price_micro_usd: priceOracle.price_micro_usd || 0,
-              price_usd: priceOracle.price_usd || 0,
-              timestamp: priceOracle.timestamp || 0,
+              in_consensus: configOracle.in_consensus !== false,
+              selected_for_epoch: Boolean(configOracle.selected_for_epoch),
+              is_running_locally: Boolean(configOracle.is_running_locally),
+              price_micro_usd: priceMicroUsd,
+              price_usd: priceUsd,
+              timestamp: lastPriceTimestamp,
               deviation_pct: priceOracle.deviation_pct || 0,
               signature_valid: priceOracle.signature_valid || false,
-              status: priceOracle.status || 'no_data',
-              is_running: priceOracle.status === 'reporting'
+              price_source: configOracle.price_source || priceOracle.price_source || 'none',
+              status: priceStatus,
+              is_running: priceStatus === 'reporting',
+              heartbeat_status: configOracle.heartbeat_status || 'unknown',
+              software_version: configOracle.software_version || '',
+              client_version: configOracle.client_version || 0,
+              p2p_protocol_version: configOracle.p2p_protocol_version || 0,
+              oracle_protocol_version: configOracle.oracle_protocol_version || 0,
+              musig2_context_version: configOracle.musig2_context_version || 0,
+              heartbeat_timestamp: configOracle.heartbeat_timestamp || 0,
+              heartbeat_age_seconds: configOracle.heartbeat_age_seconds ?? -1,
+              heartbeat_signature_valid: Boolean(configOracle.heartbeat_signature_valid)
             };
           });
 
@@ -165,6 +217,51 @@ const OraclesPage = () => {
 
   // Count oracles that are actively reporting (consistent across page)
   const reportingCount = oracles.filter(o => o.status === 'reporting').length;
+  const freshHeartbeatCount = oracles.filter(o => o.heartbeat_status === 'fresh' && o.heartbeat_signature_valid).length;
+  const rc38ContextCount = oracles.filter(o =>
+    o.heartbeat_status === 'fresh' &&
+    o.heartbeat_signature_valid &&
+    o.musig2_context_version >= EXPECTED_MUSIG2_CONTEXT_VERSION
+  ).length;
+  const selectedCount = oracles.filter(o => o.selected_for_epoch).length;
+  const locallyRunningCount = oracles.filter(o => o.is_running_locally).length;
+  const consensusReady = reportingCount >= ORACLE_THRESHOLD &&
+    freshHeartbeatCount >= ORACLE_THRESHOLD &&
+    rc38ContextCount >= ORACLE_THRESHOLD &&
+    selectedCount >= ORACLE_THRESHOLD;
+
+  const SitrepMetric = ({ label, value, detail, ok }) => (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2,
+        height: '100%',
+        border: '1px solid #e0e0e0',
+        borderRadius: '8px',
+        backgroundColor: ok ? 'rgba(46, 125, 50, 0.06)' : '#fafafa'
+      }}
+    >
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+        {label}
+      </Typography>
+      <Typography
+        variant="h4"
+        fontWeight="bold"
+        sx={{ color: ok ? '#2e7d32' : '#ed6c02', lineHeight: 1.1 }}
+      >
+        {value}
+      </Typography>
+      <Typography variant="caption" color="text.secondary">
+        {detail}
+      </Typography>
+      <LinearProgress
+        variant="determinate"
+        value={oracles.length ? Math.min(100, (parseInt(value, 10) / oracles.length) * 100) : 0}
+        color={ok ? 'success' : 'warning'}
+        sx={{ mt: 1.5, height: 6, borderRadius: 3 }}
+      />
+    </Paper>
+  );
 
   // Hero Section
   const HeroSection = () => (
@@ -331,6 +428,59 @@ const OraclesPage = () => {
           </Typography>
         </Box>
       )}
+    </Card>
+  );
+
+  const OracleSitrepSection = () => (
+    <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px', borderTop: `4px solid ${consensusReady ? '#2e7d32' : '#ed6c02'}` }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <VerifiedIcon sx={{ fontSize: '2rem', color: consensusReady ? '#2e7d32' : '#ed6c02', mr: 1 }} />
+          <Typography variant="h5" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
+            Oracle Operator Sitrep
+          </Typography>
+        </Box>
+        <Chip
+          label={consensusReady ? 'consensus ready' : 'below ready threshold'}
+          color={consensusReady ? 'success' : 'warning'}
+          size="small"
+        />
+      </Box>
+
+      <Grid container spacing={2}>
+        <Grid item xs={12} sm={6} md={3}>
+          <SitrepMetric
+            label="Price Reporters"
+            value={`${reportingCount}/${oracles.length || ACTIVE_ORACLE_COUNT}`}
+            detail={`${ORACLE_THRESHOLD} valid price feeds required`}
+            ok={reportingCount >= ORACLE_THRESHOLD}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <SitrepMetric
+            label="Fresh Heartbeats"
+            value={`${freshHeartbeatCount}/${oracles.length || ACTIVE_ORACLE_COUNT}`}
+            detail="signed operator status, fresh under 30 minutes"
+            ok={freshHeartbeatCount >= ORACLE_THRESHOLD}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <SitrepMetric
+            label="RC38 MuSig2 Context"
+            value={`${rc38ContextCount}/${oracles.length || ACTIVE_ORACLE_COUNT}`}
+            detail={`MuSig2 context ${EXPECTED_MUSIG2_CONTEXT_VERSION}+ with valid heartbeat`}
+            ok={rc38ContextCount >= ORACLE_THRESHOLD}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <SitrepMetric
+            label="Selected This Epoch"
+            value={`${selectedCount}/${oracles.length || ACTIVE_ORACLE_COUNT}`}
+            detail={`${locallyRunningCount} local oracle slot${locallyRunningCount === 1 ? '' : 's'} visible`}
+            ok={selectedCount >= ORACLE_THRESHOLD}
+          />
+        </Grid>
+      </Grid>
     </Card>
   );
 
@@ -519,6 +669,16 @@ const OraclesPage = () => {
                   </Tooltip>
                 </TableCell>
                 <TableCell>
+                  <Tooltip title="Signed RC38 operator heartbeat and software/protocol versions reported by this oracle" arrow>
+                    <strong style={{ cursor: 'help' }}>Heartbeat / Version</strong>
+                  </Tooltip>
+                </TableCell>
+                <TableCell>
+                  <Tooltip title="Whether this oracle is selected for the current epoch's MuSig2 signing set" arrow>
+                    <strong style={{ cursor: 'help' }}>Epoch Role</strong>
+                  </Tooltip>
+                </TableCell>
+                <TableCell>
                   <Tooltip title="P2P network address where this oracle broadcasts price updates" arrow>
                     <strong style={{ cursor: 'help' }}>Endpoint</strong>
                   </Tooltip>
@@ -581,6 +741,51 @@ const OraclesPage = () => {
                         {oracle.deviation_pct > 0 ? '+' : ''}{oracle.deviation_pct.toFixed(2)}%
                       </Typography>
                     )}
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                      {oracle.price_source !== 'none' ? oracle.price_source : 'no price source'} · {formatTimestampAge(oracle.timestamp)}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 150 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                        <Chip
+                          label={oracle.heartbeat_status || 'unknown'}
+                          size="small"
+                          color={getHeartbeatChipColor(oracle.heartbeat_status, oracle.heartbeat_signature_valid)}
+                        />
+                        <Typography variant="caption" color="text.secondary">
+                          {formatAgeSeconds(oracle.heartbeat_age_seconds)}
+                        </Typography>
+                      </Box>
+                      <Typography variant="body2" fontWeight="bold" sx={{ color: oracle.software_version ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
+                        {oracle.software_version || 'No version reported'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        MuSig2 ctx {oracle.musig2_context_version || '--'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Client {oracle.client_version || '--'} · P2P {oracle.p2p_protocol_version || '--'} · Oracle {oracle.oracle_protocol_version || '--'}
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                      <Chip
+                        label={oracle.selected_for_epoch ? 'selected' : 'standby'}
+                        size="small"
+                        color={oracle.selected_for_epoch ? 'success' : 'default'}
+                        variant={oracle.selected_for_epoch ? 'filled' : 'outlined'}
+                      />
+                      <Chip
+                        label={oracle.in_consensus ? 'in consensus' : 'reserve'}
+                        size="small"
+                        color={oracle.in_consensus ? 'primary' : 'default'}
+                        variant="outlined"
+                      />
+                      {oracle.is_running_locally && (
+                        <Chip label="local" size="small" color="info" variant="outlined" />
+                      )}
+                    </Box>
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
@@ -617,15 +822,32 @@ const OraclesPage = () => {
                     )}
                   </TableCell>
                   <TableCell>
-                    {oracle.signature_valid ? (
-                      <Tooltip title="Signature cryptographically valid">
-                        <CheckCircleIcon sx={{ color: '#4caf50' }} />
-                      </Tooltip>
-                    ) : (
-                      <Tooltip title="No valid signature (oracle not reporting)">
-                        <ErrorIcon sx={{ color: '#9e9e9e' }} />
-                      </Tooltip>
-                    )}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        {oracle.signature_valid ? (
+                          <Tooltip title="Price signature cryptographically valid">
+                            <CheckCircleIcon sx={{ color: '#4caf50', fontSize: 20 }} />
+                          </Tooltip>
+                        ) : (
+                          <Tooltip title="No valid price signature (oracle not reporting)">
+                            <ErrorIcon sx={{ color: '#9e9e9e', fontSize: 20 }} />
+                          </Tooltip>
+                        )}
+                        <Typography variant="caption" color="text.secondary">price</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        {oracle.heartbeat_signature_valid ? (
+                          <Tooltip title="Heartbeat signature cryptographically valid">
+                            <CheckCircleIcon sx={{ color: '#4caf50', fontSize: 20 }} />
+                          </Tooltip>
+                        ) : (
+                          <Tooltip title="No valid heartbeat signature">
+                            <ErrorIcon sx={{ color: '#9e9e9e', fontSize: 20 }} />
+                          </Tooltip>
+                        )}
+                        <Typography variant="caption" color="text.secondary">heartbeat</Typography>
+                      </Box>
+                    </Box>
                   </TableCell>
                 </TableRow>
               ))}
@@ -721,6 +943,7 @@ const OraclesPage = () => {
       <HeroSection />
       <NotActiveBanner />
       <CurrentPriceCard />
+      <OracleSitrepSection />
       <OracleListSection />
       <WhatAreOraclesSection />
       <BecomeOracleSection />
