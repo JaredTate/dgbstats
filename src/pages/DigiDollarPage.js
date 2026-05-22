@@ -137,7 +137,7 @@ const DigiDollarPage = () => {
           <Typography variant="body2">
             <strong>Status:</strong> Implementation is <strong>95% complete</strong> with 50,000+ lines of functional,
             tested code. Currently active on testnet with <strong>1,850+ tests passing</strong> (311 functional tests + 1,539 C++ unit tests).
-            Oracle system is in <strong>Phase Two</strong> with 9-of-17 MuSig2 consensus active on testnet24 (port 12031).
+            Oracle system is in <strong>Phase Two</strong> on testnet25 (port 12032) with a 9-signature MuSig2 quorum and 35 reserved oracle slots.
           </Typography>
         </Alert>
       </CardContent>
@@ -737,7 +737,7 @@ const DigiDollarPage = () => {
               <ListItemIcon><SecurityIcon sx={{ color: '#002352' }} /></ListItemIcon>
               <ListItemText
                 primary="Decentralized Oracles"
-                secondary="Phase Two active: 9-of-17 MuSig2 consensus on testnet24 (port 12031). Oracle bundle format: v0x03."
+                secondary="Phase Two active on testnet25 (port 12032): 9-signature MuSig2 quorum, 35 reserved oracle slots. Oracle bundle format: v0x03."
               />
             </ListItem>
             <ListItem>
@@ -845,7 +845,7 @@ const DigiDollarPage = () => {
                 <ListItemIcon><SecurityIcon sx={{ color: '#0066cc' }} /></ListItemIcon>
                 <ListItemText
                   primary="Oracle Validation"
-                  secondary="Phase Two active: 9-of-17 MuSig2 consensus on testnet24 (port 12031). Oracle bundle format: v0x03."
+                  secondary="Phase Two active on testnet25 (port 12032): 9-signature MuSig2 quorum, 35 reserved oracle slots. Oracle bundle format: v0x03."
                 />
               </ListItem>
               <ListItem>
@@ -900,7 +900,7 @@ const DigiDollarPage = () => {
                 2. Oracle Verification
               </Typography>
               <Typography variant="body2">
-                17 oracles with 9-of-17 consensus active on testnet24.
+                35 reserved oracle slots with 17 active launch operators and a 9-signature MuSig2 quorum on testnet25.
                 7 exchange APIs (Binance, KuCoin, Gate.io, HTX,
                 Crypto.com, CoinGecko, CoinMarketCap). Oracle signatures use MuSig2 aggregate signing (v0x03).
               </Typography>
@@ -1229,13 +1229,13 @@ const DigiDollarPage = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <CheckCircleIcon sx={{ color: '#4caf50', mr: 1, fontSize: '1.2rem' }} />
                 <Typography variant="body2">
-                  <strong>Oracle System (Phase Two)</strong> - 9-of-17 MuSig2 Consensus Active on testnet24
+                  <strong>Oracle System (Phase Two)</strong> - 9-signature MuSig2 quorum active on testnet25
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <ConstructionIcon sx={{ color: '#ff9800', mr: 1, fontSize: '1.2rem' }} />
                 <Typography variant="body2" color="text.secondary">
-                  <strong>MuSig2 Oracle Validation (9-of-17)</strong> - In Progress
+                  <strong>MuSig2 Oracle Validation (9-of-35 reserved roster)</strong> - In Progress
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -1285,7 +1285,7 @@ const DigiDollarPage = () => {
             </Box>
 
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Oracle System - Phase Two Active (9-of-17 MuSig2 Consensus on testnet24)
+              Oracle System - Phase Two Active (testnet25, 35 reserved slots, 9-signature MuSig2 quorum)
             </Typography>
 
             <List dense sx={{ pl: 0, maxHeight: '400px', overflowY: 'auto' }}>
@@ -1327,15 +1327,15 @@ const DigiDollarPage = () => {
               <ListItem sx={{ pl: 0 }}>
                 <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
-                  primary="Phase Two Oracle Consensus (9-of-17 MuSig2)"
-                  secondary="Active on testnet24 - 17 oracles, 9-of-17 consensus required"
+                  primary="Phase Two Oracle Consensus (9-signature MuSig2)"
+                  secondary="Active on testnet25 - 35 reserved slots, 17 active launch operators, 9 signatures required"
                 />
               </ListItem>
               <ListItem sx={{ pl: 0 }}>
                 <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
                   primary="DigiDollar Activated on Testnet"
-                  secondary="Complete - v9.26.0-RC38, fully functional with oracle price feeds"
+                  secondary="Complete - v9.26.0-RC41, fresh testnet25 with oracle price feeds"
                 />
               </ListItem>
               <ListItem sx={{ pl: 0 }}>
@@ -1357,7 +1357,7 @@ const DigiDollarPage = () => {
       <Alert severity="success" sx={{ mt: 3 }}>
         <Typography variant="body2">
           <strong>Current Status:</strong> DigiDollar is 95% complete with 1,850+ tests passing. Oracle system
-          in Phase Two with 9-of-17 MuSig2 consensus active on testnet24. DigiDollar activated on testnet (v9.26.0-RC38).
+          in Phase Two on testnet25 with a 9-signature MuSig2 quorum and 35 reserved oracle slots. DigiDollar activated on testnet (v9.26.0-RC41).
           Mainnet release targeted for <strong>May, 2026</strong> with activation window through May, 2028.
           For complete details and all other upgrades, see the full{' '}
           <a href="/roadmap" style={{ color: '#0066cc', fontWeight: 'bold' }}>

@@ -57,6 +57,11 @@ describe('Wallet Converter — pure helpers', () => {
     expect(readApplicationId(buf)).toBe(0xFEC4B7E5);
   });
 
+  it('readApplicationId reads testnet25 (RC41) id', () => {
+    const buf = makeFakeSqlite(0xFEC5B8E6);
+    expect(readApplicationId(buf)).toBe(0xFEC5B8E6);
+  });
+
   it('APPLICATION_IDS.testnet23 matches the RC30 pchMessageStart (FD D2 B9 E4)', () => {
     expect(APPLICATION_IDS.testnet23).toBe(0xFDD2B9E4);
   });
@@ -65,9 +70,13 @@ describe('Wallet Converter — pure helpers', () => {
     expect(APPLICATION_IDS.testnet24).toBe(0xFEC4B7E5);
   });
 
-  it('CURRENT_TESTNET points at testnet24 for the current RC38 line', () => {
-    expect(CURRENT_TESTNET).toBe('testnet24');
-    expect(APPLICATION_IDS[CURRENT_TESTNET]).toBe(0xFEC4B7E5);
+  it('APPLICATION_IDS.testnet25 matches the RC41 pchMessageStart (FE C5 B8 E6)', () => {
+    expect(APPLICATION_IDS.testnet25).toBe(0xFEC5B8E6);
+  });
+
+  it('CURRENT_TESTNET points at testnet25 for the current RC41 line', () => {
+    expect(CURRENT_TESTNET).toBe('testnet25');
+    expect(APPLICATION_IDS[CURRENT_TESTNET]).toBe(0xFEC5B8E6);
   });
 
   it('detectNetwork identifies testnet19/20', () => {
@@ -84,6 +93,10 @@ describe('Wallet Converter — pure helpers', () => {
 
   it('detectNetwork identifies testnet24 (RC34)', () => {
     expect(detectNetwork(0xFEC4B7E5)).toBe('testnet24');
+  });
+
+  it('detectNetwork identifies testnet25 (RC41)', () => {
+    expect(detectNetwork(0xFEC5B8E6)).toBe('testnet25');
   });
 
   it('detectNetwork identifies mainnet', () => {
@@ -119,6 +132,13 @@ describe('Wallet Converter — pure helpers', () => {
     expect(dv.getUint32(68, false)).toBe(0xFEC4B7E5);
   });
 
+  it('patchApplicationId converts a testnet24 wallet to RC41 testnet25', () => {
+    const buf = makeFakeSqlite(0xFEC4B7E5);
+    const patched = patchApplicationId(buf, APPLICATION_IDS.testnet25);
+    const dv = new DataView(patched);
+    expect(dv.getUint32(68, false)).toBe(0xFEC5B8E6);
+  });
+
   it('testnet21 → testnet23 round-trip preserves all other bytes', () => {
     const original = makeFakeSqlite(0xFDD2B9E3);
     const toT23 = patchApplicationId(original, APPLICATION_IDS.testnet23);
@@ -130,6 +150,13 @@ describe('Wallet Converter — pure helpers', () => {
     const original = makeFakeSqlite(0xFDD2B9E4);
     const toT24 = patchApplicationId(original, APPLICATION_IDS.testnet24);
     const back = patchApplicationId(toT24, APPLICATION_IDS.testnet23);
+    expect(Array.from(new Uint8Array(back))).toEqual(Array.from(new Uint8Array(original)));
+  });
+
+  it('testnet24 → testnet25 round-trip preserves all other bytes', () => {
+    const original = makeFakeSqlite(0xFEC4B7E5);
+    const toT25 = patchApplicationId(original, APPLICATION_IDS.testnet25);
+    const back = patchApplicationId(toT25, APPLICATION_IDS.testnet24);
     expect(Array.from(new Uint8Array(back))).toEqual(Array.from(new Uint8Array(original)));
   });
 
@@ -232,9 +259,24 @@ describe('Wallet Converter — real fixture files', () => {
     expect(dv.getUint32(68, false)).toBe(0xFEC4B7E5);
   });
 
+  it('real testnet21 fixture → testnet25 writes RC41 magic at offset 68-71', () => {
+    const buf = loadFixture('wallet-testnet21.dat');
+    const patched = patchApplicationId(buf, APPLICATION_IDS.testnet25);
+    const dv = new DataView(patched);
+    expect(dv.getUint32(68, false)).toBe(0xFEC5B8E6);
+  });
+
   it('real testnet21 fixture → testnet24 preserves file size and SQLite header', () => {
     const buf = loadFixture('wallet-testnet21.dat');
     const patched = patchApplicationId(buf, APPLICATION_IDS.testnet24);
+    expect(patched.byteLength).toBe(buf.byteLength);
+    const header = new Uint8Array(patched, 0, 16);
+    expect(Array.from(header)).toEqual(Array.from(SQLITE_HEADER));
+  });
+
+  it('real testnet21 fixture → testnet25 preserves file size and SQLite header', () => {
+    const buf = loadFixture('wallet-testnet21.dat');
+    const patched = patchApplicationId(buf, APPLICATION_IDS.testnet25);
     expect(patched.byteLength).toBe(buf.byteLength);
     const header = new Uint8Array(patched, 0, 16);
     expect(Array.from(header)).toEqual(Array.from(SQLITE_HEADER));

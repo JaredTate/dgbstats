@@ -19,20 +19,20 @@ describe('RoadmapPage oracle consensus copy', () => {
     vi.clearAllMocks();
   });
 
-  it('shows updated 9-of-17 MuSig2 references', async () => {
+  it('shows updated RC41 MuSig2 references', async () => {
     renderWithProviders(<RoadmapPage />, { network: 'testnet' });
     await waitForAsync();
 
     await waitFor(() => {
-      expect(screen.getByText(/Design 17-oracle system with 9-of-17 MuSig2 aggregate signing/i)).toBeInTheDocument();
-      expect(screen.getByText(/Oracle network \(Phase Two - 9-of-17 MuSig2 consensus\)/i)).toBeInTheDocument();
-      expect(screen.getByText(/with Phase Two 9-of-17 consensus/i)).toBeInTheDocument();
-      expect(screen.getByText(/oracle price feeds and 9-of-17 consensus/i)).toBeInTheDocument();
-      const validationMatches = screen.getAllByText(/9-of-17 MuSig2 Oracle Testnet Validation/i);
+      expect(screen.getByText(/Design 35-slot oracle system with 17 active launch operators and 9-signature MuSig2 aggregate signing/i)).toBeInTheDocument();
+      expect(screen.getByText(/Oracle network \(Phase Two - 35-slot roster, 9-signature MuSig2 quorum\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/with Phase Two 9-signature consensus/i)).toBeInTheDocument();
+      expect(screen.getByText(/oracle price feeds and a 9-signature quorum across a 35-slot roster/i)).toBeInTheDocument();
+      const validationMatches = screen.getAllByText(/RC41 MuSig2 Oracle Testnet Validation/i);
       expect(validationMatches.length).toBeGreaterThan(0);
-      expect(screen.getByText(/Complete 9-of-17 oracle consensus validation on testnet/i)).toBeInTheDocument();
-      expect(screen.getAllByText(/Testnet Release v9\.26\.0-RC38/i).length).toBeGreaterThan(0);
-      expect(screen.getByText(/Final testnet release candidate \(v9\.26\.0-RC38\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/Complete 9-signature oracle consensus validation on testnet25/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Testnet Release v9\.26\.0-RC41/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/Fresh testnet25 release candidate \(v9\.26\.0-RC41\)/i)).toBeInTheDocument();
     });
   });
 });
