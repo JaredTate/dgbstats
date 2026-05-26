@@ -281,6 +281,30 @@ describe('DifficultiesPage', () => {
       });
     });
 
+    it('should normalize Core algorithm identifiers in recentBlocks messages', async () => {
+      renderWithProviders(<DifficultiesPage />);
+
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      ws.receiveMessage({
+        type: 'recentBlocks',
+        data: [
+          { algo: 'sha256d', difficulty: 0.00001937, height: 1001 },
+          { algo: 'scrypt', difficulty: 0.25, height: 1002 },
+          { algo: 'skein', difficulty: 1.5, height: 1003 },
+          { algo: 'qubit', difficulty: 12.75, height: 1004 },
+          { algo: 'odocrypt', difficulty: 0.00000042, height: 1005 }
+        ]
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('0.00001937')).toBeInTheDocument();
+        expect(screen.getByText('0.25000000')).toBeInTheDocument();
+        expect(screen.getByText('0.00000042')).toBeInTheDocument();
+      });
+    });
+
     it('should handle real-time newBlock updates', async () => {
       renderWithProviders(<DifficultiesPage />);
       

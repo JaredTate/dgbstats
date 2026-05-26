@@ -18,6 +18,20 @@ Chart.register(LineController);
  */
 const algoNames = ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo'];
 
+const normalizeAlgoName = (algo) => {
+  const normalized = String(algo || '').toLowerCase();
+  const algoMap = {
+    sha256d: 'SHA256D',
+    scrypt: 'Scrypt',
+    skein: 'Skein',
+    qubit: 'Qubit',
+    odo: 'Odo',
+    odocrypt: 'Odo'
+  };
+
+  return algoMap[normalized] || (algoNames.includes(algo) ? algo : null);
+};
+
 /**
  * Color mapping for each mining algorithm for consistent UI styling
  * Used in charts, cards, and visual indicators throughout the page
@@ -335,7 +349,7 @@ const DifficultiesPage = ({ difficultiesData }) => {
          */
         const updatedDifficulties = algoNames.reduce((acc, algo) => {
           const algoDifficulties = message.data
-            .filter((block) => block.algo === algo)
+            .filter((block) => normalizeAlgoName(block.algo) === algo)
             .map((block) => block.difficulty);
           return { ...acc, [algo]: algoDifficulties };
         }, {});
@@ -347,9 +361,12 @@ const DifficultiesPage = ({ difficultiesData }) => {
          * Appends new difficulty value to the appropriate algorithm array
          * Triggers chart updates automatically via useEffect dependency
          */
+        const algo = normalizeAlgoName(message.data.algo);
+        if (!algo) return;
+
         setDifficulties((prevDifficulties) => ({
           ...prevDifficulties,
-          [message.data.algo]: [...prevDifficulties[message.data.algo], message.data.difficulty],
+          [algo]: [...(prevDifficulties[algo] || []), message.data.difficulty],
         }));
       }
     };

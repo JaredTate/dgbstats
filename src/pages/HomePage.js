@@ -14,6 +14,20 @@ import UpdateIcon from '@mui/icons-material/Update';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { useNetwork } from '../context/NetworkContext';
 
+const getDifficultyValue = (difficulties, key, fallbackKey = null) => {
+  if (!difficulties) return undefined;
+  return difficulties[key] ?? (fallbackKey ? difficulties[fallbackKey] : undefined);
+};
+
+const formatDifficultyValue = (value) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 'N/A';
+
+  return numeric.toLocaleString(undefined, {
+    maximumFractionDigits: 8
+  });
+};
+
 /**
  * HomePage Component - Main dashboard displaying DigiByte blockchain statistics
  * 
@@ -160,19 +174,19 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
         {blockchainInfo && blockchainInfo.difficulties ? (
           <>
             <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-              <span>SHA256d:</span> <span>{parseInt(blockchainInfo.difficulties.sha256d).toLocaleString()}</span>
+              <span>SHA256d:</span> <span>{formatDifficultyValue(getDifficultyValue(blockchainInfo.difficulties, 'sha256d'))}</span>
             </Typography>
             <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-              <span>Scrypt:</span> <span>{parseInt(blockchainInfo.difficulties.scrypt).toLocaleString()}</span>
+              <span>Scrypt:</span> <span>{formatDifficultyValue(getDifficultyValue(blockchainInfo.difficulties, 'scrypt'))}</span>
             </Typography>
             <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-              <span>Skein:</span> <span>{parseInt(blockchainInfo.difficulties.skein).toLocaleString()}</span>
+              <span>Skein:</span> <span>{formatDifficultyValue(getDifficultyValue(blockchainInfo.difficulties, 'skein'))}</span>
             </Typography>
             <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-              <span>Qubit:</span> <span>{parseInt(blockchainInfo.difficulties.qubit).toLocaleString()}</span>
+              <span>Qubit:</span> <span>{formatDifficultyValue(getDifficultyValue(blockchainInfo.difficulties, 'qubit'))}</span>
             </Typography>
             <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-              <span>Odo:</span> <span>{parseInt(blockchainInfo.difficulties.odo).toLocaleString()}</span>
+              <span>Odo:</span> <span>{formatDifficultyValue(getDifficultyValue(blockchainInfo.difficulties, 'odo', 'odocrypt'))}</span>
             </Typography>
           </>
         ) : (

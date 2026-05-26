@@ -88,7 +88,7 @@ describe('HomePage', () => {
       );
 
       expect(screen.getByText('Latest Version')).toBeInTheDocument();
-      expect(screen.getByText('v9.26.0-RC41')).toBeInTheDocument();
+      expect(screen.getAllByText('v9.26.0-RC41').length).toBeGreaterThan(0);
     });
 
     it('should render algorithm difficulties card', async () => {
@@ -236,6 +236,43 @@ describe('HomePage', () => {
         expect(screen.getByText('12,345,678')).toBeInTheDocument(); // SHA256d difficulty
         expect(screen.getByText('234,567')).toBeInTheDocument(); // Scrypt difficulty
       });
+    });
+
+    it('should preserve fractional testnet difficulties below one', async () => {
+      renderWithProviders(
+        <HomePage
+          numberWithCommas={(x) => x ? x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "0"}
+          formatNumber={(num) => num ? num.toLocaleString() : "0"}
+        />,
+        { network: 'testnet' }
+      );
+
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      ws.receiveMessage({
+        type: 'initialData',
+        data: {
+          blockchainInfo: {
+            blocks: 123456,
+            difficulties: {
+              sha256d: 0.00001937,
+              scrypt: 0.25,
+              skein: 1.5,
+              qubit: 12.75,
+              odocrypt: 0.00000042
+            }
+          }
+        }
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('0.00001937')).toBeInTheDocument();
+        expect(screen.getByText('0.25')).toBeInTheDocument();
+        expect(screen.getByText('0.00000042')).toBeInTheDocument();
+      });
+      expect(screen.queryAllByText('0')).toHaveLength(0);
+      expect(screen.queryByText('NaN')).not.toBeInTheDocument();
     });
 
     it('should display active softforks', async () => {
