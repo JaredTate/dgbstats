@@ -19,6 +19,16 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useNetwork } from '../context/NetworkContext';
 import IntegrationGuides from '../components/IntegrationGuides';
 
+const TESTNET_RELEASE = {
+  version: 'v9.26.0-RC41',
+  network: 'testnet25',
+  p2pPort: '12032',
+  activationHeight: 600,
+  oracleTotalSlots: 35,
+  activeOracleSlots: 17,
+  oracleThreshold: 9
+};
+
 // Empty initial state - no mock data
 const EMPTY_DD_STATS = {
   health_percentage: 0,
@@ -207,6 +217,18 @@ const DDStatsPage = () => {
         >
           Monitor DD Supply, Locked DGB, DCA & ERR Levels
         </Typography>
+        <Typography
+          variant="body2"
+          sx={{
+            maxWidth: '860px',
+            mx: 'auto',
+            mt: 2,
+            color: isTestnet ? '#2e7d32' : '#0066cc',
+            fontWeight: 700
+          }}
+        >
+          {TESTNET_RELEASE.version} on {TESTNET_RELEASE.network}: block {TESTNET_RELEASE.activationHeight} activation, P2P port {TESTNET_RELEASE.p2pPort}, {TESTNET_RELEASE.oracleThreshold} of {TESTNET_RELEASE.oracleTotalSlots} oracle consensus.
+        </Typography>
       </CardContent>
     </Card>
   );
@@ -239,6 +261,17 @@ const DDStatsPage = () => {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {isTestnet && (
+            <Chip
+              label={`${TESTNET_RELEASE.version} / ${TESTNET_RELEASE.network}`}
+              size="small"
+              sx={{
+                backgroundColor: 'rgba(255,255,255,0.18)',
+                color: 'white',
+                fontWeight: 'bold'
+              }}
+            />
+          )}
           {lastUpdated && (
             <Typography variant="caption" sx={{ opacity: 0.8 }}>
               {lastUpdated.toLocaleTimeString()}

@@ -14,6 +14,17 @@ import UpdateIcon from '@mui/icons-material/Update';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { useNetwork } from '../context/NetworkContext';
 
+const TESTNET_RELEASE = {
+  version: 'v9.26.0-RC41',
+  network: 'testnet25',
+  p2pPort: '12032',
+  rpcPort: '14026',
+  activationHeight: '600',
+  oracleConsensus: '9 of 35',
+  activeOracleSlots: '17 active launch slots',
+  mainnetActivationFloor: '23,627,520'
+};
+
 const getDifficultyValue = (difficulties, key, fallbackKey = null) => {
   if (!difficulties) return undefined;
   return difficulties[key] ?? (fallbackKey ? difficulties[fallbackKey] : undefined);
@@ -304,6 +315,66 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
     );
   };
 
+  const TestnetReleaseCard = () => {
+    if (!isTestnet) return null;
+
+    return (
+      <Grid item xs={12}>
+        <Card
+          elevation={3}
+          sx={{
+            borderRadius: '8px',
+            borderTop: `4px solid ${networkTheme.primary}`,
+            backgroundColor: 'rgba(46, 125, 50, 0.04)'
+          }}
+        >
+          <CardContent>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, flexWrap: 'wrap', mb: 2 }}>
+              <Box>
+                <Typography variant="h5" fontWeight="bold" sx={{ color: networkTheme.primary }}>
+                  RC41 Testnet Reset
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Fresh {TESTNET_RELEASE.network} network for DigiDollar validation before mainnet launch decisions.
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <Typography variant="caption" sx={{ px: 1.25, py: 0.5, borderRadius: '8px', backgroundColor: networkTheme.primary, color: 'white', fontWeight: 'bold' }}>
+                  {TESTNET_RELEASE.version}
+                </Typography>
+                <Typography variant="caption" sx={{ px: 1.25, py: 0.5, borderRadius: '8px', backgroundColor: '#ffffff', border: `1px solid ${networkTheme.primary}`, color: networkTheme.primary, fontWeight: 'bold' }}>
+                  {TESTNET_RELEASE.oracleConsensus} oracle consensus
+                </Typography>
+              </Box>
+            </Box>
+
+            <Grid container spacing={2}>
+              {[
+                { label: 'Testnet', value: TESTNET_RELEASE.network },
+                { label: 'P2P Port', value: TESTNET_RELEASE.p2pPort },
+                { label: 'RPC Port', value: TESTNET_RELEASE.rpcPort },
+                { label: 'DD Activation', value: `Block ${TESTNET_RELEASE.activationHeight}` },
+                { label: 'Oracle Roster', value: `35 reserved, ${TESTNET_RELEASE.activeOracleSlots}` },
+                { label: 'Mainnet Floor', value: `Block ${TESTNET_RELEASE.mainnetActivationFloor}` }
+              ].map(({ label, value }) => (
+                <Grid item xs={12} sm={6} md={4} key={label}>
+                  <Box sx={{ p: 1.5, borderRadius: '8px', backgroundColor: '#ffffff', border: '1px solid rgba(46, 125, 50, 0.16)' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                      {label}
+                    </Typography>
+                    <Typography variant="body1" fontWeight="bold" sx={{ color: networkTheme.primary }}>
+                      {value}
+                    </Typography>
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+          </CardContent>
+        </Card>
+      </Grid>
+    );
+  };
+
   /**
    * HeroSection - Top banner with main title and description
    * Provides introduction to the DigiByte blockchain and website purpose
@@ -465,7 +536,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
           <Grid item xs={12} sm={6} md={4}>
             <StatCard
               title="Latest Version"
-              value={isTestnet ? "v9.26.0-RC41" : "v8.26.2"}
+              value={isTestnet ? TESTNET_RELEASE.version : "v8.26.2"}
               icon={<UpdateIcon />}
               description={isTestnet ? "Latest testnet release candidate." : "Latest DGB core version."}
               loading={false}
@@ -476,6 +547,8 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
           <Grid item xs={12} sm={6} md={4}>
             <SoftforksCard />
           </Grid>
+
+          <TestnetReleaseCard />
         </Grid>
       </Container>
     </Box>

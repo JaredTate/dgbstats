@@ -97,6 +97,7 @@ describe('DDStatsPage', () => {
       expect(screen.getByText('DigiDollar Testnet Stats')).toBeInTheDocument();
       expect(screen.getByText('Real-Time Network Health & Statistics')).toBeInTheDocument();
       expect(screen.getByText('Monitor DD Supply, Locked DGB, DCA & ERR Levels')).toBeInTheDocument();
+      expect(screen.getByText(/v9\.26\.0-RC41 on testnet25: block 600 activation, P2P port 12032, 9 of 35 oracle consensus\./)).toBeInTheDocument();
     });
 
     it('should render the network status card header', async () => {

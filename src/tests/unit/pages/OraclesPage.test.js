@@ -208,7 +208,7 @@ describe('OraclesPage', () => {
       await waitFor(() => {
         expect(screen.getByText('Testnet Oracle Price')).toBeInTheDocument();
         expect(screen.getByText('DGB/USD Price')).toBeInTheDocument();
-        expect(screen.getByText('Network Oracles')).toBeInTheDocument();
+        expect(screen.getByText('Oracle Consensus')).toBeInTheDocument();
         expect(screen.getByText('Last Update')).toBeInTheDocument();
       });
     });
@@ -219,6 +219,10 @@ describe('OraclesPage', () => {
       expect(screen.getByText('What Are Oracles?')).toBeInTheDocument();
       expect(screen.getByText(/The Blockchain Blind Spot:/)).toBeInTheDocument();
       expect(screen.getByText('How It Works:')).toBeInTheDocument();
+      expect(screen.getByText(/six active exchanges/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/every 60 seconds/i).length).toBeGreaterThan(0);
+      expect(screen.queryByText(/CoinMarketCap/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/7 exchanges/i)).not.toBeInTheDocument();
     });
 
     it('should render the become an oracle operator section', async () => {
@@ -226,8 +230,11 @@ describe('OraclesPage', () => {
 
       expect(screen.getByText('Become an Oracle Operator')).toBeInTheDocument();
       expect(screen.getByText('Step 1: Create Oracle Key')).toBeInTheDocument();
-      expect(screen.getByText('Step 2: Submit Public Key')).toBeInTheDocument();
+      expect(screen.getByText('Step 2: Coordinate Slot Assignment')).toBeInTheDocument();
       expect(screen.getByText('Step 3: Start Oracle')).toBeInTheDocument();
+      expect(screen.getByText(/assigned active oracle ID/i)).toBeInTheDocument();
+      expect(screen.queryByText(/simple 3-step process/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Send your public key.*via GitHub/i)).not.toBeInTheDocument();
     });
 
     it('should render the oracle network table section', async () => {
@@ -262,8 +269,8 @@ describe('OraclesPage', () => {
       const setupGuideLink = screen.getByRole('link', { name: /Oracle Setup Guide/i });
       expect(setupGuideLink).toHaveAttribute('href', expect.stringContaining('DIGIDOLLAR_ORACLE_SETUP.md'));
 
-      const githubLink = screen.getByRole('link', { name: /Submit Your Key on GitHub/i });
-      expect(githubLink).toHaveAttribute('href', 'https://github.com/DigiByte-Core/digibyte/issues');
+      const setupIssueLink = screen.getByRole('link', { name: /Coordinate Operator Slot/i });
+      expect(setupIssueLink).toHaveAttribute('href', 'https://github.com/DigiByte-Core/digibyte/issues');
     });
   });
 
@@ -298,7 +305,7 @@ describe('OraclesPage', () => {
       sendOracleData(ws);
 
       await waitFor(() => {
-        expect(screen.getAllByText('9/17').length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/9\/17/).length).toBeGreaterThan(0);
       });
 
       // Send updated data with 8 reporting oracles (Shenger comes online)
@@ -316,7 +323,7 @@ describe('OraclesPage', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getAllByText('10/17').length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/10\/17/).length).toBeGreaterThan(0);
       });
     });
   });
@@ -344,7 +351,7 @@ describe('OraclesPage', () => {
       sendOracleData(ws);
 
       await waitFor(() => {
-        expect(screen.getAllByText('9/17').length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/9\/17/).length).toBeGreaterThan(0);
       });
     });
 
@@ -430,8 +437,8 @@ describe('OraclesPage', () => {
         expect(screen.getByText('Fresh Heartbeats')).toBeInTheDocument();
         expect(screen.getByText('RC41 MuSig2 Context')).toBeInTheDocument();
         expect(screen.getByText('Selected This Epoch')).toBeInTheDocument();
-        expect(screen.getAllByText('10/17').length).toBeGreaterThan(0);
-        expect(screen.getAllByText('9/17').length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/10\/35/).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/9\/35/).length).toBeGreaterThan(0);
       });
     });
 
@@ -461,8 +468,10 @@ describe('OraclesPage', () => {
       const consensus = screen.getAllByText(/9-signature oracle quorum/);
       expect(consensus.length).toBeGreaterThan(0);
       expect(screen.getByText(/35 reserved oracle slots/)).toBeInTheDocument();
-      expect(screen.getByText(/MuSig2 aggregate signing \(v0x03\) with individual fallback \(v0x02\)/)).toBeInTheDocument();
-      expect(screen.getByText(/Price updates every 15 seconds/)).toBeInTheDocument();
+      expect(screen.getByText(/MuSig2 aggregate signing \(v0x03\) only/)).toBeInTheDocument();
+      expect(screen.getByText(/Exchange fetch and oracle broadcast every 60 seconds/)).toBeInTheDocument();
+      expect(screen.queryByText(/v0x02/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/15 seconds/)).not.toBeInTheDocument();
       const schnorr = screen.getAllByText(/BIP-340 Schnorr signatures/);
       expect(schnorr.length).toBeGreaterThan(0);
     });
@@ -472,7 +481,7 @@ describe('OraclesPage', () => {
 
       const musig2 = screen.getAllByText(/MuSig2 aggregate signing \(v0x03\)/);
       expect(musig2.length).toBeGreaterThan(0);
-      expect(screen.getByText(/35-slot oracle roster with 9-signature quorum/)).toBeInTheDocument();
+      expect(screen.getByText(/35-slot oracle roster with 9 of 35 signature quorum/)).toBeInTheDocument();
       expect(screen.getByText(/BIP9 activation for deployment/)).toBeInTheDocument();
     });
 
@@ -599,14 +608,14 @@ describe('OraclesPage', () => {
       sendOracleData(ws);
 
       await waitFor(() => {
-        expect(screen.getAllByText('9/17').length).toBeGreaterThan(0);
-        expect(screen.getByText('Online Reporting')).toBeInTheDocument();
+        expect(screen.getAllByText(/9\/17/).length).toBeGreaterThan(0);
+        expect(screen.getByText('Oracle Consensus')).toBeInTheDocument();
       });
     });
   });
 
   describe('Reporting Count Accuracy', () => {
-    it('should count 10/17 when 10 oracles are reporting', async () => {
+    it('should count 10/17 when 10 active launch slots are reporting', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
@@ -625,7 +634,7 @@ describe('OraclesPage', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getAllByText('10/17').length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/10\/17/).length).toBeGreaterThan(0);
       });
     });
 
@@ -640,7 +649,7 @@ describe('OraclesPage', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getAllByText('9/17').length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/9\/17/).length).toBeGreaterThan(0);
       });
     });
 
@@ -849,7 +858,7 @@ describe('OraclesPage', () => {
       sendOracleData(ws);
 
       await waitFor(() => {
-        expect(screen.getAllByText('9/17').length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/9\/17/).length).toBeGreaterThan(0);
         expect(screen.queryByText(/\/15/)).not.toBeInTheDocument();
         expect(screen.queryByText(/\/8/)).not.toBeInTheDocument();
       });

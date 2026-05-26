@@ -901,8 +901,8 @@ const DigiDollarPage = () => {
               </Typography>
               <Typography variant="body2">
                 35 reserved oracle slots with 17 active launch operators and a 9-signature MuSig2 quorum on testnet25.
-                7 exchange APIs (Binance, KuCoin, Gate.io, HTX,
-                Crypto.com, CoinGecko, CoinMarketCap). Oracle signatures use MuSig2 aggregate signing (v0x03).
+                Six active exchange APIs (Binance, KuCoin, Gate.io, HTX,
+                Crypto.com, CoinGecko) feed oracle signatures using MuSig2 aggregate signing (v0x03).
               </Typography>
             </Box>
           </Grid>
@@ -1299,8 +1299,8 @@ const DigiDollarPage = () => {
               <ListItem sx={{ pl: 0 }}>
                 <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
-                  primary="7 Exchange API Integration"
-                  secondary="Complete - Binance, KuCoin, Gate.io, HTX, Crypto.com, CoinGecko, CoinMarketCap"
+                  primary="Six Active Exchange API Integration"
+                  secondary="Complete - Binance, KuCoin, Gate.io, HTX, Crypto.com, CoinGecko"
                 />
               </ListItem>
               <ListItem sx={{ pl: 0 }}>

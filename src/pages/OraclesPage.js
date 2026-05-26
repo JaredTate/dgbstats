@@ -43,6 +43,7 @@ const ORACLE_TOTAL_SLOTS = 35;
 const ACTIVE_ORACLE_COUNT = 17;
 const MAX_ACTIVE_ORACLE_ID = 16; // IDs 0 through 16
 const ORACLE_THRESHOLD = 9;     // consensus requires 9 signatures
+const ORACLE_CONSENSUS_LABEL = `${ORACLE_THRESHOLD} of ${ORACLE_TOTAL_SLOTS}`;
 const EXPECTED_MUSIG2_CONTEXT_VERSION = 2; // RC41 attempt/evidence-bound context protocol
 const ORACLE_EPOCH_BLOCKS = 40;
 const TARGET_BLOCK_SECONDS = 15;
@@ -295,7 +296,7 @@ const OraclesPage = () => {
 
   const epochInfo = getOracleEpochInfo();
 
-  const SitrepMetric = ({ label, value, detail, ok }) => (
+  const SitrepMetric = ({ label, value, detail, ok, progressValue, progressTotal = ORACLE_TOTAL_SLOTS }) => (
     <Paper
       elevation={0}
       sx={{
@@ -321,7 +322,7 @@ const OraclesPage = () => {
       </Typography>
       <LinearProgress
         variant="determinate"
-        value={oracles.length ? Math.min(100, (parseInt(value, 10) / oracles.length) * 100) : 0}
+        value={progressTotal ? Math.min(100, ((progressValue || 0) / progressTotal) * 100) : 0}
         color={ok ? 'success' : 'warning'}
         sx={{ mt: 1.5, height: 6, borderRadius: 3 }}
       />
@@ -450,17 +451,17 @@ const OraclesPage = () => {
             </Tooltip>
           </Grid>
           <Grid item xs={12} md={4}>
-            <Tooltip title="Number of active launch oracles contributing to network price consensus. RC41 reserves 35 total oracle slots and requires 9 valid signatures." arrow placement="top">
+            <Tooltip title="RC41 consensus quorum across the full 35-slot reserved oracle roster. The table below shows the 17 active launch slots." arrow placement="top">
               <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help', minHeight: 160, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <Typography variant="body2" color="text.secondary">Network Oracles</Typography>
+                <Typography variant="body2" color="text.secondary">Oracle Consensus</Typography>
                 <Typography variant="h3" fontWeight="bold" sx={{ color: reportingCount > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
-                  {reportingCount > 0 ? `${reportingCount}/${oracles.length}` : '--'}
+                  {ORACLE_THRESHOLD}/{ORACLE_TOTAL_SLOTS}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {reportingCount > 0 ? 'Online Reporting' : 'Not Reporting'}
+                  signatures required
                 </Typography>
                 <Typography variant="body2" fontWeight="bold" sx={{ mt: 1, color: reportingCount >= ORACLE_THRESHOLD ? '#2e7d32' : '#ed6c02' }}>
-                  {ORACLE_THRESHOLD} signatures needed for consensus
+                  {reportingCount}/{oracles.length || ACTIVE_ORACLE_COUNT} launch slots reporting
                 </Typography>
               </Box>
             </Tooltip>
@@ -489,7 +490,7 @@ const OraclesPage = () => {
       {isTestnet && (
         <Box sx={{ mt: 2, p: 1.5, backgroundColor: 'rgba(46, 125, 50, 0.08)', borderRadius: '8px', textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
-            <strong>Phase Two:</strong> {ORACLE_THRESHOLD} signatures required | 35-slot oracle roster | MuSig2 aggregate signing (v0x03)
+            <strong>RC41 Phase Two:</strong> {ORACLE_CONSENSUS_LABEL} signatures required | 35-slot reserved roster | 17 active launch slots | MuSig2 aggregate signing (v0x03)
           </Typography>
         </Box>
       )}
@@ -516,33 +517,37 @@ const OraclesPage = () => {
         <Grid item xs={12} sm={6} md={3}>
           <SitrepMetric
             label="Price Reporters"
-            value={`${reportingCount}/${oracles.length || ACTIVE_ORACLE_COUNT}`}
-            detail={`${ORACLE_THRESHOLD} valid price feeds required`}
+            value={`${reportingCount}/${ORACLE_TOTAL_SLOTS}`}
+            detail={`${ORACLE_CONSENSUS_LABEL} valid signatures required; ${oracles.length || ACTIVE_ORACLE_COUNT} launch slots visible`}
             ok={reportingCount >= ORACLE_THRESHOLD}
+            progressValue={reportingCount}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <SitrepMetric
             label="Fresh Heartbeats"
-            value={`${freshHeartbeatCount}/${oracles.length || ACTIVE_ORACLE_COUNT}`}
+            value={`${freshHeartbeatCount}/${ORACLE_TOTAL_SLOTS}`}
             detail="signed operator status, fresh under 30 minutes"
             ok={freshHeartbeatCount >= ORACLE_THRESHOLD}
+            progressValue={freshHeartbeatCount}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <SitrepMetric
             label="RC41 MuSig2 Context"
-            value={`${rc41ContextCount}/${oracles.length || ACTIVE_ORACLE_COUNT}`}
+            value={`${rc41ContextCount}/${ORACLE_TOTAL_SLOTS}`}
             detail={`MuSig2 context ${EXPECTED_MUSIG2_CONTEXT_VERSION}+ with valid heartbeat`}
             ok={rc41ContextCount >= ORACLE_THRESHOLD}
+            progressValue={rc41ContextCount}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <SitrepMetric
             label="Selected This Epoch"
-            value={`${selectedCount}/${oracles.length || ACTIVE_ORACLE_COUNT}`}
+            value={`${selectedCount}/${ORACLE_TOTAL_SLOTS}`}
             detail={`${locallyRunningCount} local oracle slot${locallyRunningCount === 1 ? '' : 's'} visible`}
             ok={selectedCount >= ORACLE_THRESHOLD}
+            progressValue={selectedCount}
           />
         </Grid>
       </Grid>
@@ -664,7 +669,7 @@ const OraclesPage = () => {
             </Typography>
             <Box component="ol" sx={{ pl: 2, m: 0 }}>
               <Typography component="li" variant="body2" sx={{ mb: 1 }}>
-                Oracles fetch prices from 7 exchanges (Binance, KuCoin, Gate.io, HTX, Crypto.com, CoinGecko, CoinMarketCap)
+                Oracles fetch prices from six active exchanges (Binance, KuCoin, Gate.io, HTX, Crypto.com, CoinGecko) every 60 seconds
               </Typography>
               <Typography component="li" variant="body2" sx={{ mb: 1 }}>
                 Calculate median price with MAD outlier filtering
@@ -690,7 +695,7 @@ const OraclesPage = () => {
       </Typography>
 
       <Typography variant="body1" sx={{ mb: 3 }}>
-        Help secure the DigiDollar network by running an oracle node. It's a simple 3-step process:
+        Help secure the DigiDollar network by running an assigned testnet25 oracle slot.
       </Typography>
 
       <Grid container spacing={3}>
@@ -710,11 +715,11 @@ const OraclesPage = () => {
           <Paper elevation={2} sx={{ p: 3, textAlign: 'center', height: '100%', borderTop: `4px solid ${isTestnet ? '#4caf50' : '#0066cc'}` }}>
             <SendIcon sx={{ fontSize: '3rem', color: isTestnet ? '#4caf50' : '#0066cc', mb: 2 }} />
             <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
-              Step 2: Submit Public Key
+              Step 2: Coordinate Slot Assignment
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Send your public key to the DigiByte Core developers via GitHub.
-              Only the public key is shared - your private key stays secure.
+              Coordinate an assigned active oracle ID (slot 0-16) with the maintainers before publishing a key.
+              Slots 17-34 are reserved for a future release.
             </Typography>
           </Paper>
         </Grid>
@@ -755,7 +760,7 @@ const OraclesPage = () => {
             color: isTestnet ? '#2e7d32' : '#002352'
           }}
         >
-          Submit Your Key on GitHub
+          Coordinate Operator Slot
         </Button>
       </Box>
     </Card>
@@ -772,7 +777,7 @@ const OraclesPage = () => {
           </Typography>
           {oracles.length > 0 ? (
             <Chip
-              label={`${reportingCount} / ${oracles.length} Online Reporting`}
+              label={`${reportingCount} / ${ORACLE_TOTAL_SLOTS} Consensus Reporting`}
               color={reportingCount >= ORACLE_THRESHOLD ? 'success' : 'warning'}
               size="small"
               sx={{ ml: 2 }}
@@ -1010,7 +1015,7 @@ const OraclesPage = () => {
         <Box sx={{ mt: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
           <Typography variant="body2" color="text.secondary">
             <strong>Price Format:</strong> Oracle prices use micro-USD format where 1,000,000 = $1.00.
-            This ensures exact arithmetic with no floating-point errors. RC41 reserves {ORACLE_TOTAL_SLOTS} oracle slots and requires {ORACLE_THRESHOLD} valid signatures on testnet.
+            This ensures exact arithmetic with no floating-point errors. RC41 consensus is {ORACLE_CONSENSUS_LABEL} across {ORACLE_TOTAL_SLOTS} reserved slots, with {ACTIVE_ORACLE_COUNT} active launch slots displayed above.
           </Typography>
         </Box>
         </>
@@ -1034,9 +1039,9 @@ const OraclesPage = () => {
             </Typography>
             <Box component="ul" sx={{ pl: 2, m: 0 }}>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>9-signature oracle quorum</Typography>
-              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>35 reserved oracle slots (IDs 0-34), with 17 active launch slots</Typography>
-              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>MuSig2 aggregate signing (v0x03) with individual fallback (v0x02)</Typography>
-              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Price updates every 15 seconds</Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>9 of 35 reserved oracle slots required for consensus, with 17 active launch slots</Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>MuSig2 aggregate signing (v0x03) only</Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Exchange fetch and oracle broadcast every 60 seconds</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Compact 22-byte storage per block</Typography>
               <Typography component="li" variant="body2">BIP-340 Schnorr signatures</Typography>
             </Box>
@@ -1049,7 +1054,7 @@ const OraclesPage = () => {
             </Typography>
             <Box component="ul" sx={{ pl: 2, m: 0 }}>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>MuSig2 aggregate signing (v0x03)</Typography>
-              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>35-slot oracle roster with 9-signature quorum</Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>35-slot oracle roster with 9 of 35 signature quorum</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>BIP9 activation for deployment</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Same consensus mechanism as testnet</Typography>
               <Typography component="li" variant="body2">Production oracle endpoints</Typography>

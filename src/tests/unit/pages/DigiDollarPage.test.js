@@ -108,8 +108,13 @@ describe('DigiDollarPage', () => {
       expect(screen.getAllByText(/12032/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/v9\.26\.0-RC41/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/35 reserved oracle slots|35 reserved slots/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/six active exchange APIs|six active exchanges/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/v0x03/i).length).toBeGreaterThan(0);
       expect(screen.queryByText(/testnet24/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/12031/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/CoinMarketCap/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/7 exchange APIs/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/v0x02/i)).not.toBeInTheDocument();
     });
 
     it('should render the roadmap phases', () => {

@@ -302,7 +302,7 @@ const RoadmapPage = () => {
             title: 'Oracle Price Feed Implementation',
             date: '2025-12-01',
             status: 'completed',
-            description: '7 exchange APIs (Binance, KuCoin, Gate.io, HTX, Crypto.com, CoinGecko, CoinMarketCap) with Phase Two 9-signature consensus',
+            description: 'Six active exchange APIs (Binance, KuCoin, Gate.io, HTX, Crypto.com, CoinGecko) with Phase Two 9-signature consensus',
             completionDate: '2026-01-15'
           },
           {
