@@ -240,9 +240,10 @@ const OraclesPage = () => {
   // Check if we have valid data
   const hasData = oraclePrice.oracle_count > 0 || oracles.length > 0;
 
-  // Count oracles that are actively reporting (consistent across page)
-  const reportingCount = oracles.filter(o => o.status === 'reporting').length;
+  // Count oracles that are actively signing prices and publishing heartbeats.
   const activeOracleCount = oracles.length || ACTIVE_ORACLE_COUNT;
+  const isOracleSigningPrice = (oracle) => oracle.status === 'reporting' && oracle.signature_valid;
+  const priceSigningCount = oracles.filter(isOracleSigningPrice).length;
   const freshHeartbeatCount = oracles.filter(o => o.heartbeat_status === 'fresh' && o.heartbeat_signature_valid).length;
   const rc43ContextCount = oracles.filter(o =>
     o.heartbeat_status === 'fresh' &&
@@ -251,7 +252,7 @@ const OraclesPage = () => {
   ).length;
   const epochEligibleCount = oracles.filter(o => o.epoch_eligible).length;
   const locallyRunningCount = oracles.filter(o => o.is_running_locally).length;
-  const consensusReady = reportingCount >= ORACLE_THRESHOLD &&
+  const consensusReady = priceSigningCount >= ORACLE_THRESHOLD &&
     freshHeartbeatCount >= ORACLE_THRESHOLD &&
     rc43ContextCount >= ORACLE_THRESHOLD &&
     epochEligibleCount >= ORACLE_THRESHOLD;
@@ -266,7 +267,7 @@ const OraclesPage = () => {
       };
     }
     buckets[version].count += 1;
-    if (oracle.status === 'reporting') buckets[version].reporting += 1;
+    if (isOracleSigningPrice(oracle)) buckets[version].reporting += 1;
     if (oracle.heartbeat_status === 'fresh' && oracle.heartbeat_signature_valid) buckets[version].fresh += 1;
     return buckets;
   }, {})).sort((a, b) => {
@@ -476,14 +477,14 @@ const OraclesPage = () => {
             <Tooltip title={`RC43 consensus quorum across the full 35-slot reserved oracle roster. The table below shows ${activeOracleCount} consensus-active testnet slots from Core RPC.`} arrow placement="top">
               <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help', minHeight: 160, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <Typography variant="body2" color="text.secondary">Oracle Consensus</Typography>
-                <Typography variant="h3" fontWeight="bold" sx={{ color: reportingCount > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
+                <Typography variant="h3" fontWeight="bold" sx={{ color: priceSigningCount > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
                   {ORACLE_THRESHOLD}/{ORACLE_TOTAL_SLOTS}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   signatures required
                 </Typography>
-                <Typography variant="body2" fontWeight="bold" sx={{ mt: 1, color: reportingCount >= ORACLE_THRESHOLD ? '#2e7d32' : '#ed6c02' }}>
-                  {reportingCount}/{activeOracleCount} active slots reporting
+                <Typography variant="body2" fontWeight="bold" sx={{ mt: 1, color: priceSigningCount >= ORACLE_THRESHOLD ? '#2e7d32' : '#ed6c02' }}>
+                  {priceSigningCount}/{activeOracleCount} active slots signing prices
                 </Typography>
               </Box>
             </Tooltip>
@@ -525,7 +526,7 @@ const OraclesPage = () => {
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <VerifiedIcon sx={{ fontSize: '2rem', color: consensusReady ? '#2e7d32' : '#ed6c02', mr: 1 }} />
           <Typography variant="h5" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
-            Oracle Operator Sitrep
+            Oracle Network Status
           </Typography>
         </Box>
         <Chip
@@ -538,16 +539,16 @@ const OraclesPage = () => {
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6} md={3}>
           <SitrepMetric
-            label="Price Reporters"
-            value={`${reportingCount}/${activeOracleCount}`}
-            detail={`${ORACLE_THRESHOLD} valid signatures required; ${ORACLE_TOTAL_SLOTS} reserved slots total`}
-            ok={reportingCount >= ORACLE_THRESHOLD}
-            progressValue={reportingCount}
+            label="Signing Prices"
+            value={`${priceSigningCount}/${activeOracleCount}`}
+            detail={`${ORACLE_THRESHOLD} signed price feeds required; ${ORACLE_TOTAL_SLOTS} reserved slots total`}
+            ok={priceSigningCount >= ORACLE_THRESHOLD}
+            progressValue={priceSigningCount}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <SitrepMetric
-            label="Fresh Heartbeats"
+            label="Online Heartbeats"
             value={`${freshHeartbeatCount}/${activeOracleCount}`}
             detail="signed operator status, fresh under 30 minutes"
             ok={freshHeartbeatCount >= ORACLE_THRESHOLD}
@@ -556,7 +557,7 @@ const OraclesPage = () => {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <SitrepMetric
-            label="RC43 MuSig2 Context"
+            label="Compatible Software"
             value={`${rc43ContextCount}/${activeOracleCount}`}
             detail={`MuSig2 context ${EXPECTED_MUSIG2_CONTEXT_VERSION}+ with valid heartbeat`}
             ok={rc43ContextCount >= ORACLE_THRESHOLD}
@@ -565,7 +566,7 @@ const OraclesPage = () => {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <SitrepMetric
-            label="Epoch Eligible"
+            label="In Current Epoch"
             value={`${epochEligibleCount}/${activeOracleCount}`}
             detail={`${locallyRunningCount} local oracle slot${locallyRunningCount === 1 ? '' : 's'} visible`}
             ok={epochEligibleCount >= ORACLE_THRESHOLD}
@@ -575,13 +576,13 @@ const OraclesPage = () => {
       </Grid>
 
       <Alert severity="info" sx={{ mt: 2 }}>
-        Final 9 signer set is not exposed by current Core RPC. This page shows whether each consensus-active oracle is eligible for the epoch; the MuSig2 session chooses the final 9 from nonce-submitters.
+        This page shows which active oracles are in the current epoch and which are broadcasting signed prices. Core does not currently expose the exact 9-oracle MuSig2 bundle signer list, so "Signing price" means signed price reporting, not final bundle participation.
       </Alert>
 
       {versionBuckets.length > 0 && (
         <Box sx={{ mt: 3 }}>
           <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1, color: isTestnet ? '#2e7d32' : '#002352' }}>
-            Version Matrix
+            Oracle Versions
           </Typography>
           <Grid container spacing={1.5}>
             {versionBuckets.map((bucket) => (
@@ -602,7 +603,7 @@ const OraclesPage = () => {
                     {formatOperatorCount(bucket.count)}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {bucket.reporting} reporting · {bucket.fresh} fresh heartbeats
+                    {bucket.reporting} signing prices · {bucket.fresh} fresh heartbeats
                   </Typography>
                 </Paper>
               </Grid>
@@ -836,8 +837,8 @@ const OraclesPage = () => {
           </Typography>
           {oracles.length > 0 ? (
             <Chip
-              label={`${reportingCount} / ${activeOracleCount} Consensus Reporting`}
-              color={reportingCount >= ORACLE_THRESHOLD ? 'success' : 'warning'}
+              label={`${priceSigningCount} / ${activeOracleCount} Signing Prices`}
+              color={priceSigningCount >= ORACLE_THRESHOLD ? 'success' : 'warning'}
               size="small"
               sx={{ ml: 2 }}
             />
@@ -890,8 +891,8 @@ const OraclesPage = () => {
                   </Tooltip>
                 </TableCell>
                 <TableCell>
-                  <Tooltip title="Whether Core marks this consensus-active oracle eligible for the current epoch. The final 9 signer set is selected from nonce-submitters and is not exposed per oracle by current RPC." arrow>
-                    <strong style={{ cursor: 'help' }}>Epoch Eligibility</strong>
+                  <Tooltip title="Shows whether this oracle is in the current epoch and whether it is broadcasting a valid signed price. Core does not expose the exact final MuSig2 bundle signer list per oracle." arrow>
+                    <strong style={{ cursor: 'help' }}>Current Epoch / Signing</strong>
                   </Tooltip>
                 </TableCell>
                 <TableCell>
@@ -987,13 +988,19 @@ const OraclesPage = () => {
                   <TableCell>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                       <Chip
-                        label={oracle.epoch_eligible ? 'eligible' : 'standby'}
+                        label={oracle.epoch_eligible ? 'In epoch' : 'Not in epoch'}
                         size="small"
                         color={oracle.epoch_eligible ? 'success' : 'default'}
                         variant={oracle.epoch_eligible ? 'filled' : 'outlined'}
                       />
                       <Chip
-                        label={oracle.in_consensus ? 'in consensus' : 'reserve'}
+                        label={isOracleSigningPrice(oracle) ? 'Signing price' : 'Not signing'}
+                        size="small"
+                        color={isOracleSigningPrice(oracle) ? 'success' : 'default'}
+                        variant={isOracleSigningPrice(oracle) ? 'filled' : 'outlined'}
+                      />
+                      <Chip
+                        label={oracle.in_consensus ? 'Active slot' : 'Reserve slot'}
                         size="small"
                         color={oracle.in_consensus ? 'primary' : 'default'}
                         variant="outlined"

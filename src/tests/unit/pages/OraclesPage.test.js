@@ -447,7 +447,7 @@ describe('OraclesPage', () => {
   });
 
   describe('RC43 Oracle Sitrep', () => {
-    it('should display signed heartbeat and MuSig2 context readiness counts', async () => {
+    it('should display public-friendly oracle network status counts', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
@@ -455,16 +455,18 @@ describe('OraclesPage', () => {
       sendOracleData(ws);
 
       await waitFor(() => {
-        expect(screen.getByText('Oracle Operator Sitrep')).toBeInTheDocument();
-        expect(screen.getByText('Fresh Heartbeats')).toBeInTheDocument();
-        expect(screen.getByText('RC43 MuSig2 Context')).toBeInTheDocument();
-        expect(screen.getByText('Epoch Eligible')).toBeInTheDocument();
+        expect(screen.getByText('Oracle Network Status')).toBeInTheDocument();
+        expect(screen.getByText('Online Heartbeats')).toBeInTheDocument();
+        expect(screen.getByText('Compatible Software')).toBeInTheDocument();
+        expect(screen.getByText('In Current Epoch')).toBeInTheDocument();
         expect(screen.getAllByText(/10\/18/).length).toBeGreaterThan(0);
         expect(screen.getAllByText(/9\/18/).length).toBeGreaterThan(0);
+        expect(screen.queryByText('Oracle Operator Sitrep')).not.toBeInTheDocument();
+        expect(screen.queryByText('RC43 MuSig2 Context')).not.toBeInTheDocument();
       });
     });
 
-    it('should show per-oracle heartbeat age, software version, and epoch eligibility', async () => {
+    it('should show each oracle current epoch and price signing state in the list', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
@@ -473,12 +475,14 @@ describe('OraclesPage', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Heartbeat / Version')).toBeInTheDocument();
-        expect(screen.getByText('Epoch Eligibility')).toBeInTheDocument();
+        expect(screen.getByText('Current Epoch / Signing')).toBeInTheDocument();
         expect(screen.getAllByText('v9.26.0-rc43').length).toBeGreaterThan(0);
         expect(screen.getAllByText('MuSig2 ctx 2').length).toBeGreaterThan(0);
         expect(screen.getByText('3m 0s ago')).toBeInTheDocument();
-        expect(screen.getAllByText('eligible').length).toBeGreaterThan(0);
-        expect(screen.getAllByText('standby').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('In epoch').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('Not in epoch').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('Signing price').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('Not signing').length).toBeGreaterThan(0);
       });
     });
 
@@ -496,11 +500,11 @@ describe('OraclesPage', () => {
       sendOracleData(ws, { oracles: allEligible });
 
       await waitFor(() => {
-        expect(screen.getByText('Epoch Eligible')).toBeInTheDocument();
-        expect(screen.getAllByText('eligible').length).toBe(18);
+        expect(screen.getByText('In Current Epoch')).toBeInTheDocument();
+        expect(screen.getAllByText('In epoch').length).toBe(18);
         expect(screen.queryByText('Selected This Epoch')).not.toBeInTheDocument();
         expect(screen.queryByText('selected')).not.toBeInTheDocument();
-        expect(screen.getByText(/Final 9 signer set is not exposed by current Core RPC/i)).toBeInTheDocument();
+        expect(screen.getByText(/Core does not currently expose the exact 9-oracle MuSig2 bundle signer list/i)).toBeInTheDocument();
       });
     });
 
@@ -512,11 +516,12 @@ describe('OraclesPage', () => {
       sendOracleData(ws);
 
       await waitFor(() => {
-        expect(screen.getByText('Version Matrix')).toBeInTheDocument();
+        expect(screen.getByText('Oracle Versions')).toBeInTheDocument();
         expect(screen.getAllByText('v9.26.0-rc43').length).toBeGreaterThan(0);
         expect(screen.getAllByText('v9.26.0-rc40').length).toBeGreaterThan(0);
         expect(screen.getByText(/10 operators/i)).toBeInTheDocument();
         expect(screen.getByText(/1 operator/i)).toBeInTheDocument();
+        expect(screen.queryByText('Version Matrix')).not.toBeInTheDocument();
       });
     });
   });
