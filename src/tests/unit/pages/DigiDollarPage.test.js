@@ -101,16 +101,17 @@ describe('DigiDollarPage', () => {
       expect(screen.getByText('MAST Implementation')).toBeInTheDocument();
     });
 
-    it('should show current RC42 testnet25 oracle network details', () => {
+    it('should show current RC43 testnet25 oracle network details', () => {
       renderWithProviders(<DigiDollarPage />);
 
       expect(screen.getAllByText(/testnet25/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/12032/i).length).toBeGreaterThan(0);
-      expect(screen.getAllByText(/v9\.26\.0-RC42/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/v9\.26\.0-RC43/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/18 active testnet operators/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/35 reserved oracle slots|35 reserved slots/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/six active exchange APIs|six active exchanges/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/v0x03/i).length).toBeGreaterThan(0);
+      expect(screen.queryByText(/v9\.26\.0-RC42/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/testnet24/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/12031/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/CoinMarketCap/i)).not.toBeInTheDocument();

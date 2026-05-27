@@ -73,8 +73,8 @@ const heartbeatForOracle = (oracleId) => {
       selected_for_epoch: selectedOracleIds.has(oracleId),
       is_running_locally: oracleId <= 1,
       heartbeat_status: 'fresh',
-      software_version: 'v9.26.0-rc42',
-      client_version: 9260042,
+      software_version: 'v9.26.0-rc43',
+      client_version: 9260043,
       p2p_protocol_version: 70017,
       oracle_protocol_version: 1,
       musig2_context_version: 2,
@@ -425,7 +425,7 @@ describe('OraclesPage', () => {
     });
   });
 
-  describe('RC42 Oracle Sitrep', () => {
+  describe('RC43 Oracle Sitrep', () => {
     it('should display signed heartbeat and MuSig2 context readiness counts', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
@@ -436,7 +436,7 @@ describe('OraclesPage', () => {
       await waitFor(() => {
         expect(screen.getByText('Oracle Operator Sitrep')).toBeInTheDocument();
         expect(screen.getByText('Fresh Heartbeats')).toBeInTheDocument();
-        expect(screen.getByText('RC42 MuSig2 Context')).toBeInTheDocument();
+        expect(screen.getByText('RC43 MuSig2 Context')).toBeInTheDocument();
         expect(screen.getByText('Selected This Epoch')).toBeInTheDocument();
         expect(screen.getAllByText(/10\/35/).length).toBeGreaterThan(0);
         expect(screen.getAllByText(/9\/35/).length).toBeGreaterThan(0);
@@ -453,7 +453,7 @@ describe('OraclesPage', () => {
       await waitFor(() => {
         expect(screen.getByText('Heartbeat / Version')).toBeInTheDocument();
         expect(screen.getByText('Epoch Role')).toBeInTheDocument();
-        expect(screen.getAllByText('v9.26.0-rc42').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('v9.26.0-rc43').length).toBeGreaterThan(0);
         expect(screen.getAllByText('MuSig2 ctx 2').length).toBeGreaterThan(0);
         expect(screen.getByText('3m 0s ago')).toBeInTheDocument();
         expect(screen.getAllByText('selected').length).toBeGreaterThan(0);
@@ -769,7 +769,7 @@ describe('OraclesPage', () => {
       const ws = webSocketInstances[0];
 
       // mockOracles contains 19 entries (18 active + 1 reserve)
-      // The frontend MUST filter to 18 active RC42 slots.
+      // The frontend MUST filter to 18 active RC43 slots.
       sendOracleData(ws);
 
       await waitFor(() => {
@@ -847,7 +847,7 @@ describe('OraclesPage', () => {
       });
     });
 
-    it('should show RC42 9-signature consensus text (not older quorum text)', async () => {
+    it('should show RC43 9-signature consensus text (not older quorum text)', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
 
       const consensus = screen.getAllByText(/9 signatures required|35-slot oracle roster/);

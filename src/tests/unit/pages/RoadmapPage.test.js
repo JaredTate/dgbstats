@@ -19,7 +19,7 @@ describe('RoadmapPage oracle consensus copy', () => {
     vi.clearAllMocks();
   });
 
-  it('shows updated RC42 MuSig2 references', async () => {
+  it('shows updated RC43 MuSig2 references', async () => {
     renderWithProviders(<RoadmapPage />, { network: 'testnet' });
     await waitForAsync();
 
@@ -28,11 +28,12 @@ describe('RoadmapPage oracle consensus copy', () => {
       expect(screen.getByText(/Oracle network \(Phase Two - 35-slot roster, 9-signature MuSig2 quorum\)/i)).toBeInTheDocument();
       expect(screen.getByText(/with Phase Two 9-signature consensus/i)).toBeInTheDocument();
       expect(screen.getByText(/oracle price feeds and a 9-signature quorum across a 35-slot roster/i)).toBeInTheDocument();
-      const validationMatches = screen.getAllByText(/RC42 MuSig2 Oracle Testnet Validation/i);
+      const validationMatches = screen.getAllByText(/RC43 MuSig2 Oracle Testnet Validation/i);
       expect(validationMatches.length).toBeGreaterThan(0);
       expect(screen.getByText(/Complete 9-signature oracle consensus validation on testnet25/i)).toBeInTheDocument();
-      expect(screen.getAllByText(/Testnet Release v9\.26\.0-RC42/i).length).toBeGreaterThan(0);
-      expect(screen.getByText(/Current testnet25 release candidate \(v9\.26\.0-RC42\)/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Testnet Release v9\.26\.0-RC43/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/DigiByte v9\.26 Release Candidate 43 \(Current\)/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/Current testnet25 release candidate \(v9\.26\.0-RC43\)/i)).toBeInTheDocument();
     });
   });
 });

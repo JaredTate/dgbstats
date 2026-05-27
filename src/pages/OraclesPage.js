@@ -35,7 +35,7 @@ const EMPTY_ORACLE_PRICE = {
   volatility: 0
 };
 
-// RC42 oracle configuration: 35 reserved slots with 18 active testnet keys.
+// RC43 oracle configuration: 35 reserved slots with 18 active testnet keys.
 // Consensus needs 9 valid signatures from the active testnet keyset. The UI
 // keeps reporting counts scoped to active entries while explaining the full
 // 35-slot roster used on mainnet and testnet.
@@ -44,7 +44,7 @@ const ACTIVE_ORACLE_COUNT = 18;
 const MAX_ACTIVE_ORACLE_ID = 17; // IDs 0 through 17
 const ORACLE_THRESHOLD = 9;     // consensus requires 9 signatures
 const ORACLE_CONSENSUS_LABEL = `${ORACLE_THRESHOLD} of ${ORACLE_TOTAL_SLOTS}`;
-const EXPECTED_MUSIG2_CONTEXT_VERSION = 2; // RC42 attempt/evidence-bound context protocol
+const EXPECTED_MUSIG2_CONTEXT_VERSION = 2; // RC43 attempt/evidence-bound context protocol
 const ORACLE_EPOCH_BLOCKS = 40;
 const TARGET_BLOCK_SECONDS = 15;
 
@@ -242,7 +242,7 @@ const OraclesPage = () => {
   // Count oracles that are actively reporting (consistent across page)
   const reportingCount = oracles.filter(o => o.status === 'reporting').length;
   const freshHeartbeatCount = oracles.filter(o => o.heartbeat_status === 'fresh' && o.heartbeat_signature_valid).length;
-  const rc42ContextCount = oracles.filter(o =>
+  const rc43ContextCount = oracles.filter(o =>
     o.heartbeat_status === 'fresh' &&
     o.heartbeat_signature_valid &&
     o.musig2_context_version >= EXPECTED_MUSIG2_CONTEXT_VERSION
@@ -251,7 +251,7 @@ const OraclesPage = () => {
   const locallyRunningCount = oracles.filter(o => o.is_running_locally).length;
   const consensusReady = reportingCount >= ORACLE_THRESHOLD &&
     freshHeartbeatCount >= ORACLE_THRESHOLD &&
-    rc42ContextCount >= ORACLE_THRESHOLD &&
+    rc43ContextCount >= ORACLE_THRESHOLD &&
     selectedCount >= ORACLE_THRESHOLD;
 
   const getOracleEpochInfo = () => {
@@ -452,7 +452,7 @@ const OraclesPage = () => {
             </Tooltip>
           </Grid>
           <Grid item xs={12} md={4}>
-            <Tooltip title="RC42 consensus quorum across the full 35-slot reserved oracle roster. The table below shows the 18 active testnet slots." arrow placement="top">
+            <Tooltip title="RC43 consensus quorum across the full 35-slot reserved oracle roster. The table below shows the 18 active testnet slots." arrow placement="top">
               <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help', minHeight: 160, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <Typography variant="body2" color="text.secondary">Oracle Consensus</Typography>
                 <Typography variant="h3" fontWeight="bold" sx={{ color: reportingCount > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
@@ -491,7 +491,7 @@ const OraclesPage = () => {
       {isTestnet && (
         <Box sx={{ mt: 2, p: 1.5, backgroundColor: 'rgba(46, 125, 50, 0.08)', borderRadius: '8px', textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
-            <strong>RC42 Phase Two:</strong> {ORACLE_CONSENSUS_LABEL} signatures required | 35-slot reserved roster | 18 active testnet slots | MuSig2 aggregate signing (v0x03)
+            <strong>RC43 Phase Two:</strong> {ORACLE_CONSENSUS_LABEL} signatures required | 35-slot reserved roster | 18 active testnet slots | MuSig2 aggregate signing (v0x03)
           </Typography>
         </Box>
       )}
@@ -535,11 +535,11 @@ const OraclesPage = () => {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <SitrepMetric
-            label="RC42 MuSig2 Context"
-            value={`${rc42ContextCount}/${ORACLE_TOTAL_SLOTS}`}
+            label="RC43 MuSig2 Context"
+            value={`${rc43ContextCount}/${ORACLE_TOTAL_SLOTS}`}
             detail={`MuSig2 context ${EXPECTED_MUSIG2_CONTEXT_VERSION}+ with valid heartbeat`}
-            ok={rc42ContextCount >= ORACLE_THRESHOLD}
-            progressValue={rc42ContextCount}
+            ok={rc43ContextCount >= ORACLE_THRESHOLD}
+            progressValue={rc43ContextCount}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -827,7 +827,7 @@ const OraclesPage = () => {
                   </Tooltip>
                 </TableCell>
                 <TableCell>
-                  <Tooltip title="Signed RC42 operator heartbeat and software/protocol versions reported by this oracle" arrow>
+                  <Tooltip title="Signed RC43 operator heartbeat and software/protocol versions reported by this oracle" arrow>
                     <strong style={{ cursor: 'help' }}>Heartbeat / Version</strong>
                   </Tooltip>
                 </TableCell>
@@ -1016,7 +1016,7 @@ const OraclesPage = () => {
         <Box sx={{ mt: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
           <Typography variant="body2" color="text.secondary">
             <strong>Price Format:</strong> Oracle prices use micro-USD format where 1,000,000 = $1.00.
-            This ensures exact arithmetic with no floating-point errors. RC42 consensus is {ORACLE_CONSENSUS_LABEL} across {ORACLE_TOTAL_SLOTS} reserved slots, with {ACTIVE_ORACLE_COUNT} active testnet slots displayed above.
+            This ensures exact arithmetic with no floating-point errors. RC43 consensus is {ORACLE_CONSENSUS_LABEL} across {ORACLE_TOTAL_SLOTS} reserved slots, with {ACTIVE_ORACLE_COUNT} active testnet slots displayed above.
           </Typography>
         </Box>
         </>

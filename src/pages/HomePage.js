@@ -15,7 +15,7 @@ import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { useNetwork } from '../context/NetworkContext';
 
 const TESTNET_RELEASE = {
-  version: 'v9.26.0-RC42',
+  version: 'v9.26.0-RC43',
   network: 'testnet25',
   p2pPort: '12032',
   rpcPort: '14026',
@@ -332,10 +332,10 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, flexWrap: 'wrap', mb: 2 }}>
               <Box>
                 <Typography variant="h5" fontWeight="bold" sx={{ color: networkTheme.primary }}>
-                  RC42 Testnet Update
+                  RC43 Testnet Update
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Fresh {TESTNET_RELEASE.network} network for DigiDollar validation before mainnet launch decisions.
+                  Current {TESTNET_RELEASE.network} network for DigiDollar validation before mainnet launch decisions.
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>

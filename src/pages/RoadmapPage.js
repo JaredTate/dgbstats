@@ -347,11 +347,11 @@ const RoadmapPage = () => {
           },
           {
             id: 'initial-release',
-            title: 'Testnet Release v9.26.0-RC42',
-            date: '2026-04-19',
+            title: 'Testnet Release v9.26.0-RC43',
+            date: '2026-05-27',
             status: 'completed',
-            description: 'Current testnet25 release candidate before mainnet with full DigiDollar functionality and RC42 oracle roster',
-            completionDate: '2026-04-19'
+            description: 'Current testnet25 release candidate before mainnet with full DigiDollar functionality and RC43 oracle roster',
+            completionDate: '2026-05-27'
           }
         ]
       },
@@ -384,15 +384,15 @@ const RoadmapPage = () => {
           },
           {
             id: 'v9.26-rc2',
-            title: 'DigiByte v9.26 Release Candidate 42 (Current)',
-            date: '2026-04-19',
+            title: 'DigiByte v9.26 Release Candidate 43 (Current)',
+            date: '2026-05-27',
             status: 'completed',
-            description: 'Current testnet25 release candidate (v9.26.0-RC42) — 35-slot oracle roster, 18 active testnet operators, and 9-signature MuSig2 quorum before mainnet',
-            completionDate: '2026-04-19'
+            description: 'Current testnet25 release candidate (v9.26.0-RC43) — 35-slot oracle roster, 18 active testnet operators, and 9-signature MuSig2 quorum before mainnet',
+            completionDate: '2026-05-27'
           },
           {
             id: 'oracle-phase2-testnet',
-            title: 'RC42 MuSig2 Oracle Testnet Validation',
+            title: 'RC43 MuSig2 Oracle Testnet Validation',
             date: '2026-03-15',
             status: 'pending',
             description: 'Complete 9-signature oracle consensus validation on testnet25'

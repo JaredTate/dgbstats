@@ -1335,7 +1335,7 @@ const DigiDollarPage = () => {
                 <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
                   primary="DigiDollar Activated on Testnet"
-                  secondary="Complete - v9.26.0-RC42, testnet25 with oracle price feeds"
+                  secondary="Complete - v9.26.0-RC43, testnet25 with oracle price feeds"
                 />
               </ListItem>
               <ListItem sx={{ pl: 0 }}>
@@ -1357,7 +1357,7 @@ const DigiDollarPage = () => {
       <Alert severity="success" sx={{ mt: 3 }}>
         <Typography variant="body2">
           <strong>Current Status:</strong> DigiDollar is 95% complete with 1,850+ tests passing. Oracle system
-          in Phase Two on testnet25 with a 9-signature MuSig2 quorum and 35 reserved oracle slots. DigiDollar active on testnet (v9.26.0-RC42).
+          in Phase Two on testnet25 with a 9-signature MuSig2 quorum and 35 reserved oracle slots. DigiDollar active on testnet (v9.26.0-RC43).
           Mainnet release targeted for <strong>May, 2026</strong> with activation window through May, 2028.
           For complete details and all other upgrades, see the full{' '}
           <a href="/roadmap" style={{ color: '#0066cc', fontWeight: 'bold' }}>

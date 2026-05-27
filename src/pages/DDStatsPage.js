@@ -20,7 +20,7 @@ import { useNetwork } from '../context/NetworkContext';
 import IntegrationGuides from '../components/IntegrationGuides';
 
 const TESTNET_RELEASE = {
-  version: 'v9.26.0-RC42',
+  version: 'v9.26.0-RC43',
   network: 'testnet25',
   p2pPort: '12032',
   activationHeight: 600,
