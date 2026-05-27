@@ -143,6 +143,27 @@ const mockOracles = [
   ...heartbeatForOracle(oracle.oracle_id)
 }));
 
+const mockExpandedActiveOracle = {
+  oracle_id: 18,
+  name: 'New Active Oracle',
+  pubkey: '03c629fa6598d732768f7c726b4b621285f9c3b85303900aa912017db7617d844',
+  endpoint: 'oracle19.digibyte.io:12032',
+  is_active: true,
+  in_consensus: true,
+  selected_for_epoch: true,
+  is_running_locally: false,
+  heartbeat_status: 'fresh',
+  software_version: 'v9.26.0-rc43',
+  client_version: 9260043,
+  p2p_protocol_version: 70017,
+  oracle_protocol_version: 1,
+  musig2_context_version: 2,
+  heartbeat_timestamp: 1770064190,
+  heartbeat_age_seconds: 210,
+  heartbeat_signature_valid: true,
+  status: 'reporting'
+};
+
 // Combined message that backend sends via WebSocket
 const mockOracleDataMessage = {
   type: 'oracleData',
@@ -437,13 +458,13 @@ describe('OraclesPage', () => {
         expect(screen.getByText('Oracle Operator Sitrep')).toBeInTheDocument();
         expect(screen.getByText('Fresh Heartbeats')).toBeInTheDocument();
         expect(screen.getByText('RC43 MuSig2 Context')).toBeInTheDocument();
-        expect(screen.getByText('Selected This Epoch')).toBeInTheDocument();
-        expect(screen.getAllByText(/10\/35/).length).toBeGreaterThan(0);
-        expect(screen.getAllByText(/9\/35/).length).toBeGreaterThan(0);
+        expect(screen.getByText('Epoch Eligible')).toBeInTheDocument();
+        expect(screen.getAllByText(/10\/18/).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/9\/18/).length).toBeGreaterThan(0);
       });
     });
 
-    it('should show per-oracle heartbeat age, software version, and epoch role', async () => {
+    it('should show per-oracle heartbeat age, software version, and epoch eligibility', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
@@ -452,12 +473,50 @@ describe('OraclesPage', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Heartbeat / Version')).toBeInTheDocument();
-        expect(screen.getByText('Epoch Role')).toBeInTheDocument();
+        expect(screen.getByText('Epoch Eligibility')).toBeInTheDocument();
         expect(screen.getAllByText('v9.26.0-rc43').length).toBeGreaterThan(0);
         expect(screen.getAllByText('MuSig2 ctx 2').length).toBeGreaterThan(0);
         expect(screen.getByText('3m 0s ago')).toBeInTheDocument();
-        expect(screen.getAllByText('selected').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('eligible').length).toBeGreaterThan(0);
         expect(screen.getAllByText('standby').length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should not present Core selected_for_epoch as the final 9 signer set', async () => {
+      renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      const allEligible = mockOracles.map((oracle) => (
+        oracle.oracle_id <= 17
+          ? { ...oracle, selected_for_epoch: true }
+          : oracle
+      ));
+
+      sendOracleData(ws, { oracles: allEligible });
+
+      await waitFor(() => {
+        expect(screen.getByText('Epoch Eligible')).toBeInTheDocument();
+        expect(screen.getAllByText('eligible').length).toBe(18);
+        expect(screen.queryByText('Selected This Epoch')).not.toBeInTheDocument();
+        expect(screen.queryByText('selected')).not.toBeInTheDocument();
+        expect(screen.getByText(/Final 9 signer set is not exposed by current Core RPC/i)).toBeInTheDocument();
+      });
+    });
+
+    it('should summarize software versions so stale operators stand out', async () => {
+      renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      sendOracleData(ws);
+
+      await waitFor(() => {
+        expect(screen.getByText('Version Matrix')).toBeInTheDocument();
+        expect(screen.getAllByText('v9.26.0-rc43').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('v9.26.0-rc40').length).toBeGreaterThan(0);
+        expect(screen.getByText(/10 operators/i)).toBeInTheDocument();
+        expect(screen.getByText(/1 operator/i)).toBeInTheDocument();
       });
     });
   });
@@ -763,13 +822,13 @@ describe('OraclesPage', () => {
   // GUARDRAIL TESTS — prevent regressions on oracle count and naming
   // =====================================================================
   describe('Guardrails: Oracle Count & Naming', () => {
-    it('should NEVER display more than 18 oracles even when RPC returns reserve entries', async () => {
+    it('should hide reserve entries when RPC marks them outside consensus', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
 
-      // mockOracles contains 19 entries (18 active + 1 reserve)
-      // The frontend MUST filter to 18 active RC43 slots.
+      // mockOracles contains 19 entries (18 active + 1 reserve).
+      // Reserve entries outside consensus must stay hidden from the active table.
       sendOracleData(ws);
 
       await waitFor(() => {
@@ -781,16 +840,39 @@ describe('OraclesPage', () => {
       });
     });
 
-    it('should never show oracle IDs above 17', async () => {
+    it('should show newly active oracle IDs above 17 when RPC marks them in consensus', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
 
-      sendOracleData(ws);
+      sendOracleData(ws, {
+        oracles: [...mockOracles, mockExpandedActiveOracle],
+        allPrices: {
+          ...mockAllOraclePrices,
+          oracle_count: 10,
+          oracles: [
+            ...mockAllOraclePrices.oracles,
+            {
+              oracle_id: 18,
+              name: 'New Active Oracle',
+              endpoint: 'oracle19.digibyte.io:12032',
+              price_micro_usd: 50000,
+              price_usd: 0.05,
+              timestamp: 1770064190,
+              deviation_pct: 0,
+              signature_valid: true,
+              status: 'reporting'
+            }
+          ]
+        },
+        price: { ...mockOraclePrice, oracle_count: 10 }
+      });
 
       await waitFor(() => {
-        // Reserve endpoints from IDs 18+ must not appear.
-        expect(screen.queryByText('oracle19.digidollar.org:9019')).not.toBeInTheDocument();
+        expect(screen.getByText('New Active Oracle')).toBeInTheDocument();
+        expect(screen.getByText('ID: 18')).toBeInTheDocument();
+        expect(screen.getByText('oracle19.digibyte.io:12032')).toBeInTheDocument();
+        expect(screen.getAllByText(/10\/19/).length).toBeGreaterThan(0);
       });
     });
 
