@@ -33,9 +33,10 @@ describe('RC43 oracle copy guards', () => {
 
   it('should use public oracle signing words instead of protocol jargon', () => {
     expect(pageSources).not.toMatch(/In Current Epoch|In epoch|Signing price|Active slot/);
+    expect(pageSources).not.toMatch(/Part of Latest 9|Part of latest 9|Not in latest 9|Latest 9 \/ Live/);
     expect(pageSources).not.toMatch(/Core does not currently expose the exact 9-oracle MuSig2 bundle signer list/);
-    expect(pageSources).toMatch(/Part of Latest 9|Part of latest 9/);
-    expect(pageSources).toMatch(/Latest 9 \/ Live|Live Price Feeds/);
+    expect(pageSources).toMatch(/Signing \/ Live|Live Price Feeds/);
+    expect(pageSources).toMatch(/Not signing/);
   });
 
   it('should publish RC43 as the current testnet release, not RC42', () => {

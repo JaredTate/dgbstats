@@ -491,7 +491,7 @@ const OraclesPage = () => {
                 </Typography>
                 <Typography variant="body2" fontWeight="bold" sx={{ mt: 1, color: latestBundleSignerCount >= latestBundleRequired ? '#2e7d32' : '#ed6c02' }}>
                   {hasLatestBundleSignerData
-                    ? `${latestBundleSignerCount}/${latestBundleRequired} in latest 9`
+                    ? `${latestBundleSignerCount}/${latestBundleRequired} signing`
                     : 'bundle signer data unavailable'}
                 </Typography>
               </Box>
@@ -547,7 +547,7 @@ const OraclesPage = () => {
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6} md={2.4}>
           <SitrepMetric
-            label="Part of Latest 9"
+            label="Signing"
             value={`${latestBundleSignerCount}/${latestBundleRequired}`}
             detail={hasLatestBundleSignerData ? `actual 9-signer list from block ${latestBundle.height}` : 'waiting for getoraclesigners data'}
             ok={latestBundleSignerCount >= latestBundleRequired}
@@ -595,7 +595,7 @@ const OraclesPage = () => {
       </Grid>
 
       <Alert severity="info" sx={{ mt: 2 }}>
-        Part of latest 9 means this oracle actually signed the newest on-chain DigiDollar price bundle. Live price feed means the oracle is online and broadcasting a valid signed price. Roster oracles are the configured testnet oracles loaded from Core.
+        Signing means this oracle actually signed the newest on-chain DigiDollar price bundle. Live price feed means the oracle is online and broadcasting a valid signed price. Roster oracles are the configured testnet oracles loaded from Core.
       </Alert>
 
       {versionBuckets.length > 0 && (
@@ -857,7 +857,7 @@ const OraclesPage = () => {
           {oracles.length > 0 ? (
             <Chip
               label={hasLatestBundleSignerData
-                ? `${latestBundleSignerCount} / ${latestBundleRequired} Part of Latest 9`
+                ? `${latestBundleSignerCount} / ${latestBundleRequired} Signing`
                 : `${priceSigningCount} / ${activeOracleCount} Live Price Feeds`}
               color={(hasLatestBundleSignerData ? latestBundleSignerCount >= latestBundleRequired : priceSigningCount >= ORACLE_THRESHOLD) ? 'success' : 'warning'}
               size="small"
@@ -912,8 +912,8 @@ const OraclesPage = () => {
                   </Tooltip>
                 </TableCell>
                 <TableCell sx={{ width: '14%' }}>
-                  <Tooltip title="Part of latest 9 means this oracle ID is in the newest on-chain MuSig2 participation bitmap and signed the latest bundle. Live price feed means it is currently broadcasting a valid signed price." arrow>
-                    <strong style={{ cursor: 'help' }}>Latest 9 / Live</strong>
+                  <Tooltip title="Signing means this oracle ID is in the newest on-chain MuSig2 participation bitmap and signed the latest bundle. Live price feed means it is currently broadcasting a valid signed price." arrow>
+                    <strong style={{ cursor: 'help' }}>Signing / Live</strong>
                   </Tooltip>
                 </TableCell>
                 <TableCell sx={{ width: '18%' }}>
@@ -999,7 +999,7 @@ const OraclesPage = () => {
                   <TableCell>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                       <Chip
-                        label={oracle.signed_latest_bundle ? 'Part of latest 9' : 'Not in latest 9'}
+                        label={oracle.signed_latest_bundle ? 'Signing' : 'Not signing'}
                         size="small"
                         color={oracle.signed_latest_bundle ? 'success' : 'default'}
                         variant={oracle.signed_latest_bundle ? 'filled' : 'outlined'}

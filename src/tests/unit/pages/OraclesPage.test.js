@@ -308,7 +308,7 @@ describe('OraclesPage', () => {
       expect(screen.getByText('Price')).toBeInTheDocument();
       expect(screen.getByText('Endpoint')).toBeInTheDocument();
       expect(screen.getByText('Heartbeat / Version')).toBeInTheDocument();
-      expect(screen.getByText('Latest 9 / Live')).toBeInTheDocument();
+      expect(screen.getByText('Signing / Live')).toBeInTheDocument();
       expect(screen.queryByText('Public Key')).not.toBeInTheDocument();
       expect(screen.queryByText('Signature')).not.toBeInTheDocument();
     });
@@ -493,7 +493,7 @@ describe('OraclesPage', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Oracle Network Status')).toBeInTheDocument();
-        expect(screen.getByText('Part of Latest 9')).toBeInTheDocument();
+        expect(screen.getAllByText('Signing').length).toBeGreaterThan(0);
         expect(screen.getByText('Online Heartbeats')).toBeInTheDocument();
         expect(screen.getByText('Compatible Software')).toBeInTheDocument();
         expect(screen.getByText('Roster Oracles')).toBeInTheDocument();
@@ -515,18 +515,20 @@ describe('OraclesPage', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Heartbeat / Version')).toBeInTheDocument();
-        expect(screen.getByText('Latest 9 / Live')).toBeInTheDocument();
+        expect(screen.getByText('Signing / Live')).toBeInTheDocument();
         expect(screen.getAllByText('v9.26.0-rc43').length).toBeGreaterThan(0);
         expect(screen.getAllByText('MuSig2 ctx 2').length).toBeGreaterThan(0);
         expect(screen.getByText('3m 0s ago')).toBeInTheDocument();
         expect(screen.getAllByText('Live price feed').length).toBeGreaterThan(0);
         expect(screen.getAllByText('No live price').length).toBeGreaterThan(0);
-        expect(screen.getAllByText('Part of latest 9')).toHaveLength(9);
-        expect(screen.getAllByText('Not in latest 9')).toHaveLength(9);
+        expect(screen.getAllByText('Signing').length).toBeGreaterThanOrEqual(9);
+        expect(screen.getAllByText('Not signing')).toHaveLength(9);
         expect(screen.queryByText('Active slot')).not.toBeInTheDocument();
         expect(screen.queryByText('In epoch')).not.toBeInTheDocument();
         expect(screen.queryByText('Signing price')).not.toBeInTheDocument();
         expect(screen.queryByText('Allowed this round')).not.toBeInTheDocument();
+        expect(screen.queryByText('Part of latest 9')).not.toBeInTheDocument();
+        expect(screen.queryByText('Not in latest 9')).not.toBeInTheDocument();
       });
     });
 
@@ -545,12 +547,14 @@ describe('OraclesPage', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Roster Oracles')).toBeInTheDocument();
-        expect(screen.getAllByText('Part of latest 9')).toHaveLength(9);
-        expect(screen.getAllByText('Not in latest 9')).toHaveLength(9);
+        expect(screen.getAllByText('Signing').length).toBeGreaterThanOrEqual(9);
+        expect(screen.getAllByText('Not signing')).toHaveLength(9);
         expect(screen.queryByText('Selected This Epoch')).not.toBeInTheDocument();
         expect(screen.queryByText('selected')).not.toBeInTheDocument();
         expect(screen.queryByText('Allowed this round')).not.toBeInTheDocument();
         expect(screen.queryByText('Not allowed this round')).not.toBeInTheDocument();
+        expect(screen.queryByText('Part of latest 9')).not.toBeInTheDocument();
+        expect(screen.queryByText('Not in latest 9')).not.toBeInTheDocument();
         expect(screen.queryByText(/Core does not currently expose the exact 9-oracle MuSig2 bundle signer list/i)).not.toBeInTheDocument();
       });
     });
