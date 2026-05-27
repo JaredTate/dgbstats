@@ -42,6 +42,7 @@ const mockAllOraclePrices = {
     { oracle_id: 14, name: 'Neel', endpoint: 'oracle15.digibyte.io:12032', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
     { oracle_id: 15, name: 'DigiSwarm', endpoint: 'oracle16.digibyte.io:12032', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
     { oracle_id: 16, name: 'GTO90', endpoint: 'oracle17.digibyte.io:12032', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
+    { oracle_id: 17, name: 'digibyte-maxi', endpoint: 'oracle18.digibyte.io:12032', price_micro_usd: 0, price_usd: 0, timestamp: 0, deviation_pct: 0, signature_valid: false, status: 'no_data' },
   ]
 };
 
@@ -72,8 +73,8 @@ const heartbeatForOracle = (oracleId) => {
       selected_for_epoch: selectedOracleIds.has(oracleId),
       is_running_locally: oracleId <= 1,
       heartbeat_status: 'fresh',
-      software_version: 'v9.26.0-rc41',
-      client_version: 9260041,
+      software_version: 'v9.26.0-rc42',
+      client_version: 9260042,
       p2p_protocol_version: 70017,
       oracle_protocol_version: 1,
       musig2_context_version: 2,
@@ -101,7 +102,7 @@ const heartbeatForOracle = (oracleId) => {
   }
 
   return {
-    in_consensus: oracleId <= 16,
+    in_consensus: oracleId <= 17,
     selected_for_epoch: selectedOracleIds.has(oracleId),
     is_running_locally: false,
     heartbeat_status: 'unknown',
@@ -134,8 +135,8 @@ const mockOracles = [
   { oracle_id: 14, name: 'Unknown', pubkey: '03e629fa6598d732768f7c726b4b621285f9c3b85303900aa912017db7617d8bdb', endpoint: 'oracle15.digibyte.io:12032', is_active: true, status: 'no_data' },
   { oracle_id: 15, name: 'Unknown', pubkey: '02f629fa6598d732768f7c726b4b621285f9c3b85303900aa912017db7617d811', endpoint: 'oracle16.digibyte.io:12032', is_active: true, status: 'no_data' },
   { oracle_id: 16, name: 'Unknown', pubkey: '03a629fa6598d732768f7c726b4b621285f9c3b85303900aa912017db7617d822', endpoint: 'oracle17.digibyte.io:12032', is_active: true, status: 'no_data' },
-  // Legacy entries beyond ID 16 — these should be FILTERED OUT by the frontend
-  { oracle_id: 17, name: 'Unknown', pubkey: '03b629fa6598d732768f7c726b4b621285f9c3b85303900aa912017db7617d833', endpoint: 'oracle18.digidollar.org:9018', is_active: false, status: 'no_data' },
+  { oracle_id: 17, name: 'Unknown', pubkey: '03649d750bcad5b42b3dd0f11c8d98d62ed5afd515cd986663f81c35f086e58d47', endpoint: 'oracle18.digibyte.io:12032', is_active: true, status: 'no_data' },
+  // Reserve entries beyond ID 17 — these should be FILTERED OUT by the frontend
   { oracle_id: 18, name: 'Unknown', pubkey: '03c629fa6598d732768f7c726b4b621285f9c3b85303900aa912017db7617d844', endpoint: 'oracle19.digidollar.org:9019', is_active: false, status: 'no_data' },
 ].map(oracle => ({
   ...oracle,
@@ -305,7 +306,7 @@ describe('OraclesPage', () => {
       sendOracleData(ws);
 
       await waitFor(() => {
-        expect(screen.getAllByText(/9\/17/).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/9\/18/).length).toBeGreaterThan(0);
       });
 
       // Send updated data with 8 reporting oracles (Shenger comes online)
@@ -323,7 +324,7 @@ describe('OraclesPage', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getAllByText(/10\/17/).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/10\/18/).length).toBeGreaterThan(0);
       });
     });
   });
@@ -351,7 +352,7 @@ describe('OraclesPage', () => {
       sendOracleData(ws);
 
       await waitFor(() => {
-        expect(screen.getAllByText(/9\/17/).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/9\/18/).length).toBeGreaterThan(0);
       });
     });
 
@@ -424,7 +425,7 @@ describe('OraclesPage', () => {
     });
   });
 
-  describe('RC41 Oracle Sitrep', () => {
+  describe('RC42 Oracle Sitrep', () => {
     it('should display signed heartbeat and MuSig2 context readiness counts', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
@@ -435,7 +436,7 @@ describe('OraclesPage', () => {
       await waitFor(() => {
         expect(screen.getByText('Oracle Operator Sitrep')).toBeInTheDocument();
         expect(screen.getByText('Fresh Heartbeats')).toBeInTheDocument();
-        expect(screen.getByText('RC41 MuSig2 Context')).toBeInTheDocument();
+        expect(screen.getByText('RC42 MuSig2 Context')).toBeInTheDocument();
         expect(screen.getByText('Selected This Epoch')).toBeInTheDocument();
         expect(screen.getAllByText(/10\/35/).length).toBeGreaterThan(0);
         expect(screen.getAllByText(/9\/35/).length).toBeGreaterThan(0);
@@ -452,7 +453,7 @@ describe('OraclesPage', () => {
       await waitFor(() => {
         expect(screen.getByText('Heartbeat / Version')).toBeInTheDocument();
         expect(screen.getByText('Epoch Role')).toBeInTheDocument();
-        expect(screen.getAllByText('v9.26.0-rc41').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('v9.26.0-rc42').length).toBeGreaterThan(0);
         expect(screen.getAllByText('MuSig2 ctx 2').length).toBeGreaterThan(0);
         expect(screen.getByText('3m 0s ago')).toBeInTheDocument();
         expect(screen.getAllByText('selected').length).toBeGreaterThan(0);
@@ -557,8 +558,8 @@ describe('OraclesPage', () => {
     });
   });
 
-  describe('All 17 Active Oracles', () => {
-    it('should display all 17 oracles including current active oracle slots', async () => {
+  describe('All 18 Active Oracles', () => {
+    it('should display all 18 oracles including current active oracle slots', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
@@ -584,10 +585,11 @@ describe('OraclesPage', () => {
         expect(screen.getByText('Neel')).toBeInTheDocument();
         expect(screen.getByText('DigiSwarm')).toBeInTheDocument();
         expect(screen.getByText('GTO90')).toBeInTheDocument();
+        expect(screen.getByText('digibyte-maxi')).toBeInTheDocument();
       });
     });
 
-    it('should show correct no data count (8 of 17)', async () => {
+    it('should show correct no data count (9 of 18)', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
@@ -596,11 +598,11 @@ describe('OraclesPage', () => {
 
       await waitFor(() => {
         const noDataChips = screen.getAllByText('no data');
-        expect(noDataChips.length).toBe(8);
+        expect(noDataChips.length).toBe(9);
       });
     });
 
-    it('should correctly count 9 reporting oracles out of 17 total', async () => {
+    it('should correctly count 9 reporting oracles out of 18 active slots', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
@@ -608,14 +610,14 @@ describe('OraclesPage', () => {
       sendOracleData(ws);
 
       await waitFor(() => {
-        expect(screen.getAllByText(/9\/17/).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/9\/18/).length).toBeGreaterThan(0);
         expect(screen.getByText('Oracle Consensus')).toBeInTheDocument();
       });
     });
   });
 
   describe('Reporting Count Accuracy', () => {
-    it('should count 10/17 when 10 active launch slots are reporting', async () => {
+    it('should count 10/18 when 10 active testnet slots are reporting', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
@@ -634,7 +636,7 @@ describe('OraclesPage', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getAllByText(/10\/17/).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/10\/18/).length).toBeGreaterThan(0);
       });
     });
 
@@ -649,11 +651,11 @@ describe('OraclesPage', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getAllByText(/9\/17/).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/9\/18/).length).toBeGreaterThan(0);
       });
     });
 
-    it('should show 9 reporting chips and 8 no data chips', async () => {
+    it('should show 9 reporting chips and 9 no data chips', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
@@ -664,7 +666,7 @@ describe('OraclesPage', () => {
         const reportingChips = screen.getAllByText('reporting');
         expect(reportingChips.length).toBe(9);
         const noDataChips = screen.getAllByText('no data');
-        expect(noDataChips.length).toBe(8);
+        expect(noDataChips.length).toBe(9);
       });
     });
   });
@@ -761,25 +763,25 @@ describe('OraclesPage', () => {
   // GUARDRAIL TESTS — prevent regressions on oracle count and naming
   // =====================================================================
   describe('Guardrails: Oracle Count & Naming', () => {
-    it('should NEVER display more than 17 oracles even when RPC returns 18+', async () => {
+    it('should NEVER display more than 18 oracles even when RPC returns reserve entries', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
 
-      // mockOracles contains 19 entries (17 active + 2 legacy)
-      // The frontend MUST filter to 17
+      // mockOracles contains 19 entries (18 active + 1 reserve)
+      // The frontend MUST filter to 18 active RC42 slots.
       sendOracleData(ws);
 
       await waitFor(() => {
         // Count oracle rows in the table. Each oracle renders its endpoint.
-        // Active oracles (IDs 0-16) have endpoints matching *digibyte.io* or IP
+        // Active oracles (IDs 0-17) have endpoints matching *digibyte.io* or IP
         // Legacy oracles (IDs 11-14) have endpoints matching *digidollar.org*
         const legacyEndpoints = screen.queryAllByText(/digidollar\.org/);
         expect(legacyEndpoints.length).toBe(0);
       });
     });
 
-    it('should never show oracle IDs above 16', async () => {
+    it('should never show oracle IDs above 17', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
@@ -787,12 +789,7 @@ describe('OraclesPage', () => {
       sendOracleData(ws);
 
       await waitFor(() => {
-        // Legacy endpoints from IDs 17+ must not appear
-        expect(screen.queryByText('oracle12.digidollar.org:9012')).not.toBeInTheDocument();
-        expect(screen.queryByText('oracle13.digidollar.org:9013')).not.toBeInTheDocument();
-        expect(screen.queryByText('oracle14.digidollar.org:9014')).not.toBeInTheDocument();
-        expect(screen.queryByText('oracle15.digidollar.org:9015')).not.toBeInTheDocument();
-        expect(screen.queryByText('oracle18.digidollar.org:9018')).not.toBeInTheDocument();
+        // Reserve endpoints from IDs 18+ must not appear.
         expect(screen.queryByText('oracle19.digidollar.org:9019')).not.toBeInTheDocument();
       });
     });
@@ -821,7 +818,7 @@ describe('OraclesPage', () => {
       });
     });
 
-    it('should display exactly 17 oracle entries in the table', async () => {
+    it('should display digibyte-maxi for oracle ID 17 (not Unknown)', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
@@ -829,28 +826,42 @@ describe('OraclesPage', () => {
       sendOracleData(ws);
 
       await waitFor(() => {
-        // 9 reporting + 8 no_data = 17 total status chips
-        const reporting = screen.getAllByText('reporting');
-        const noData = screen.getAllByText('no data');
-        expect(reporting.length + noData.length).toBe(17);
+        expect(screen.getByText('digibyte-maxi')).toBeInTheDocument();
+        expect(screen.getByText('oracle18.digibyte.io:12032')).toBeInTheDocument();
+        expect(screen.getByText('03649d750b...86e58d47')).toBeInTheDocument();
       });
     });
 
-    it('should show RC41 9-signature consensus text (not older quorum text)', async () => {
+    it('should display exactly 18 oracle entries in the table', async () => {
+      renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      sendOracleData(ws);
+
+      await waitFor(() => {
+        // 9 reporting + 9 no_data = 18 total status chips
+        const reporting = screen.getAllByText('reporting');
+        const noData = screen.getAllByText('no data');
+        expect(reporting.length + noData.length).toBe(18);
+      });
+    });
+
+    it('should show RC42 9-signature consensus text (not older quorum text)', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
 
       const consensus = screen.getAllByText(/9 signatures required|35-slot oracle roster/);
       expect(consensus.length).toBeGreaterThan(0);
 
       // Must NEVER contain old references
-      expect(screen.queryByText(/9-of-17/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/9-of-18/)).not.toBeInTheDocument();
       expect(screen.queryByText(/6-of-15/)).not.toBeInTheDocument();
       expect(screen.queryByText(/6-of-8/)).not.toBeInTheDocument();
       expect(screen.queryByText(/5-of-9/)).not.toBeInTheDocument();
       expect(screen.queryByText(/9-of-15/)).not.toBeInTheDocument();
     });
 
-    it('should display /17 in the reporting fraction (not /15 or /8)', async () => {
+    it('should display /18 in the reporting fraction (not /17, /15, or /8)', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
@@ -858,7 +869,8 @@ describe('OraclesPage', () => {
       sendOracleData(ws);
 
       await waitFor(() => {
-        expect(screen.getAllByText(/9\/17/).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/9\/18/).length).toBeGreaterThan(0);
+        expect(screen.queryByText(/\/17/)).not.toBeInTheDocument();
         expect(screen.queryByText(/\/15/)).not.toBeInTheDocument();
         expect(screen.queryByText(/\/8/)).not.toBeInTheDocument();
       });

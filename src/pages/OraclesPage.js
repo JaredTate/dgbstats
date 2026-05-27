@@ -35,16 +35,16 @@ const EMPTY_ORACLE_PRICE = {
   volatility: 0
 };
 
-// RC41 oracle configuration: 35 reserved slots with 17 active launch keys.
-// Consensus needs 9 valid signatures from the active launch keyset. The UI
+// RC42 oracle configuration: 35 reserved slots with 18 active testnet keys.
+// Consensus needs 9 valid signatures from the active testnet keyset. The UI
 // keeps reporting counts scoped to active entries while explaining the full
 // 35-slot roster used on mainnet and testnet.
 const ORACLE_TOTAL_SLOTS = 35;
-const ACTIVE_ORACLE_COUNT = 17;
-const MAX_ACTIVE_ORACLE_ID = 16; // IDs 0 through 16
+const ACTIVE_ORACLE_COUNT = 18;
+const MAX_ACTIVE_ORACLE_ID = 17; // IDs 0 through 17
 const ORACLE_THRESHOLD = 9;     // consensus requires 9 signatures
 const ORACLE_CONSENSUS_LABEL = `${ORACLE_THRESHOLD} of ${ORACLE_TOTAL_SLOTS}`;
-const EXPECTED_MUSIG2_CONTEXT_VERSION = 2; // RC41 attempt/evidence-bound context protocol
+const EXPECTED_MUSIG2_CONTEXT_VERSION = 2; // RC42 attempt/evidence-bound context protocol
 const ORACLE_EPOCH_BLOCKS = 40;
 const TARGET_BLOCK_SECONDS = 15;
 
@@ -60,7 +60,8 @@ const ORACLE_NAMES = {
   13: 'DigiByteForce',  // Oracle 13
   14: 'Neel',           // Oracle 14
   15: 'DigiSwarm',      // Oracle 15
-  16: 'GTO90'           // Oracle 16
+  16: 'GTO90',          // Oracle 16
+  17: 'digibyte-maxi'   // Oracle 17
 };
 
 const formatAgeSeconds = (seconds) => {
@@ -203,7 +204,7 @@ const OraclesPage = () => {
 
           // Only show active oracles (IDs 0 through MAX_ACTIVE_ORACLE_ID).
           // The getoracles RPC may still expose legacy vOracleNode entries but consensus
-          // uses ACTIVE_ORACLE_COUNT (17). Discard anything beyond that.
+          // uses ACTIVE_ORACLE_COUNT (18). Discard anything beyond that.
           const activeOracles = mappedOracles.filter(o => o.oracle_id <= MAX_ACTIVE_ORACLE_ID);
           setOracles(activeOracles);
           setLastUpdated(new Date());
@@ -241,7 +242,7 @@ const OraclesPage = () => {
   // Count oracles that are actively reporting (consistent across page)
   const reportingCount = oracles.filter(o => o.status === 'reporting').length;
   const freshHeartbeatCount = oracles.filter(o => o.heartbeat_status === 'fresh' && o.heartbeat_signature_valid).length;
-  const rc41ContextCount = oracles.filter(o =>
+  const rc42ContextCount = oracles.filter(o =>
     o.heartbeat_status === 'fresh' &&
     o.heartbeat_signature_valid &&
     o.musig2_context_version >= EXPECTED_MUSIG2_CONTEXT_VERSION
@@ -250,7 +251,7 @@ const OraclesPage = () => {
   const locallyRunningCount = oracles.filter(o => o.is_running_locally).length;
   const consensusReady = reportingCount >= ORACLE_THRESHOLD &&
     freshHeartbeatCount >= ORACLE_THRESHOLD &&
-    rc41ContextCount >= ORACLE_THRESHOLD &&
+    rc42ContextCount >= ORACLE_THRESHOLD &&
     selectedCount >= ORACLE_THRESHOLD;
 
   const getOracleEpochInfo = () => {
@@ -451,7 +452,7 @@ const OraclesPage = () => {
             </Tooltip>
           </Grid>
           <Grid item xs={12} md={4}>
-            <Tooltip title="RC41 consensus quorum across the full 35-slot reserved oracle roster. The table below shows the 17 active launch slots." arrow placement="top">
+            <Tooltip title="RC42 consensus quorum across the full 35-slot reserved oracle roster. The table below shows the 18 active testnet slots." arrow placement="top">
               <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help', minHeight: 160, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <Typography variant="body2" color="text.secondary">Oracle Consensus</Typography>
                 <Typography variant="h3" fontWeight="bold" sx={{ color: reportingCount > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
@@ -461,7 +462,7 @@ const OraclesPage = () => {
                   signatures required
                 </Typography>
                 <Typography variant="body2" fontWeight="bold" sx={{ mt: 1, color: reportingCount >= ORACLE_THRESHOLD ? '#2e7d32' : '#ed6c02' }}>
-                  {reportingCount}/{oracles.length || ACTIVE_ORACLE_COUNT} launch slots reporting
+                  {reportingCount}/{oracles.length || ACTIVE_ORACLE_COUNT} active slots reporting
                 </Typography>
               </Box>
             </Tooltip>
@@ -490,7 +491,7 @@ const OraclesPage = () => {
       {isTestnet && (
         <Box sx={{ mt: 2, p: 1.5, backgroundColor: 'rgba(46, 125, 50, 0.08)', borderRadius: '8px', textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
-            <strong>RC41 Phase Two:</strong> {ORACLE_CONSENSUS_LABEL} signatures required | 35-slot reserved roster | 17 active launch slots | MuSig2 aggregate signing (v0x03)
+            <strong>RC42 Phase Two:</strong> {ORACLE_CONSENSUS_LABEL} signatures required | 35-slot reserved roster | 18 active testnet slots | MuSig2 aggregate signing (v0x03)
           </Typography>
         </Box>
       )}
@@ -518,7 +519,7 @@ const OraclesPage = () => {
           <SitrepMetric
             label="Price Reporters"
             value={`${reportingCount}/${ORACLE_TOTAL_SLOTS}`}
-            detail={`${ORACLE_CONSENSUS_LABEL} valid signatures required; ${oracles.length || ACTIVE_ORACLE_COUNT} launch slots visible`}
+            detail={`${ORACLE_CONSENSUS_LABEL} valid signatures required; ${oracles.length || ACTIVE_ORACLE_COUNT} active testnet slots visible`}
             ok={reportingCount >= ORACLE_THRESHOLD}
             progressValue={reportingCount}
           />
@@ -534,11 +535,11 @@ const OraclesPage = () => {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <SitrepMetric
-            label="RC41 MuSig2 Context"
-            value={`${rc41ContextCount}/${ORACLE_TOTAL_SLOTS}`}
+            label="RC42 MuSig2 Context"
+            value={`${rc42ContextCount}/${ORACLE_TOTAL_SLOTS}`}
             detail={`MuSig2 context ${EXPECTED_MUSIG2_CONTEXT_VERSION}+ with valid heartbeat`}
-            ok={rc41ContextCount >= ORACLE_THRESHOLD}
-            progressValue={rc41ContextCount}
+            ok={rc42ContextCount >= ORACLE_THRESHOLD}
+            progressValue={rc42ContextCount}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -718,8 +719,8 @@ const OraclesPage = () => {
               Step 2: Coordinate Slot Assignment
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Coordinate an assigned active oracle ID (slot 0-16) with the maintainers before publishing a key.
-              Slots 17-34 are reserved for a future release.
+              Coordinate an assigned active oracle ID (slot 0-17) with the maintainers before publishing a key.
+              Slots 18-34 are reserved for a future release.
             </Typography>
           </Paper>
         </Grid>
@@ -826,7 +827,7 @@ const OraclesPage = () => {
                   </Tooltip>
                 </TableCell>
                 <TableCell>
-                  <Tooltip title="Signed RC41 operator heartbeat and software/protocol versions reported by this oracle" arrow>
+                  <Tooltip title="Signed RC42 operator heartbeat and software/protocol versions reported by this oracle" arrow>
                     <strong style={{ cursor: 'help' }}>Heartbeat / Version</strong>
                   </Tooltip>
                 </TableCell>
@@ -1015,7 +1016,7 @@ const OraclesPage = () => {
         <Box sx={{ mt: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
           <Typography variant="body2" color="text.secondary">
             <strong>Price Format:</strong> Oracle prices use micro-USD format where 1,000,000 = $1.00.
-            This ensures exact arithmetic with no floating-point errors. RC41 consensus is {ORACLE_CONSENSUS_LABEL} across {ORACLE_TOTAL_SLOTS} reserved slots, with {ACTIVE_ORACLE_COUNT} active launch slots displayed above.
+            This ensures exact arithmetic with no floating-point errors. RC42 consensus is {ORACLE_CONSENSUS_LABEL} across {ORACLE_TOTAL_SLOTS} reserved slots, with {ACTIVE_ORACLE_COUNT} active testnet slots displayed above.
           </Typography>
         </Box>
         </>
@@ -1039,7 +1040,7 @@ const OraclesPage = () => {
             </Typography>
             <Box component="ul" sx={{ pl: 2, m: 0 }}>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>9-signature oracle quorum</Typography>
-              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>9 of 35 reserved oracle slots required for consensus, with 17 active launch slots</Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>9 of 35 reserved oracle slots required for consensus, with 18 active testnet slots</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>MuSig2 aggregate signing (v0x03) only</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Exchange fetch and oracle broadcast every 60 seconds</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Compact 22-byte storage per block</Typography>

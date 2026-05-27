@@ -20,7 +20,7 @@ export const APPLICATION_IDS = {
   testnet21:      0xFDD2B9E3, // RC28
   testnet23:      0xFDD2B9E4, // RC29 / RC30
   testnet24:      0xFEC4B7E5, // RC34 reset magic, current through RC40
-  testnet25:      0xFEC5B8E6, // RC41 reset magic
+  testnet25:      0xFEC5B8E6, // RC41/RC42 testnet25 magic
   regtest:        0xFABFB5DA
 };
 
@@ -191,7 +191,7 @@ const WalletConvertPage = () => {
           <Typography variant="body1" sx={{ maxWidth: '800px', mx: 'auto', color: '#555' }}>
             Patch the SQLite <code>application_id</code> bytes in a wallet.dat file to migrate between testnet versions.
             Use this when copying an oracle wallet from one testnet to another —
-            RC41 uses the fresh testnet25 genesis, P2P port 12032, and network magic bytes <code>0xFEC5B8E6</code>,
+            RC42 uses the existing testnet25 genesis, P2P port 12032, and network magic bytes <code>0xFEC5B8E6</code>,
             so oracle wallets from older testnets will be rejected until their SQLite application_id is converted.
           </Typography>
         </CardContent>

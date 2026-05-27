@@ -900,7 +900,7 @@ const DigiDollarPage = () => {
                 2. Oracle Verification
               </Typography>
               <Typography variant="body2">
-                35 reserved oracle slots with 17 active launch operators and a 9-signature MuSig2 quorum on testnet25.
+                35 reserved oracle slots with 18 active testnet operators and a 9-signature MuSig2 quorum on testnet25.
                 Six active exchange APIs (Binance, KuCoin, Gate.io, HTX,
                 Crypto.com, CoinGecko) feed oracle signatures using MuSig2 aggregate signing (v0x03).
               </Typography>
@@ -1328,14 +1328,14 @@ const DigiDollarPage = () => {
                 <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
                   primary="Phase Two Oracle Consensus (9-signature MuSig2)"
-                  secondary="Active on testnet25 - 35 reserved slots, 17 active launch operators, 9 signatures required"
+                  secondary="Active on testnet25 - 35 reserved slots, 18 active testnet operators, 9 signatures required"
                 />
               </ListItem>
               <ListItem sx={{ pl: 0 }}>
                 <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
                   primary="DigiDollar Activated on Testnet"
-                  secondary="Complete - v9.26.0-RC41, fresh testnet25 with oracle price feeds"
+                  secondary="Complete - v9.26.0-RC42, testnet25 with oracle price feeds"
                 />
               </ListItem>
               <ListItem sx={{ pl: 0 }}>
@@ -1357,7 +1357,7 @@ const DigiDollarPage = () => {
       <Alert severity="success" sx={{ mt: 3 }}>
         <Typography variant="body2">
           <strong>Current Status:</strong> DigiDollar is 95% complete with 1,850+ tests passing. Oracle system
-          in Phase Two on testnet25 with a 9-signature MuSig2 quorum and 35 reserved oracle slots. DigiDollar activated on testnet (v9.26.0-RC41).
+          in Phase Two on testnet25 with a 9-signature MuSig2 quorum and 35 reserved oracle slots. DigiDollar active on testnet (v9.26.0-RC42).
           Mainnet release targeted for <strong>May, 2026</strong> with activation window through May, 2028.
           For complete details and all other upgrades, see the full{' '}
           <a href="/roadmap" style={{ color: '#0066cc', fontWeight: 'bold' }}>

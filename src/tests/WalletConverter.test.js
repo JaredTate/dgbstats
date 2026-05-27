@@ -57,7 +57,7 @@ describe('Wallet Converter — pure helpers', () => {
     expect(readApplicationId(buf)).toBe(0xFEC4B7E5);
   });
 
-  it('readApplicationId reads testnet25 (RC41) id', () => {
+  it('readApplicationId reads testnet25 (RC41/RC42) id', () => {
     const buf = makeFakeSqlite(0xFEC5B8E6);
     expect(readApplicationId(buf)).toBe(0xFEC5B8E6);
   });
@@ -70,11 +70,11 @@ describe('Wallet Converter — pure helpers', () => {
     expect(APPLICATION_IDS.testnet24).toBe(0xFEC4B7E5);
   });
 
-  it('APPLICATION_IDS.testnet25 matches the RC41 pchMessageStart (FE C5 B8 E6)', () => {
+  it('APPLICATION_IDS.testnet25 matches the RC41/RC42 pchMessageStart (FE C5 B8 E6)', () => {
     expect(APPLICATION_IDS.testnet25).toBe(0xFEC5B8E6);
   });
 
-  it('CURRENT_TESTNET points at testnet25 for the current RC41 line', () => {
+  it('CURRENT_TESTNET points at testnet25 for the current RC42 line', () => {
     expect(CURRENT_TESTNET).toBe('testnet25');
     expect(APPLICATION_IDS[CURRENT_TESTNET]).toBe(0xFEC5B8E6);
   });
@@ -95,7 +95,7 @@ describe('Wallet Converter — pure helpers', () => {
     expect(detectNetwork(0xFEC4B7E5)).toBe('testnet24');
   });
 
-  it('detectNetwork identifies testnet25 (RC41)', () => {
+  it('detectNetwork identifies testnet25 (RC41/RC42)', () => {
     expect(detectNetwork(0xFEC5B8E6)).toBe('testnet25');
   });
 
@@ -132,7 +132,7 @@ describe('Wallet Converter — pure helpers', () => {
     expect(dv.getUint32(68, false)).toBe(0xFEC4B7E5);
   });
 
-  it('patchApplicationId converts a testnet24 wallet to RC41 testnet25', () => {
+  it('patchApplicationId converts a testnet24 wallet to RC42 testnet25', () => {
     const buf = makeFakeSqlite(0xFEC4B7E5);
     const patched = patchApplicationId(buf, APPLICATION_IDS.testnet25);
     const dv = new DataView(patched);
@@ -259,7 +259,7 @@ describe('Wallet Converter — real fixture files', () => {
     expect(dv.getUint32(68, false)).toBe(0xFEC4B7E5);
   });
 
-  it('real testnet21 fixture → testnet25 writes RC41 magic at offset 68-71', () => {
+  it('real testnet21 fixture → testnet25 writes RC42 magic at offset 68-71', () => {
     const buf = loadFixture('wallet-testnet21.dat');
     const patched = patchApplicationId(buf, APPLICATION_IDS.testnet25);
     const dv = new DataView(patched);
@@ -307,6 +307,13 @@ describe('WalletConvertPage — component', () => {
     renderWithProviders(<WalletConvertPage />, { network: 'testnet', route: '/testnet/convert' });
     expect(screen.getByText(/Wallet Converter/i)).toBeInTheDocument();
     expect(screen.getByText(/never leaves your browser/i)).toBeInTheDocument();
+  });
+
+  it('describes testnet25 as the current RC42 network while preserving the same magic bytes', () => {
+    renderWithProviders(<WalletConvertPage />, { network: 'testnet', route: '/testnet/convert' });
+    expect(screen.getByText(/RC42 uses the existing testnet25 genesis/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/0xFEC5B8E6/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/RC41 uses the fresh testnet25 genesis/i)).not.toBeInTheDocument();
   });
 
   it('renders the drag-and-drop zone', () => {

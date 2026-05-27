@@ -20,12 +20,12 @@ import { useNetwork } from '../context/NetworkContext';
 import IntegrationGuides from '../components/IntegrationGuides';
 
 const TESTNET_RELEASE = {
-  version: 'v9.26.0-RC41',
+  version: 'v9.26.0-RC42',
   network: 'testnet25',
   p2pPort: '12032',
   activationHeight: 600,
   oracleTotalSlots: 35,
-  activeOracleSlots: 17,
+  activeOracleSlots: 18,
   oracleThreshold: 9
 };
 

@@ -201,7 +201,7 @@ const RoadmapPage = () => {
             title: 'Oracle Network Architecture',
             date: '2025-10-12',
             status: 'completed',
-            description: 'Design 35-slot oracle system with 17 active launch operators and 9-signature MuSig2 aggregate signing',
+            description: 'Design 35-slot oracle system with 18 active testnet operators and 9-signature MuSig2 aggregate signing',
             completionDate: '2025-10-12'
           },
           {
@@ -347,10 +347,10 @@ const RoadmapPage = () => {
           },
           {
             id: 'initial-release',
-            title: 'Testnet Release v9.26.0-RC41',
+            title: 'Testnet Release v9.26.0-RC42',
             date: '2026-04-19',
             status: 'completed',
-            description: 'Fresh testnet25 release candidate before mainnet with full DigiDollar functionality and RC41 oracle roster',
+            description: 'Current testnet25 release candidate before mainnet with full DigiDollar functionality and RC42 oracle roster',
             completionDate: '2026-04-19'
           }
         ]
@@ -384,15 +384,15 @@ const RoadmapPage = () => {
           },
           {
             id: 'v9.26-rc2',
-            title: 'DigiByte v9.26 Release Candidate 41 (Current)',
+            title: 'DigiByte v9.26 Release Candidate 42 (Current)',
             date: '2026-04-19',
             status: 'completed',
-            description: 'Fresh testnet25 release candidate (v9.26.0-RC41) — 35-slot oracle roster and 9-signature MuSig2 quorum before mainnet',
+            description: 'Current testnet25 release candidate (v9.26.0-RC42) — 35-slot oracle roster, 18 active testnet operators, and 9-signature MuSig2 quorum before mainnet',
             completionDate: '2026-04-19'
           },
           {
             id: 'oracle-phase2-testnet',
-            title: 'RC41 MuSig2 Oracle Testnet Validation',
+            title: 'RC42 MuSig2 Oracle Testnet Validation',
             date: '2026-03-15',
             status: 'pending',
             description: 'Complete 9-signature oracle consensus validation on testnet25'

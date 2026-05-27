@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 
-describe('RC41 oracle copy guards', () => {
+describe('RC42 oracle copy guards', () => {
   const pageSources = [
     'OraclesPage.js',
     'DigiDollarPage.js',
@@ -20,5 +20,10 @@ describe('RC41 oracle copy guards', () => {
     expect(pageSources).not.toMatch(/simple 3-step process/);
     expect(pageSources).not.toMatch(/Step 2: Submit Public Key/);
     expect(pageSources).not.toMatch(/Submit Your Key on GitHub/);
+  });
+
+  it('should not publish stale pre-RC42 active-oracle roster copy', () => {
+    expect(pageSources).not.toMatch(/17 active launch operators|17 active launch slots|17 active slots/);
+    expect(pageSources).not.toMatch(/slot 0-16|slots 17-34/);
   });
 });
