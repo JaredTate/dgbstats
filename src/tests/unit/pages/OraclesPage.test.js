@@ -59,6 +59,40 @@ const mockDeploymentInfo = {
   }
 };
 
+const mockLatestBundleSignerIds = [0, 1, 2, 4, 5, 8, 9, 11, 13];
+
+const mockOracleSigners = {
+  chain_height: 2025,
+  scan_blocks: 100,
+  required_signers: 9,
+  total_oracle_slots: 35,
+  active_oracle_slots: 18,
+  bundle_count: 1,
+  bundles: [
+    {
+      height: 2025,
+      epoch: 50,
+      version: 3,
+      price_micro_usd: 50000,
+      price_usd: 0.05,
+      timestamp: 1770064194,
+      participation_bitmap: '2f2b',
+      bitmap_valid: true,
+      signer_count: 9,
+      signer_ids: mockLatestBundleSignerIds,
+      signers: mockLatestBundleSignerIds.map((oracle_id) => ({
+        oracle_id,
+        name: `Oracle ${oracle_id}`,
+        configured: true,
+        in_consensus: true,
+        is_active: true,
+        pubkey: '03mock',
+        endpoint: `oracle${oracle_id + 1}.digibyte.io:12032`
+      }))
+    }
+  ]
+};
+
 // Mock oracle config data (from getoracles RPC)
 // Simulates the RPC returning MORE than 17 entries (legacy vOracleNodes)
 // to test that the frontend correctly filters to active oracles only.
@@ -170,7 +204,8 @@ const mockOracleDataMessage = {
   data: {
     price: mockOraclePrice,
     allPrices: mockAllOraclePrices,
-    oracles: mockOracles
+    oracles: mockOracles,
+    oracleSigners: mockOracleSigners
   }
 };
 
@@ -272,8 +307,10 @@ describe('OraclesPage', () => {
       expect(screen.getByText('Status')).toBeInTheDocument();
       expect(screen.getByText('Price')).toBeInTheDocument();
       expect(screen.getByText('Endpoint')).toBeInTheDocument();
-      expect(screen.getByText('Public Key')).toBeInTheDocument();
-      expect(screen.getByText('Signature')).toBeInTheDocument();
+      expect(screen.getByText('Heartbeat / Version')).toBeInTheDocument();
+      expect(screen.getByText('Latest 9 / Live')).toBeInTheDocument();
+      expect(screen.queryByText('Public Key')).not.toBeInTheDocument();
+      expect(screen.queryByText('Signature')).not.toBeInTheDocument();
     });
 
     it('should render the technical specifications section', async () => {
@@ -456,17 +493,20 @@ describe('OraclesPage', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Oracle Network Status')).toBeInTheDocument();
+        expect(screen.getByText('Part of Latest 9')).toBeInTheDocument();
         expect(screen.getByText('Online Heartbeats')).toBeInTheDocument();
         expect(screen.getByText('Compatible Software')).toBeInTheDocument();
-        expect(screen.getByText('In Current Epoch')).toBeInTheDocument();
+        expect(screen.getByText('Roster Oracles')).toBeInTheDocument();
+        expect(screen.getByText('Live Price Feeds')).toBeInTheDocument();
         expect(screen.getAllByText(/10\/18/).length).toBeGreaterThan(0);
         expect(screen.getAllByText(/9\/18/).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/9\/9/).length).toBeGreaterThan(0);
         expect(screen.queryByText('Oracle Operator Sitrep')).not.toBeInTheDocument();
         expect(screen.queryByText('RC43 MuSig2 Context')).not.toBeInTheDocument();
       });
     });
 
-    it('should show each oracle current epoch and price signing state in the list', async () => {
+    it('should show each oracle latest bundle signer and live price state in the list', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
@@ -475,18 +515,22 @@ describe('OraclesPage', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Heartbeat / Version')).toBeInTheDocument();
-        expect(screen.getByText('Current Epoch / Signing')).toBeInTheDocument();
+        expect(screen.getByText('Latest 9 / Live')).toBeInTheDocument();
         expect(screen.getAllByText('v9.26.0-rc43').length).toBeGreaterThan(0);
         expect(screen.getAllByText('MuSig2 ctx 2').length).toBeGreaterThan(0);
         expect(screen.getByText('3m 0s ago')).toBeInTheDocument();
-        expect(screen.getAllByText('In epoch').length).toBeGreaterThan(0);
-        expect(screen.getAllByText('Not in epoch').length).toBeGreaterThan(0);
-        expect(screen.getAllByText('Signing price').length).toBeGreaterThan(0);
-        expect(screen.getAllByText('Not signing').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('Live price feed').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('No live price').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('Part of latest 9')).toHaveLength(9);
+        expect(screen.getAllByText('Not in latest 9')).toHaveLength(9);
+        expect(screen.queryByText('Active slot')).not.toBeInTheDocument();
+        expect(screen.queryByText('In epoch')).not.toBeInTheDocument();
+        expect(screen.queryByText('Signing price')).not.toBeInTheDocument();
+        expect(screen.queryByText('Allowed this round')).not.toBeInTheDocument();
       });
     });
 
-    it('should not present Core selected_for_epoch as the final 9 signer set', async () => {
+    it('should ignore selected_for_epoch when showing the final 9 bundle signers', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
@@ -500,11 +544,14 @@ describe('OraclesPage', () => {
       sendOracleData(ws, { oracles: allEligible });
 
       await waitFor(() => {
-        expect(screen.getByText('In Current Epoch')).toBeInTheDocument();
-        expect(screen.getAllByText('In epoch').length).toBe(18);
+        expect(screen.getByText('Roster Oracles')).toBeInTheDocument();
+        expect(screen.getAllByText('Part of latest 9')).toHaveLength(9);
+        expect(screen.getAllByText('Not in latest 9')).toHaveLength(9);
         expect(screen.queryByText('Selected This Epoch')).not.toBeInTheDocument();
         expect(screen.queryByText('selected')).not.toBeInTheDocument();
-        expect(screen.getByText(/Core does not currently expose the exact 9-oracle MuSig2 bundle signer list/i)).toBeInTheDocument();
+        expect(screen.queryByText('Allowed this round')).not.toBeInTheDocument();
+        expect(screen.queryByText('Not allowed this round')).not.toBeInTheDocument();
+        expect(screen.queryByText(/Core does not currently expose the exact 9-oracle MuSig2 bundle signer list/i)).not.toBeInTheDocument();
       });
     });
 
@@ -599,7 +646,7 @@ describe('OraclesPage', () => {
     });
   });
 
-  describe('Oracle Epoch Clock', () => {
+  describe('Oracle Round Clock', () => {
     it('should display current epoch, block range, countdown, and MuSig2 session progress', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
@@ -609,10 +656,10 @@ describe('OraclesPage', () => {
       sendOracleData(ws);
 
       await waitFor(() => {
-        expect(screen.getByText('Oracle Epoch Clock')).toBeInTheDocument();
-        expect(screen.getByText('Epoch 50')).toBeInTheDocument();
+        expect(screen.getByText('Oracle Round Clock')).toBeInTheDocument();
+        expect(screen.getByText('Round 50')).toBeInTheDocument();
         expect(screen.getByText('Blocks 2,000-2,039')).toBeInTheDocument();
-        expect(screen.getByText('Next epoch: block 2,040')).toBeInTheDocument();
+        expect(screen.getByText('Next round: block 2,040')).toBeInTheDocument();
         expect(screen.getByText('15 blocks away')).toBeInTheDocument();
         expect(screen.getByText('~3m 45s')).toBeInTheDocument();
         expect(screen.getAllByText('MuSig2 complete').length).toBeGreaterThan(0);
@@ -622,8 +669,8 @@ describe('OraclesPage', () => {
     });
   });
 
-  describe('All 18 Active Oracles', () => {
-    it('should display all 18 oracles including current active oracle slots', async () => {
+  describe('All 18 Roster Oracles', () => {
+    it('should display all 18 testnet roster oracles', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
@@ -666,7 +713,7 @@ describe('OraclesPage', () => {
       });
     });
 
-    it('should correctly count 9 reporting oracles out of 18 active slots', async () => {
+    it('should correctly count 9 reporting oracles out of 18 roster oracles', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
@@ -681,7 +728,7 @@ describe('OraclesPage', () => {
   });
 
   describe('Reporting Count Accuracy', () => {
-    it('should count 10/18 when 10 active testnet slots are reporting', async () => {
+    it('should count 10/18 when 10 testnet roster oracles are reporting', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];

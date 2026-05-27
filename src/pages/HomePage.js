@@ -21,7 +21,7 @@ const TESTNET_RELEASE = {
   rpcPort: '14026',
   activationHeight: '600',
   oracleConsensus: '9 of 35',
-  activeOracleSlots: '18 active testnet slots',
+  activeOracleSlots: '18 testnet roster oracles',
   mainnetActivationFloor: '23,627,520'
 };
 

@@ -27,7 +27,15 @@ describe('RC43 oracle copy guards', () => {
 
   it('should not publish stale pre-RC42 active-oracle roster copy', () => {
     expect(pageSources).not.toMatch(/17 active launch operators|17 active launch slots|17 active slots/);
+    expect(pageSources).not.toMatch(/active slots|active testnet slots|Active slot/);
     expect(pageSources).not.toMatch(/slot 0-16|slots 17-34/);
+  });
+
+  it('should use public oracle signing words instead of protocol jargon', () => {
+    expect(pageSources).not.toMatch(/In Current Epoch|In epoch|Signing price|Active slot/);
+    expect(pageSources).not.toMatch(/Core does not currently expose the exact 9-oracle MuSig2 bundle signer list/);
+    expect(pageSources).toMatch(/Part of Latest 9|Part of latest 9/);
+    expect(pageSources).toMatch(/Latest 9 \/ Live|Live Price Feeds/);
   });
 
   it('should publish RC43 as the current testnet release, not RC42', () => {

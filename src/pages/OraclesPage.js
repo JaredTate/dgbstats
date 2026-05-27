@@ -11,8 +11,6 @@ import CloudOffIcon from '@mui/icons-material/CloudOff';
 import HourglassTopIcon from '@mui/icons-material/HourglassTop';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import SecurityIcon from '@mui/icons-material/Security';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorIcon from '@mui/icons-material/Error';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import DescriptionIcon from '@mui/icons-material/Description';
 import KeyIcon from '@mui/icons-material/Key';
@@ -35,7 +33,7 @@ const EMPTY_ORACLE_PRICE = {
   volatility: 0
 };
 
-// RC43 oracle configuration: 35 reserved slots with 18 active testnet keys by
+// RC43 oracle configuration: 35 reserved slots with 18 testnet roster keys by
 // default. Live RPC can mark additional slots active/in-consensus as the testnet
 // roster expands, so display counts are derived from getoracles instead of ID
 // ranges whenever those fields are available.
@@ -131,6 +129,7 @@ const OraclesPage = () => {
   const [ddDeploymentStatus, setDdDeploymentStatus] = useState(null);
   const [ddDeploymentInfo, setDdDeploymentInfo] = useState(null);
   const [oracleBlockHeight, setOracleBlockHeight] = useState(0);
+  const [oracleSigners, setOracleSigners] = useState(null);
 
   // WebSocket connection for real-time oracle data
   useEffect(() => {
@@ -148,9 +147,11 @@ const OraclesPage = () => {
           setDdDeploymentInfo(message.data);
         }
         if (message.type === 'oracleData') {
-          const { price: priceData, allPrices: allOraclePricesData, oracles: oraclesConfigData } = message.data;
+          const { price: priceData, allPrices: allOraclePricesData, oracles: oraclesConfigData, oracleSigners: oracleSignersData } = message.data;
           const allOraclePrices = (allOraclePricesData && allOraclePricesData.oracles) || [];
           const currentBlockHeight = allOraclePricesData?.block_height || priceData?.block_height || priceData?.last_update_height || 0;
+          const latestSignerBundle = oracleSignersData?.bundles?.[0] || null;
+          const latestBundleSignerIds = new Set((latestSignerBundle?.signer_ids || []).map(Number));
 
           // Update state with real price data
           setOraclePrice({
@@ -165,6 +166,7 @@ const OraclesPage = () => {
             volatility: priceData.volatility || 0
           });
           setOracleBlockHeight(currentBlockHeight);
+          setOracleSigners(oracleSignersData || null);
 
           // Use getoracles (config with all oracles) as base, merge price data from getalloracleprices
           const mappedOracles = (oraclesConfigData || []).map(configOracle => {
@@ -183,6 +185,7 @@ const OraclesPage = () => {
               in_consensus: configOracle.in_consensus ?? (configOracle.is_active !== false && configOracle.oracle_id <= MAX_ACTIVE_ORACLE_ID),
               epoch_eligible: Boolean(configOracle.selected_for_epoch),
               selected_for_epoch: Boolean(configOracle.selected_for_epoch),
+              signed_latest_bundle: latestBundleSignerIds.has(Number(configOracle.oracle_id)),
               is_running_locally: Boolean(configOracle.is_running_locally),
               price_micro_usd: priceMicroUsd,
               price_usd: priceUsd,
@@ -204,7 +207,7 @@ const OraclesPage = () => {
             };
           });
 
-          // Only show consensus-active slots. Older RPCs did not expose
+          // Only show consensus roster oracles. Older RPCs did not expose
           // in_consensus, so mapping above falls back to IDs 0-17 for RC43.
           const activeOracles = mappedOracles.filter(o => o.in_consensus);
           setOracles(activeOracles);
@@ -244,18 +247,21 @@ const OraclesPage = () => {
   const activeOracleCount = oracles.length || ACTIVE_ORACLE_COUNT;
   const isOracleSigningPrice = (oracle) => oracle.status === 'reporting' && oracle.signature_valid;
   const priceSigningCount = oracles.filter(isOracleSigningPrice).length;
+  const latestBundle = oracleSigners?.bundles?.[0] || null;
+  const hasLatestBundleSignerData = Boolean(latestBundle && Array.isArray(latestBundle.signer_ids));
+  const latestBundleRequired = Number(oracleSigners?.required_signers) || ORACLE_THRESHOLD;
+  const latestBundleSignerCount = oracles.filter(o => o.signed_latest_bundle).length || Number(latestBundle?.signer_count) || 0;
   const freshHeartbeatCount = oracles.filter(o => o.heartbeat_status === 'fresh' && o.heartbeat_signature_valid).length;
   const rc43ContextCount = oracles.filter(o =>
     o.heartbeat_status === 'fresh' &&
     o.heartbeat_signature_valid &&
     o.musig2_context_version >= EXPECTED_MUSIG2_CONTEXT_VERSION
   ).length;
-  const epochEligibleCount = oracles.filter(o => o.epoch_eligible).length;
   const locallyRunningCount = oracles.filter(o => o.is_running_locally).length;
-  const consensusReady = priceSigningCount >= ORACLE_THRESHOLD &&
+  const consensusReady = (!hasLatestBundleSignerData || latestBundleSignerCount >= latestBundleRequired) &&
+    priceSigningCount >= ORACLE_THRESHOLD &&
     freshHeartbeatCount >= ORACLE_THRESHOLD &&
-    rc43ContextCount >= ORACLE_THRESHOLD &&
-    epochEligibleCount >= ORACLE_THRESHOLD;
+    rc43ContextCount >= ORACLE_THRESHOLD;
   const versionBuckets = Object.values(oracles.reduce((buckets, oracle) => {
     const version = oracle.software_version || 'No version reported';
     if (!buckets[version]) {
@@ -474,17 +480,19 @@ const OraclesPage = () => {
             </Tooltip>
           </Grid>
           <Grid item xs={12} md={4}>
-            <Tooltip title={`RC43 consensus quorum across the full 35-slot reserved oracle roster. The table below shows ${activeOracleCount} consensus-active testnet slots from Core RPC.`} arrow placement="top">
+            <Tooltip title="Latest on-chain MuSig2 bundle signer count decoded from Core's participation bitmap. This is the actual 9-oracle signing set for the newest bundle." arrow placement="top">
               <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help', minHeight: 160, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <Typography variant="body2" color="text.secondary">Oracle Consensus</Typography>
-                <Typography variant="h3" fontWeight="bold" sx={{ color: priceSigningCount > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
+                <Typography variant="h3" fontWeight="bold" sx={{ color: latestBundleSignerCount > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
                   {ORACLE_THRESHOLD}/{ORACLE_TOTAL_SLOTS}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   signatures required
                 </Typography>
-                <Typography variant="body2" fontWeight="bold" sx={{ mt: 1, color: priceSigningCount >= ORACLE_THRESHOLD ? '#2e7d32' : '#ed6c02' }}>
-                  {priceSigningCount}/{activeOracleCount} active slots signing prices
+                <Typography variant="body2" fontWeight="bold" sx={{ mt: 1, color: latestBundleSignerCount >= latestBundleRequired ? '#2e7d32' : '#ed6c02' }}>
+                  {hasLatestBundleSignerData
+                    ? `${latestBundleSignerCount}/${latestBundleRequired} in latest 9`
+                    : 'bundle signer data unavailable'}
                 </Typography>
               </Box>
             </Tooltip>
@@ -513,7 +521,7 @@ const OraclesPage = () => {
       {isTestnet && (
         <Box sx={{ mt: 2, p: 1.5, backgroundColor: 'rgba(46, 125, 50, 0.08)', borderRadius: '8px', textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
-            <strong>RC43 Phase Two:</strong> {ORACLE_CONSENSUS_LABEL} signatures required | 35-slot reserved roster | {activeOracleCount} active testnet slots | MuSig2 aggregate signing (v0x03)
+            <strong>RC43 Phase Two:</strong> {ORACLE_CONSENSUS_LABEL} signatures required | 35-slot reserved roster | {activeOracleCount} testnet roster oracles | MuSig2 aggregate signing (v0x03)
           </Typography>
         </Box>
       )}
@@ -537,16 +545,26 @@ const OraclesPage = () => {
       </Box>
 
       <Grid container spacing={2}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={2.4}>
           <SitrepMetric
-            label="Signing Prices"
+            label="Part of Latest 9"
+            value={`${latestBundleSignerCount}/${latestBundleRequired}`}
+            detail={hasLatestBundleSignerData ? `actual 9-signer list from block ${latestBundle.height}` : 'waiting for getoraclesigners data'}
+            ok={latestBundleSignerCount >= latestBundleRequired}
+            progressValue={latestBundleSignerCount}
+            progressTotal={latestBundleRequired}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={2.4}>
+          <SitrepMetric
+            label="Live Price Feeds"
             value={`${priceSigningCount}/${activeOracleCount}`}
-            detail={`${ORACLE_THRESHOLD} signed price feeds required; ${ORACLE_TOTAL_SLOTS} reserved slots total`}
+            detail={`${ORACLE_THRESHOLD} valid signed price feeds required`}
             ok={priceSigningCount >= ORACLE_THRESHOLD}
             progressValue={priceSigningCount}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={2.4}>
           <SitrepMetric
             label="Online Heartbeats"
             value={`${freshHeartbeatCount}/${activeOracleCount}`}
@@ -555,7 +573,7 @@ const OraclesPage = () => {
             progressValue={freshHeartbeatCount}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={2.4}>
           <SitrepMetric
             label="Compatible Software"
             value={`${rc43ContextCount}/${activeOracleCount}`}
@@ -564,19 +582,20 @@ const OraclesPage = () => {
             progressValue={rc43ContextCount}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={2.4}>
           <SitrepMetric
-            label="In Current Epoch"
-            value={`${epochEligibleCount}/${activeOracleCount}`}
-            detail={`${locallyRunningCount} local oracle slot${locallyRunningCount === 1 ? '' : 's'} visible`}
-            ok={epochEligibleCount >= ORACLE_THRESHOLD}
-            progressValue={epochEligibleCount}
+            label="Roster Oracles"
+            value={`${activeOracleCount}/${ORACLE_TOTAL_SLOTS}`}
+            detail={`configured testnet roster from Core; ${locallyRunningCount} local oracle${locallyRunningCount === 1 ? '' : 's'} visible`}
+            ok={activeOracleCount >= ORACLE_THRESHOLD}
+            progressValue={activeOracleCount}
+            progressTotal={ORACLE_TOTAL_SLOTS}
           />
         </Grid>
       </Grid>
 
       <Alert severity="info" sx={{ mt: 2 }}>
-        This page shows which active oracles are in the current epoch and which are broadcasting signed prices. Core does not currently expose the exact 9-oracle MuSig2 bundle signer list, so "Signing price" means signed price reporting, not final bundle participation.
+        Part of latest 9 means this oracle actually signed the newest on-chain DigiDollar price bundle. Live price feed means the oracle is online and broadcasting a valid signed price. Roster oracles are the configured testnet oracles loaded from Core.
       </Alert>
 
       {versionBuckets.length > 0 && (
@@ -603,7 +622,7 @@ const OraclesPage = () => {
                     {formatOperatorCount(bucket.count)}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {bucket.reporting} signing prices · {bucket.fresh} fresh heartbeats
+                    {bucket.reporting} live price feeds · {bucket.fresh} fresh heartbeats
                   </Typography>
                 </Paper>
               </Grid>
@@ -626,7 +645,7 @@ const OraclesPage = () => {
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <HourglassTopIcon sx={{ fontSize: '2rem', color: stateOk ? '#2e7d32' : '#ed6c02', mr: 1 }} />
             <Typography variant="h5" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
-              Oracle Epoch Clock
+              Oracle Round Clock
             </Typography>
           </Box>
           <Chip
@@ -639,9 +658,9 @@ const OraclesPage = () => {
         <Grid container spacing={2}>
           <Grid item xs={12} sm={6} md={3}>
             <Paper elevation={0} sx={{ p: 2, height: '100%', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
-              <Typography variant="body2" color="text.secondary">Current Epoch</Typography>
+              <Typography variant="body2" color="text.secondary">Current Round</Typography>
               <Typography variant="h4" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
-                Epoch {epochInfo.epoch.toLocaleString()}
+                Round {epochInfo.epoch.toLocaleString()}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 Current block {epochInfo.currentHeight.toLocaleString()}
@@ -650,7 +669,7 @@ const OraclesPage = () => {
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <Paper elevation={0} sx={{ p: 2, height: '100%', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
-              <Typography variant="body2" color="text.secondary">Epoch Range</Typography>
+              <Typography variant="body2" color="text.secondary">Round Blocks</Typography>
               <Typography variant="h6" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
                 Blocks {epochInfo.epochStartHeight.toLocaleString()}-{epochInfo.epochEndHeight.toLocaleString()}
               </Typography>
@@ -661,9 +680,9 @@ const OraclesPage = () => {
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <Paper elevation={0} sx={{ p: 2, height: '100%', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
-              <Typography variant="body2" color="text.secondary">Next Epoch</Typography>
+              <Typography variant="body2" color="text.secondary">Next Round</Typography>
               <Typography variant="h6" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
-                Next epoch: block {epochInfo.nextEpochHeight.toLocaleString()}
+                Next round: block {epochInfo.nextEpochHeight.toLocaleString()}
               </Typography>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                 {epochInfo.blocksUntilNextEpoch} blocks away
@@ -837,8 +856,10 @@ const OraclesPage = () => {
           </Typography>
           {oracles.length > 0 ? (
             <Chip
-              label={`${priceSigningCount} / ${activeOracleCount} Signing Prices`}
-              color={priceSigningCount >= ORACLE_THRESHOLD ? 'success' : 'warning'}
+              label={hasLatestBundleSignerData
+                ? `${latestBundleSignerCount} / ${latestBundleRequired} Part of Latest 9`
+                : `${priceSigningCount} / ${activeOracleCount} Live Price Feeds`}
+              color={(hasLatestBundleSignerData ? latestBundleSignerCount >= latestBundleRequired : priceSigningCount >= ORACLE_THRESHOLD) ? 'success' : 'warning'}
               size="small"
               sx={{ ml: 2 }}
             />
@@ -866,48 +887,38 @@ const OraclesPage = () => {
         ) : (
           <>
 
-        <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e0e0e0' }}>
-          <Table>
+        <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e0e0e0', overflowX: 'visible' }}>
+          <Table sx={{ tableLayout: 'fixed', width: '100%' }}>
             <TableHead sx={{ backgroundColor: isTestnet ? 'rgba(46, 125, 50, 0.1)' : 'rgba(0, 35, 82, 0.05)' }}>
               <TableRow>
-                <TableCell>
+                <TableCell sx={{ width: '15%' }}>
                   <Tooltip title="Oracle operator name and unique identifier" arrow>
                     <strong style={{ cursor: 'help' }}>Oracle</strong>
                   </Tooltip>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ width: '12%' }}>
                   <Tooltip title="Reporting = actively broadcasting prices. No Data = not currently online" arrow>
                     <strong style={{ cursor: 'help' }}>Status</strong>
                   </Tooltip>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ width: '13%' }}>
                   <Tooltip title="Current price this oracle is reporting to the network" arrow>
                     <strong style={{ cursor: 'help' }}>Price</strong>
                   </Tooltip>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ width: '28%' }}>
                   <Tooltip title="Signed RC43 operator heartbeat and software/protocol versions reported by this oracle" arrow>
                     <strong style={{ cursor: 'help' }}>Heartbeat / Version</strong>
                   </Tooltip>
                 </TableCell>
-                <TableCell>
-                  <Tooltip title="Shows whether this oracle is in the current epoch and whether it is broadcasting a valid signed price. Core does not expose the exact final MuSig2 bundle signer list per oracle." arrow>
-                    <strong style={{ cursor: 'help' }}>Current Epoch / Signing</strong>
+                <TableCell sx={{ width: '14%' }}>
+                  <Tooltip title="Part of latest 9 means this oracle ID is in the newest on-chain MuSig2 participation bitmap and signed the latest bundle. Live price feed means it is currently broadcasting a valid signed price." arrow>
+                    <strong style={{ cursor: 'help' }}>Latest 9 / Live</strong>
                   </Tooltip>
                 </TableCell>
-                <TableCell>
-                  <Tooltip title="P2P network address where this oracle broadcasts price updates" arrow>
+                <TableCell sx={{ width: '18%' }}>
+                  <Tooltip title="P2P network address plus the shortened BIP-340 public key used to verify this oracle" arrow>
                     <strong style={{ cursor: 'help' }}>Endpoint</strong>
-                  </Tooltip>
-                </TableCell>
-                <TableCell>
-                  <Tooltip title="BIP-340 Schnorr public key used to verify this oracle's signatures" arrow>
-                    <strong style={{ cursor: 'help' }}>Public Key</strong>
-                  </Tooltip>
-                </TableCell>
-                <TableCell>
-                  <Tooltip title="Whether this oracle's price signature is cryptographically valid" arrow>
-                    <strong style={{ cursor: 'help' }}>Signature</strong>
                   </Tooltip>
                 </TableCell>
               </TableRow>
@@ -963,7 +974,7 @@ const OraclesPage = () => {
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 150 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 0 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                         <Chip
                           label={oracle.heartbeat_status || 'unknown'}
@@ -974,7 +985,7 @@ const OraclesPage = () => {
                           {formatAgeSeconds(oracle.heartbeat_age_seconds)}
                         </Typography>
                       </Box>
-                      <Typography variant="body2" fontWeight="bold" sx={{ color: oracle.software_version ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
+                      <Typography variant="body2" fontWeight="bold" sx={{ color: oracle.software_version ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e', overflowWrap: 'anywhere' }}>
                         {oracle.software_version || 'No version reported'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
@@ -988,21 +999,15 @@ const OraclesPage = () => {
                   <TableCell>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                       <Chip
-                        label={oracle.epoch_eligible ? 'In epoch' : 'Not in epoch'}
+                        label={oracle.signed_latest_bundle ? 'Part of latest 9' : 'Not in latest 9'}
                         size="small"
-                        color={oracle.epoch_eligible ? 'success' : 'default'}
-                        variant={oracle.epoch_eligible ? 'filled' : 'outlined'}
+                        color={oracle.signed_latest_bundle ? 'success' : 'default'}
+                        variant={oracle.signed_latest_bundle ? 'filled' : 'outlined'}
                       />
                       <Chip
-                        label={isOracleSigningPrice(oracle) ? 'Signing price' : 'Not signing'}
+                        label={isOracleSigningPrice(oracle) ? 'Live price feed' : 'No live price'}
                         size="small"
                         color={isOracleSigningPrice(oracle) ? 'success' : 'default'}
-                        variant={isOracleSigningPrice(oracle) ? 'filled' : 'outlined'}
-                      />
-                      <Chip
-                        label={oracle.in_consensus ? 'Active slot' : 'Reserve slot'}
-                        size="small"
-                        color={oracle.in_consensus ? 'primary' : 'default'}
                         variant="outlined"
                       />
                       {oracle.is_running_locally && (
@@ -1011,11 +1016,9 @@ const OraclesPage = () => {
                     </Box>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.78rem', overflowWrap: 'anywhere', lineHeight: 1.4 }}>
                       {oracle.endpoint}
                     </Typography>
-                  </TableCell>
-                  <TableCell>
                     {oracle.pubkey ? (
                       <Tooltip title={`${oracle.pubkey} (Click to view in source code)`}>
                         <Link
@@ -1025,7 +1028,7 @@ const OraclesPage = () => {
                           sx={{
                             fontFamily: 'monospace',
                             fontSize: '0.75rem',
-                            maxWidth: '150px',
+                            maxWidth: '100%',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             display: 'block',
@@ -1044,34 +1047,6 @@ const OraclesPage = () => {
                       <Typography variant="body2" color="text.secondary">--</Typography>
                     )}
                   </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                        {oracle.signature_valid ? (
-                          <Tooltip title="Price signature cryptographically valid">
-                            <CheckCircleIcon sx={{ color: '#4caf50', fontSize: 20 }} />
-                          </Tooltip>
-                        ) : (
-                          <Tooltip title="No valid price signature (oracle not reporting)">
-                            <ErrorIcon sx={{ color: '#9e9e9e', fontSize: 20 }} />
-                          </Tooltip>
-                        )}
-                        <Typography variant="caption" color="text.secondary">price</Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                        {oracle.heartbeat_signature_valid ? (
-                          <Tooltip title="Heartbeat signature cryptographically valid">
-                            <CheckCircleIcon sx={{ color: '#4caf50', fontSize: 20 }} />
-                          </Tooltip>
-                        ) : (
-                          <Tooltip title="No valid heartbeat signature">
-                            <ErrorIcon sx={{ color: '#9e9e9e', fontSize: 20 }} />
-                          </Tooltip>
-                        )}
-                        <Typography variant="caption" color="text.secondary">heartbeat</Typography>
-                      </Box>
-                    </Box>
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -1081,7 +1056,7 @@ const OraclesPage = () => {
         <Box sx={{ mt: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
           <Typography variant="body2" color="text.secondary">
             <strong>Price Format:</strong> Oracle prices use micro-USD format where 1,000,000 = $1.00.
-            This ensures exact arithmetic with no floating-point errors. RC43 consensus is {ORACLE_CONSENSUS_LABEL} across {ORACLE_TOTAL_SLOTS} reserved slots, with {activeOracleCount} active testnet slots displayed above.
+            This ensures exact arithmetic with no floating-point errors. RC43 consensus is {ORACLE_CONSENSUS_LABEL} across {ORACLE_TOTAL_SLOTS} reserved slots, with {activeOracleCount} testnet roster oracles displayed above.
           </Typography>
         </Box>
         </>
@@ -1105,7 +1080,7 @@ const OraclesPage = () => {
             </Typography>
             <Box component="ul" sx={{ pl: 2, m: 0 }}>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>9-signature oracle quorum</Typography>
-              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>9 of 35 reserved oracle slots required for consensus, with 18 active testnet slots</Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>9 of 35 reserved oracle slots required for consensus, with 18 testnet roster oracles</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>MuSig2 aggregate signing (v0x03) only</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Exchange fetch and oracle broadcast every 60 seconds</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Compact 22-byte storage per block</Typography>
