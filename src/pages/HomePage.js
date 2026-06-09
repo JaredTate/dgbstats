@@ -15,13 +15,13 @@ import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { useNetwork } from '../context/NetworkContext';
 
 const TESTNET_RELEASE = {
-  version: 'v9.26.0-RC43',
-  network: 'testnet25',
-  p2pPort: '12032',
+  version: 'v9.26.0-RC44',
+  network: 'testnet26',
+  p2pPort: '12033',
   rpcPort: '14026',
   activationHeight: '600',
-  oracleConsensus: '9 of 35',
-  activeOracleSlots: '18 testnet roster oracles',
+  oracleConsensus: '7 of 35',
+  activeOracleSlots: '35 testnet roster oracles',
   mainnetActivationFloor: '23,627,520'
 };
 
@@ -332,7 +332,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, flexWrap: 'wrap', mb: 2 }}>
               <Box>
                 <Typography variant="h5" fontWeight="bold" sx={{ color: networkTheme.primary }}>
-                  RC43 Testnet Update
+                  RC44 Testnet Update
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Current {TESTNET_RELEASE.network} network for DigiDollar validation before mainnet launch decisions.

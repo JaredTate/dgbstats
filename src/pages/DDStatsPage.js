@@ -20,13 +20,13 @@ import { useNetwork } from '../context/NetworkContext';
 import IntegrationGuides from '../components/IntegrationGuides';
 
 const TESTNET_RELEASE = {
-  version: 'v9.26.0-RC43',
-  network: 'testnet25',
-  p2pPort: '12032',
+  version: 'v9.26.0-RC44',
+  network: 'testnet26',
+  p2pPort: '12033',
   activationHeight: 600,
   oracleTotalSlots: 35,
-  activeOracleSlots: 18,
-  oracleThreshold: 9
+  activeOracleSlots: 35,
+  oracleThreshold: 7
 };
 
 // Empty initial state - no mock data

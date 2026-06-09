@@ -33,16 +33,14 @@ const EMPTY_ORACLE_PRICE = {
   volatility: 0
 };
 
-// RC43 oracle configuration: 35 reserved slots with 18 testnet roster keys by
-// default. Live RPC can mark additional slots active/in-consensus as the testnet
-// roster expands, so display counts are derived from getoracles instead of ID
-// ranges whenever those fields are available.
+// RC44 oracle configuration: 35 active testnet roster keys. Live RPC is the
+// authority, with these constants only used before data arrives.
 const ORACLE_TOTAL_SLOTS = 35;
-const ACTIVE_ORACLE_COUNT = 18;
-const MAX_ACTIVE_ORACLE_ID = 17; // fallback for older RPCs with no in_consensus flag
-const ORACLE_THRESHOLD = 9;     // consensus requires 9 signatures
+const ACTIVE_ORACLE_COUNT = 35;
+const MAX_ACTIVE_ORACLE_ID = 34; // fallback for older RPCs with no in_consensus flag
+const ORACLE_THRESHOLD = 7;      // consensus requires 7 signatures
 const ORACLE_CONSENSUS_LABEL = `${ORACLE_THRESHOLD} of ${ORACLE_TOTAL_SLOTS}`;
-const EXPECTED_MUSIG2_CONTEXT_VERSION = 2; // RC43 attempt/evidence-bound context protocol
+const EXPECTED_MUSIG2_CONTEXT_VERSION = 2; // RC44 attempt/evidence-bound context protocol
 const ORACLE_EPOCH_BLOCKS = 40;
 const TARGET_BLOCK_SECONDS = 15;
 
@@ -59,7 +57,24 @@ const ORACLE_NAMES = {
   14: 'Neel',           // Oracle 14
   15: 'DigiSwarm',      // Oracle 15
   16: 'GTO90',          // Oracle 16
-  17: 'digibyte-maxi'   // Oracle 17
+  17: 'digibyte-maxi',  // Oracle 17
+  18: 'Anthony',        // Oracle 18
+  19: 'mbah_jambon',    // Oracle 19
+  20: 'Camden',         // Oracle 20
+  21: 'Twoface123',     // Oracle 21
+  22: 'LivingTheLife',  // Oracle 22
+  23: 'ChozenOne43',    // Oracle 23
+  24: 'ckunchained',    // Oracle 24
+  25: 'JMag',           // Oracle 25
+  26: 'HashedMax',      // Oracle 26
+  27: 'DennisPitallano',// Oracle 27
+  28: 'DigiHash',       // Oracle 28
+  29: 'Michael E',      // Oracle 29
+  30: 'DigibyteDaily',  // Oracle 30
+  31: 'Peer2Peer / DigiRoos', // Oracle 31
+  32: '3DogsKanab',     // Oracle 32
+  33: 'LiberatedLark',  // Oracle 33
+  34: 'Manu_DGB_oracle' // Oracle 34
 };
 
 const formatAgeSeconds = (seconds) => {
@@ -208,7 +223,7 @@ const OraclesPage = () => {
           });
 
           // Only show consensus roster oracles. Older RPCs did not expose
-          // in_consensus, so mapping above falls back to IDs 0-17 for RC43.
+          // in_consensus, so mapping above falls back to IDs 0-34 for RC44.
           const activeOracles = mappedOracles.filter(o => o.in_consensus);
           setOracles(activeOracles);
           setLastUpdated(new Date());
@@ -480,7 +495,7 @@ const OraclesPage = () => {
             </Tooltip>
           </Grid>
           <Grid item xs={12} md={4}>
-            <Tooltip title="Latest on-chain MuSig2 bundle signer count decoded from Core's participation bitmap. This is the actual 9-oracle signing set for the newest bundle." arrow placement="top">
+            <Tooltip title="Latest on-chain MuSig2 bundle signer count decoded from Core's participation bitmap. This is the actual 7-oracle signing set for the newest bundle." arrow placement="top">
               <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help', minHeight: 160, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <Typography variant="body2" color="text.secondary">Oracle Consensus</Typography>
                 <Typography variant="h3" fontWeight="bold" sx={{ color: latestBundleSignerCount > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
@@ -521,7 +536,7 @@ const OraclesPage = () => {
       {isTestnet && (
         <Box sx={{ mt: 2, p: 1.5, backgroundColor: 'rgba(46, 125, 50, 0.08)', borderRadius: '8px', textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
-            <strong>RC43 Phase Two:</strong> {ORACLE_CONSENSUS_LABEL} signatures required | 35-slot reserved roster | {activeOracleCount} testnet roster oracles | MuSig2 aggregate signing (v0x03)
+            <strong>RC44 Phase Two:</strong> {ORACLE_CONSENSUS_LABEL} signatures required | 35-slot reserved roster | {activeOracleCount} testnet roster oracles | MuSig2 aggregate signing (v0x03)
           </Typography>
         </Box>
       )}
@@ -549,7 +564,7 @@ const OraclesPage = () => {
           <SitrepMetric
             label="Signing"
             value={`${latestBundleSignerCount}/${latestBundleRequired}`}
-            detail={hasLatestBundleSignerData ? `actual 9-signer list from block ${latestBundle.height}` : 'waiting for getoraclesigners data'}
+            detail={hasLatestBundleSignerData ? `actual 7-signer list from block ${latestBundle.height}` : 'waiting for getoraclesigners data'}
             ok={latestBundleSignerCount >= latestBundleRequired}
             progressValue={latestBundleSignerCount}
             progressTotal={latestBundleRequired}
@@ -774,7 +789,7 @@ const OraclesPage = () => {
       </Typography>
 
       <Typography variant="body1" sx={{ mb: 3 }}>
-        Help secure the DigiDollar network by running an assigned testnet25 oracle slot.
+        Help secure the DigiDollar network by running an assigned testnet26 oracle slot.
       </Typography>
 
       <Grid container spacing={3}>
@@ -907,7 +922,7 @@ const OraclesPage = () => {
                   </Tooltip>
                 </TableCell>
                 <TableCell sx={{ width: '28%' }}>
-                  <Tooltip title="Signed RC43 operator heartbeat and software/protocol versions reported by this oracle" arrow>
+                  <Tooltip title="Signed RC44 operator heartbeat and software/protocol versions reported by this oracle" arrow>
                     <strong style={{ cursor: 'help' }}>Heartbeat / Version</strong>
                   </Tooltip>
                 </TableCell>
@@ -1056,7 +1071,7 @@ const OraclesPage = () => {
         <Box sx={{ mt: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
           <Typography variant="body2" color="text.secondary">
             <strong>Price Format:</strong> Oracle prices use micro-USD format where 1,000,000 = $1.00.
-            This ensures exact arithmetic with no floating-point errors. RC43 consensus is {ORACLE_CONSENSUS_LABEL} across {ORACLE_TOTAL_SLOTS} reserved slots, with {activeOracleCount} testnet roster oracles displayed above.
+            This ensures exact arithmetic with no floating-point errors. RC44 consensus is {ORACLE_CONSENSUS_LABEL} across {ORACLE_TOTAL_SLOTS} reserved slots, with {activeOracleCount} testnet roster oracles displayed above.
           </Typography>
         </Box>
         </>
@@ -1079,8 +1094,8 @@ const OraclesPage = () => {
               Phase Two (Testnet)
             </Typography>
             <Box component="ul" sx={{ pl: 2, m: 0 }}>
-              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>9-signature oracle quorum</Typography>
-              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>9 of 35 reserved oracle slots required for consensus, with 18 testnet roster oracles</Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>7-signature oracle quorum</Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>7 of 35 reserved oracle slots required for consensus, with 35 testnet roster oracles</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>MuSig2 aggregate signing (v0x03) only</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Exchange fetch and oracle broadcast every 60 seconds</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Compact 22-byte storage per block</Typography>
@@ -1095,7 +1110,7 @@ const OraclesPage = () => {
             </Typography>
             <Box component="ul" sx={{ pl: 2, m: 0 }}>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>MuSig2 aggregate signing (v0x03)</Typography>
-              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>35-slot oracle roster with 9 of 35 signature quorum</Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>35-slot oracle roster with 7 of 35 signature quorum</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>BIP9 activation for deployment</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Same consensus mechanism as testnet</Typography>
               <Typography component="li" variant="body2">Production oracle endpoints</Typography>

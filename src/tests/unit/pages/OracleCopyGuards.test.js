@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 
-describe('RC43 oracle copy guards', () => {
+describe('RC44 oracle copy guards', () => {
   const pageSources = [
     'HomePage.js',
     'OraclesPage.js',
@@ -19,7 +19,7 @@ describe('RC43 oracle copy guards', () => {
     expect(pageSources).not.toMatch(/Price updates every 15 seconds/);
   });
 
-  it('should not describe testnet25 onboarding as a generic GitHub key submission', () => {
+  it('should not describe testnet26 onboarding as a generic GitHub key submission', () => {
     expect(pageSources).not.toMatch(/simple 3-step process/);
     expect(pageSources).not.toMatch(/Step 2: Submit Public Key/);
     expect(pageSources).not.toMatch(/Submit Your Key on GitHub/);
@@ -39,8 +39,8 @@ describe('RC43 oracle copy guards', () => {
     expect(pageSources).toMatch(/Not signing/);
   });
 
-  it('should publish RC43 as the current testnet release, not RC42', () => {
-    expect(pageSources).toMatch(/v9\.26\.0-RC43|RC43/);
+  it('should publish RC44 as the current testnet release, not RC42', () => {
+    expect(pageSources).toMatch(/v9\.26\.0-RC44|RC44/);
     expect(pageSources).not.toMatch(/v9\.26\.0-RC42|RC42 Testnet Update|RC42 MuSig2 Context|RC42 Phase Two|current RC42/);
   });
 });

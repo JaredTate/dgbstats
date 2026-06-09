@@ -201,7 +201,7 @@ const RoadmapPage = () => {
             title: 'Oracle Network Architecture',
             date: '2025-10-12',
             status: 'completed',
-            description: 'Design 35-slot oracle system with 18 active testnet operators and 9-signature MuSig2 aggregate signing',
+            description: 'Design 35-slot oracle system with 35 active testnet operators and 7-signature MuSig2 aggregate signing',
             completionDate: '2025-10-12'
           },
           {
@@ -268,7 +268,7 @@ const RoadmapPage = () => {
         description: 'Implementation of DigiDollar v9.26 with new opcodes, oracle system, and Taproot-based stablecoin functionality. DigiDollar is now active on testnet with 1,850+ tests passing (311 functional + 1,539 C++ unit tests).',
         keyFeatures: [
           '💻 OP_DIGIDOLLAR implementation',
-          '🔧 Oracle network (Phase Two - 35-slot roster, 9-signature MuSig2 quorum)',
+          '🔧 Oracle network (Phase Two - 35-slot roster, 7-signature MuSig2 quorum)',
           '🧪 MAST & Taproot integration',
           '🔐 Consensus rule updates'
         ],
@@ -302,7 +302,7 @@ const RoadmapPage = () => {
             title: 'Oracle Price Feed Implementation',
             date: '2025-12-01',
             status: 'completed',
-            description: 'Six active exchange APIs (Binance, KuCoin, Gate.io, HTX, Crypto.com, CoinGecko) with Phase Two 9-signature consensus',
+            description: 'Six active exchange APIs (Binance, KuCoin, Gate.io, HTX, Crypto.com, CoinGecko) with Phase Two 7-signature consensus',
             completionDate: '2026-01-15'
           },
           {
@@ -342,15 +342,15 @@ const RoadmapPage = () => {
             title: 'DigiDollar Testnet Activation',
             date: '2026-02-20',
             status: 'completed',
-            description: 'DigiDollar fully functional on testnet with oracle price feeds and a 9-signature quorum across a 35-slot roster',
+            description: 'DigiDollar fully functional on testnet with oracle price feeds and a 7-signature quorum across a 35-slot roster',
             completionDate: '2026-02-01'
           },
           {
             id: 'initial-release',
-            title: 'Testnet Release v9.26.0-RC43',
+            title: 'Testnet Release v9.26.0-RC44',
             date: '2026-05-27',
             status: 'completed',
-            description: 'Current testnet25 release candidate before mainnet with full DigiDollar functionality and RC43 oracle roster',
+            description: 'Current testnet26 release candidate before mainnet with full DigiDollar functionality and RC44 oracle roster',
             completionDate: '2026-05-27'
           }
         ]
@@ -387,15 +387,15 @@ const RoadmapPage = () => {
             title: 'DigiByte v9.26 Release Candidate 43 (Current)',
             date: '2026-05-27',
             status: 'completed',
-            description: 'Current testnet25 release candidate (v9.26.0-RC43) — 35-slot oracle roster, 18 active testnet operators, and 9-signature MuSig2 quorum before mainnet',
+            description: 'Current testnet26 release candidate (v9.26.0-RC44) — 35-slot oracle roster, 35 active testnet operators, and 7-signature MuSig2 quorum before mainnet',
             completionDate: '2026-05-27'
           },
           {
             id: 'oracle-phase2-testnet',
-            title: 'RC43 MuSig2 Oracle Testnet Validation',
+            title: 'RC44 MuSig2 Oracle Testnet Validation',
             date: '2026-03-15',
             status: 'pending',
-            description: 'Complete 9-signature oracle consensus validation on testnet25'
+            description: 'Complete 7-signature oracle consensus validation on testnet26'
           },
           {
             id: 'security-pen-testing',

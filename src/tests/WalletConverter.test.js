@@ -62,6 +62,11 @@ describe('Wallet Converter — pure helpers', () => {
     expect(readApplicationId(buf)).toBe(0xFEC5B8E6);
   });
 
+  it('readApplicationId reads testnet26 (RC44) id', () => {
+    const buf = makeFakeSqlite(0xFEC6B9E7);
+    expect(readApplicationId(buf)).toBe(0xFEC6B9E7);
+  });
+
   it('APPLICATION_IDS.testnet23 matches the RC30 pchMessageStart (FD D2 B9 E4)', () => {
     expect(APPLICATION_IDS.testnet23).toBe(0xFDD2B9E4);
   });
@@ -74,9 +79,13 @@ describe('Wallet Converter — pure helpers', () => {
     expect(APPLICATION_IDS.testnet25).toBe(0xFEC5B8E6);
   });
 
-  it('CURRENT_TESTNET points at testnet25 for the current RC43 line', () => {
-    expect(CURRENT_TESTNET).toBe('testnet25');
-    expect(APPLICATION_IDS[CURRENT_TESTNET]).toBe(0xFEC5B8E6);
+  it('APPLICATION_IDS.testnet26 matches the RC44 pchMessageStart (FE C6 B9 E7)', () => {
+    expect(APPLICATION_IDS.testnet26).toBe(0xFEC6B9E7);
+  });
+
+  it('CURRENT_TESTNET points at testnet26 for the current RC44 line', () => {
+    expect(CURRENT_TESTNET).toBe('testnet26');
+    expect(APPLICATION_IDS[CURRENT_TESTNET]).toBe(0xFEC6B9E7);
   });
 
   it('detectNetwork identifies testnet19/20', () => {
@@ -97,6 +106,10 @@ describe('Wallet Converter — pure helpers', () => {
 
   it('detectNetwork identifies testnet25 (RC41/RC42/RC43)', () => {
     expect(detectNetwork(0xFEC5B8E6)).toBe('testnet25');
+  });
+
+  it('detectNetwork identifies testnet26 (RC44)', () => {
+    expect(detectNetwork(0xFEC6B9E7)).toBe('testnet26');
   });
 
   it('detectNetwork identifies mainnet', () => {
@@ -139,6 +152,13 @@ describe('Wallet Converter — pure helpers', () => {
     expect(dv.getUint32(68, false)).toBe(0xFEC5B8E6);
   });
 
+  it('patchApplicationId converts a testnet25 wallet to RC44 testnet26', () => {
+    const buf = makeFakeSqlite(0xFEC5B8E6);
+    const patched = patchApplicationId(buf, APPLICATION_IDS.testnet26);
+    const dv = new DataView(patched);
+    expect(dv.getUint32(68, false)).toBe(0xFEC6B9E7);
+  });
+
   it('testnet21 → testnet23 round-trip preserves all other bytes', () => {
     const original = makeFakeSqlite(0xFDD2B9E3);
     const toT23 = patchApplicationId(original, APPLICATION_IDS.testnet23);
@@ -157,6 +177,13 @@ describe('Wallet Converter — pure helpers', () => {
     const original = makeFakeSqlite(0xFEC4B7E5);
     const toT25 = patchApplicationId(original, APPLICATION_IDS.testnet25);
     const back = patchApplicationId(toT25, APPLICATION_IDS.testnet24);
+    expect(Array.from(new Uint8Array(back))).toEqual(Array.from(new Uint8Array(original)));
+  });
+
+  it('testnet25 → testnet26 round-trip preserves all other bytes', () => {
+    const original = makeFakeSqlite(0xFEC5B8E6);
+    const toT26 = patchApplicationId(original, APPLICATION_IDS.testnet26);
+    const back = patchApplicationId(toT26, APPLICATION_IDS.testnet25);
     expect(Array.from(new Uint8Array(back))).toEqual(Array.from(new Uint8Array(original)));
   });
 
@@ -266,6 +293,13 @@ describe('Wallet Converter — real fixture files', () => {
     expect(dv.getUint32(68, false)).toBe(0xFEC5B8E6);
   });
 
+  it('real testnet21 fixture → testnet26 writes RC44 magic at offset 68-71', () => {
+    const buf = loadFixture('wallet-testnet21.dat');
+    const patched = patchApplicationId(buf, APPLICATION_IDS.testnet26);
+    const dv = new DataView(patched);
+    expect(dv.getUint32(68, false)).toBe(0xFEC6B9E7);
+  });
+
   it('real testnet21 fixture → testnet24 preserves file size and SQLite header', () => {
     const buf = loadFixture('wallet-testnet21.dat');
     const patched = patchApplicationId(buf, APPLICATION_IDS.testnet24);
@@ -277,6 +311,14 @@ describe('Wallet Converter — real fixture files', () => {
   it('real testnet21 fixture → testnet25 preserves file size and SQLite header', () => {
     const buf = loadFixture('wallet-testnet21.dat');
     const patched = patchApplicationId(buf, APPLICATION_IDS.testnet25);
+    expect(patched.byteLength).toBe(buf.byteLength);
+    const header = new Uint8Array(patched, 0, 16);
+    expect(Array.from(header)).toEqual(Array.from(SQLITE_HEADER));
+  });
+
+  it('real testnet21 fixture → testnet26 preserves file size and SQLite header', () => {
+    const buf = loadFixture('wallet-testnet21.dat');
+    const patched = patchApplicationId(buf, APPLICATION_IDS.testnet26);
     expect(patched.byteLength).toBe(buf.byteLength);
     const header = new Uint8Array(patched, 0, 16);
     expect(Array.from(header)).toEqual(Array.from(SQLITE_HEADER));
@@ -309,10 +351,10 @@ describe('WalletConvertPage — component', () => {
     expect(screen.getByText(/never leaves your browser/i)).toBeInTheDocument();
   });
 
-  it('describes testnet25 as the current RC43 network while preserving the same magic bytes', () => {
+  it('describes testnet26 as the current RC44 network with fresh magic bytes', () => {
     renderWithProviders(<WalletConvertPage />, { network: 'testnet', route: '/testnet/convert' });
-    expect(screen.getByText(/RC43 uses the existing testnet25 genesis/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/0xFEC5B8E6/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/RC44 uses the fresh testnet26 genesis/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/0xFEC6B9E7/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/RC41 uses the fresh testnet25 genesis/i)).not.toBeInTheDocument();
   });
 

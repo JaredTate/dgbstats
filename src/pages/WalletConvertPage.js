@@ -20,13 +20,14 @@ export const APPLICATION_IDS = {
   testnet21:      0xFDD2B9E3, // RC28
   testnet23:      0xFDD2B9E4, // RC29 / RC30
   testnet24:      0xFEC4B7E5, // RC34 reset magic, current through RC40
-  testnet25:      0xFEC5B8E6, // current testnet25 magic
+  testnet25:      0xFEC5B8E6, // RC41 / RC42 / RC43 testnet25 magic
+  testnet26:      0xFEC6B9E7, // RC44 reset magic
   regtest:        0xFABFB5DA
 };
 
 // The network the tool currently migrates INTO by default. Bump this
 // whenever a new testnet reset ships.
-export const CURRENT_TESTNET = 'testnet25';
+export const CURRENT_TESTNET = 'testnet26';
 
 const ID_TO_NETWORK = Object.fromEntries(
   Object.entries(APPLICATION_IDS).map(([k, v]) => [v, k])
@@ -191,7 +192,7 @@ const WalletConvertPage = () => {
           <Typography variant="body1" sx={{ maxWidth: '800px', mx: 'auto', color: '#555' }}>
             Patch the SQLite <code>application_id</code> bytes in a wallet.dat file to migrate between testnet versions.
             Use this when copying an oracle wallet from one testnet to another —
-            RC43 uses the existing testnet25 genesis, P2P port 12032, and network magic bytes <code>0xFEC5B8E6</code>,
+            RC44 uses the fresh testnet26 genesis, P2P port 12033, and network magic bytes <code>0xFEC6B9E7</code>,
             so oracle wallets from older testnets will be rejected until their SQLite application_id is converted.
           </Typography>
         </CardContent>
