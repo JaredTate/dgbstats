@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { formatNumber, numberWithCommas } from './utils';
 import styles from './App.module.css';
@@ -13,6 +13,7 @@ import DownloadsPage from './pages/DownloadsPage';
 import NodesPage from './pages/NodesPage';
 import MainnetLayout from './components/MainnetLayout';
 import TestnetLayout from './components/TestnetLayout';
+import MainnetPreLayout from './components/MainnetPreLayout';
 import config from './config';
 import HashratePage from './pages/HashratePage';
 import TaprootPage from './pages/TaprootPage';
@@ -23,6 +24,14 @@ import OraclesPage from './pages/OraclesPage';
 import DDStatsPage from './pages/DDStatsPage';
 import DDActivationPage from './pages/DDActivationPage';
 import WalletConvertPage from './pages/WalletConvertPage';
+
+export const parseBlockRewardResponse = (data) => {
+  const rewardValue = data?.blockReward?.blockreward ?? data?.blockreward ?? data?.blockReward;
+  if (rewardValue == null) return null;
+
+  const parsedReward = parseFloat(rewardValue);
+  return Number.isFinite(parsedReward) ? parsedReward : null;
+};
 
 // Create a custom theme with DigiByte colors
 const theme = createTheme({
@@ -84,29 +93,35 @@ const theme = createTheme({
 
 const App = () => {
   const [blockchainInfo, setBlockchainInfo] = useState(null);
-  const [chainTxStats, setChainTxStats] = useState(null);
+  const [, setChainTxStats] = useState(null);
   const [txOutsetInfo, setTxOutsetInfo] = useState(null);
-  const [blockReward, setBlockReward] = useState(null);
+  const [, setBlockReward] = useState(null);
   const worldPopulation = 8100000000; // Assuming a world population of 8.1 billion
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchData = async () => {
       try {
         const response1 = await fetch(`${config.apiBaseUrl}/api/getblockchaininfo`);
         const data1 = await response1.json();
+        if (!isMounted) return;
         setBlockchainInfo(data1);
 
         const response2 = await fetch(`${config.apiBaseUrl}/api/getchaintxstats`);
         const data2 = await response2.json();
+        if (!isMounted) return;
         setChainTxStats(data2);
 
         const response3 = await fetch(`${config.apiBaseUrl}/api/gettxoutsetinfo`);
         const data3 = await response3.json();
+        if (!isMounted) return;
         setTxOutsetInfo(data3);
 
         const response4 = await fetch(`${config.apiBaseUrl}/api/getblockreward`);
         const data4 = await response4.json();
-        setBlockReward(parseFloat(data4.blockReward.blockreward));
+        if (!isMounted) return;
+        setBlockReward(parseBlockRewardResponse(data4));
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -119,6 +134,7 @@ const App = () => {
     }, 30000);
 
     return () => {
+      isMounted = false;
       clearInterval(interval);
     };
   }, []);
@@ -146,6 +162,9 @@ const App = () => {
               <Route path="/downloads" element={<DownloadsPage />} />
               <Route path="/roadmap" element={<RoadmapPage />} />
               <Route path="/digidollar" element={<DigiDollarPage />} />
+              <Route path="/activation" element={<DDActivationPage />} />
+              <Route path="/oracles" element={<OraclesPage />} />
+              <Route path="/ddstats" element={<DDStatsPage />} />
               <Route path="/nodes" element={<NodesPage />} />
               <Route path="/pools" element={<PoolsPage />} />
               <Route path="/supply" element={<SupplyPage txOutsetInfo={txOutsetInfo} worldPopulation={worldPopulation} />} />
@@ -179,6 +198,14 @@ const App = () => {
               <Route path="digidollar" element={<DigiDollarPage />} />
               <Route path="convert" element={<WalletConvertPage />} />
               <Route path="taproot" element={<TaprootPage />} />
+            </Route>
+
+            {/* Modified mainnet / PRE routes */}
+            <Route path="/mainnet-pre" element={<MainnetPreLayout />}>
+              <Route index element={<Navigate to="activation" replace />} />
+              <Route path="activation" element={<DDActivationPage />} />
+              <Route path="oracles" element={<OraclesPage />} />
+              <Route path="ddstats" element={<DDStatsPage />} />
             </Route>
           </Routes>
         </div>

@@ -313,9 +313,27 @@ describe('OraclesPage', () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
 
       expect(screen.getByText('Technical Specifications')).toBeInTheDocument();
-      expect(screen.getByText('Phase Two (Testnet)')).toBeInTheDocument();
-      expect(screen.getByText('Mainnet (Planned)')).toBeInTheDocument();
+      expect(screen.getByText('Testnet Oracle Configuration')).toBeInTheDocument();
+      expect(screen.getByText('Shared Production Rules')).toBeInTheDocument();
       expect(screen.getByText('Price Validation Limits:')).toBeInTheDocument();
+    });
+
+    it('should render mainnet-pre labels and connect to the PRE WebSocket', async () => {
+      renderWithProviders(<OraclesPage />, { network: 'mainnet-pre' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      expect(mockWebSocket).toHaveBeenCalledWith('ws://localhost:5004');
+      expect(screen.getByText('DigiDollar Mainnet-PRE Oracles')).toBeInTheDocument();
+      expect(screen.getByText('Mainnet-PRE Oracle Price')).toBeInTheDocument();
+
+      sendOracleData(ws);
+
+      await waitFor(() => {
+        expect(screen.getByText('Mainnet-PRE Oracle Network')).toBeInTheDocument();
+        expect(screen.getByText(/v9\.26\.1-pre:/)).toBeInTheDocument();
+        expect(screen.getByText(/isolated P2P port 12046/)).toBeInTheDocument();
+      });
     });
 
     it('should render resource links', async () => {

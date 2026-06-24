@@ -8,27 +8,9 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HourglassTopIcon from '@mui/icons-material/HourglassTop';
 import LockIcon from '@mui/icons-material/Lock';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { useNetwork } from '../context/NetworkContext';
 import IntegrationGuides from '../components/IntegrationGuides';
-
-/**
- * BIP9 activation parameters for DigiDollar on each network
- */
-const TESTNET_PARAMS = {
-  activationThreshold: 70,
-  activationWindow: 200,
-  thresholdBlocks: 140,
-  minActivationHeight: 600,
-  bit: 23
-};
-
-const MAINNET_PARAMS = {
-  activationThreshold: 70,
-  activationWindow: 40320,
-  thresholdBlocks: 28224,
-  minActivationHeight: 22014720,
-  bit: 23
-};
 
 /**
  * Color mapping for BIP9 activation states
@@ -48,37 +30,51 @@ const STATE_ICONS = {
   defined: <HourglassTopIcon />,
   started: <PlayArrowIcon />,
   locked_in: <LockIcon />,
-  active: <CheckCircleIcon />
+  active: <CheckCircleIcon />,
+  failed: <ErrorOutlineIcon />
 };
 
 /**
  * DDActivationPage - DigiDollar BIP9 Activation Status Tracker
  *
  * Tracks the BIP9 soft fork activation lifecycle for DigiDollar through
- * all 4 stages: DEFINED -> STARTED -> LOCKED_IN -> ACTIVE.
+ * BIP9 states: DEFINED -> STARTED -> LOCKED_IN -> ACTIVE, plus FAILED.
  * Receives real-time data via WebSocket from getdigidollardeploymentinfo RPC.
  */
 const DDActivationPage = () => {
-  const { wsBaseUrl, isTestnet } = useNetwork();
-  const params = isTestnet ? TESTNET_PARAMS : MAINNET_PARAMS;
+  const network = useNetwork();
+  const { wsBaseUrl, theme: networkTheme, digiDollarLabel, displayName } = network;
+  const params = network.activation;
+  const primaryColor = networkTheme.primary;
+  const secondaryColor = networkTheme.secondary;
 
-  const [deploymentInfo, setDeploymentInfo] = useState({
+  const [deploymentInfo, setDeploymentInfo] = useState(() => ({
     enabled: false,
     status: 'defined',
-    bit: 23,
+    bit: params.bit,
     start_time: 0,
     timeout: 0,
-    min_activation_height: 0,
+    min_activation_height: params.minActivationHeight,
     signaling_blocks: 0,
-    threshold: 0,
-    period_blocks: 0,
+    threshold: params.threshold,
+    period_blocks: params.activationWindow,
     progress_percent: 0
-  });
+  }));
 
   const [currentHeight, setCurrentHeight] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+    let receivedDeploymentData = false;
+    let fallbackTimer;
+
+    const finishLoading = () => {
+      if (isMounted) {
+        setLoading(false);
+      }
+    };
+
     const socket = new WebSocket(wsBaseUrl);
 
     socket.onopen = () => {
@@ -90,8 +86,10 @@ const DDActivationPage = () => {
         const message = JSON.parse(event.data);
 
         if (message.type === 'ddDeploymentData') {
+          receivedDeploymentData = true;
+          clearTimeout(fallbackTimer);
           setDeploymentInfo(message.data);
-          setLoading(false);
+          finishLoading();
         }
 
         if (message.type === 'initialData') {
@@ -108,7 +106,27 @@ const DDActivationPage = () => {
       }
     };
 
-    return () => socket.close();
+    socket.onerror = () => {
+      finishLoading();
+    };
+
+    socket.onclose = () => {
+      if (!receivedDeploymentData) {
+        finishLoading();
+      }
+    };
+
+    fallbackTimer = setTimeout(() => {
+      if (!receivedDeploymentData) {
+        finishLoading();
+      }
+    }, 5000);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(fallbackTimer);
+      socket.close();
+    };
   }, [wsBaseUrl]);
 
   const status = deploymentInfo.status || 'defined';
@@ -123,13 +141,14 @@ const DDActivationPage = () => {
   const windowEndBlock = windowStartBlock + params.activationWindow - 1;
 
   const stages = [
-    { key: 'defined', label: 'DEFINED', blocks: isTestnet ? '0–199' : 'Pre-signal', description: 'Code exists but is dormant' },
-    { key: 'started', label: 'STARTED', blocks: isTestnet ? '200–399' : 'Signaling open', description: 'Miners signal support (bit 23)' },
-    { key: 'locked_in', label: 'LOCKED_IN', blocks: isTestnet ? '400–599' : 'Threshold met', description: 'Activation guaranteed' },
-    { key: 'active', label: 'ACTIVE', blocks: isTestnet ? '600+' : 'Activated', description: 'DigiDollar is live!' }
+    { key: 'defined', label: 'DEFINED', blocks: params.stages.defined, description: 'Code exists but is dormant' },
+    { key: 'started', label: 'STARTED', blocks: params.stages.started, description: `Miners signal support (bit ${params.bit})` },
+    { key: 'locked_in', label: 'LOCKED_IN', blocks: params.stages.locked_in, description: 'Activation guaranteed' },
+    { key: 'active', label: 'ACTIVE', blocks: params.stages.active, description: 'DigiDollar is live!' },
+    { key: 'failed', label: 'FAILED', blocks: params.stages.failed, description: 'Timeout reached without threshold' }
   ];
 
-  const stateOrder = ['defined', 'started', 'locked_in', 'active'];
+  const stateOrder = ['defined', 'started', 'locked_in', 'active', 'failed'];
   const currentStateIndex = stateOrder.indexOf(status);
 
   // Hero Section
@@ -140,41 +159,39 @@ const DDActivationPage = () => {
         borderRadius: '12px',
         mb: 4,
         overflow: 'hidden',
-        backgroundImage: isTestnet
-          ? 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)'
-          : 'linear-gradient(135deg, #f8f9fa 0%, #e8eef7 100%)',
-        border: `1px solid ${isTestnet ? 'rgba(46, 125, 50, 0.2)' : 'rgba(0, 35, 82, 0.1)'}`
+        backgroundImage: `linear-gradient(135deg, ${primaryColor}12 0%, ${secondaryColor}24 100%)`,
+        border: `1px solid ${primaryColor}26`
       }}
     >
       <CardContent sx={{ py: 4, textAlign: 'center' }}>
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
-          <RocketLaunchIcon sx={{ fontSize: '3rem', color: isTestnet ? '#2e7d32' : '#002352', mr: 2 }} />
+          <RocketLaunchIcon sx={{ fontSize: '3rem', color: primaryColor, mr: 2 }} />
           <Typography
             variant="h2"
             component="h1"
             fontWeight="800"
             sx={{
-              color: isTestnet ? '#2e7d32' : '#002352',
+              color: primaryColor,
               letterSpacing: '0.5px',
               fontSize: { xs: '1.8rem', sm: '2.3rem', md: '2.8rem' }
             }}
           >
-            DigiDollar {isTestnet ? 'Testnet ' : ''}Activation
+            DigiDollar {digiDollarLabel} Activation
           </Typography>
         </Box>
 
         <Typography
           variant="h5"
-          sx={{ color: isTestnet ? '#4caf50' : '#0066cc', mb: 2, fontWeight: 600 }}
+          sx={{ color: secondaryColor, mb: 2, fontWeight: 600 }}
         >
           BIP9 Soft Fork Activation Tracker
         </Typography>
 
-        <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 2, borderColor: isTestnet ? '#4caf50' : '#0066cc', borderWidth: 2 }} />
+        <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 2, borderColor: secondaryColor, borderWidth: 2 }} />
 
         <Typography variant="body1" sx={{ maxWidth: '800px', mx: 'auto', color: '#555' }}>
           Track the activation progress of DigiDollar through the BIP9 miner signaling process.
-          {isTestnet ? ' This testnet deployment uses accelerated parameters for testing.' : ''}
+          {' '}{params.description}
         </Typography>
       </CardContent>
     </Card>
@@ -194,7 +211,7 @@ const DDActivationPage = () => {
           }}
         >
           <CardContent sx={{ textAlign: 'center', py: 4 }}>
-            <Typography variant="h6" sx={{ color: isTestnet ? '#2e7d32' : '#002352', mb: 2 }}>
+            <Typography variant="h6" sx={{ color: primaryColor, mb: 2 }}>
               Is DigiDollar Active?
             </Typography>
             <Typography
@@ -218,7 +235,7 @@ const DDActivationPage = () => {
           }}
         >
           <CardContent sx={{ textAlign: 'center', py: 4 }}>
-            <Typography variant="h6" sx={{ color: isTestnet ? '#2e7d32' : '#002352', mb: 2 }}>
+            <Typography variant="h6" sx={{ color: primaryColor, mb: 2 }}>
               Current Stage
             </Typography>
             <Chip
@@ -245,16 +262,16 @@ const DDActivationPage = () => {
           sx={{
             height: '100%',
             borderRadius: '12px',
-            borderTop: `4px solid ${isTestnet ? '#4caf50' : '#0066cc'}`
+            borderTop: `4px solid ${secondaryColor}`
           }}
         >
           <CardContent sx={{ textAlign: 'center', py: 4 }}>
-            <Typography variant="h6" sx={{ color: isTestnet ? '#2e7d32' : '#002352', mb: 2 }}>
+            <Typography variant="h6" sx={{ color: primaryColor, mb: 2 }}>
               Current Block
             </Typography>
             <Typography
               variant="h3"
-              sx={{ color: isTestnet ? '#2e7d32' : '#002352', fontWeight: 'bold' }}
+              sx={{ color: primaryColor, fontWeight: 'bold' }}
             >
               {currentHeight > 0 ? currentHeight.toLocaleString() : '...'}
             </Typography>
@@ -269,13 +286,13 @@ const DDActivationPage = () => {
     </Grid>
   );
 
-  // 4-Stage Flow Visualization
+  // BIP9 state flow visualization
   const StageFlow = () => (
     <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px' }}>
       <Typography
         variant="h5"
         fontWeight="bold"
-        sx={{ mb: 3, textAlign: 'center', color: isTestnet ? '#2e7d32' : '#002352' }}
+        sx={{ mb: 3, textAlign: 'center', color: primaryColor }}
       >
         Activation Progress
       </Typography>
@@ -287,7 +304,7 @@ const DDActivationPage = () => {
           const stageColor = STATE_COLORS[stage.key];
 
           return (
-            <Grid item xs={12} sm={6} md={3} key={stage.key}>
+            <Grid item xs={12} sm={6} md={2.4} key={stage.key}>
               <Paper
                 elevation={isCurrentStage ? 4 : 1}
                 sx={{
@@ -353,7 +370,7 @@ const DDActivationPage = () => {
             <Typography
               variant="body1"
               fontWeight="bold"
-              sx={{ color: progress >= 70 ? '#4caf50' : '#ff9800' }}
+              sx={{ color: progress >= params.activationThreshold ? '#4caf50' : '#ff9800' }}
             >
               {progress.toFixed(1)}%
             </Typography>
@@ -367,16 +384,16 @@ const DDActivationPage = () => {
                 borderRadius: '12px',
                 backgroundColor: '#e0e0e0',
                 '& .MuiLinearProgress-bar': {
-                  backgroundColor: progress >= 70 ? '#4caf50' : '#ff9800',
+                  backgroundColor: progress >= params.activationThreshold ? '#4caf50' : '#ff9800',
                   borderRadius: '12px'
                 }
               }}
             />
-            {/* 70% threshold marker */}
+            {/* Threshold marker */}
             <Box
               sx={{
                 position: 'absolute',
-                left: '70%',
+                left: `${params.activationThreshold}%`,
                 top: -4,
                 bottom: -4,
                 width: '2px',
@@ -388,14 +405,14 @@ const DDActivationPage = () => {
               variant="caption"
               sx={{
                 position: 'absolute',
-                left: '70%',
+                left: `${params.activationThreshold}%`,
                 top: -20,
                 transform: 'translateX(-50%)',
                 color: '#f44336',
                 fontWeight: 'bold'
               }}
             >
-              70%
+              {params.activationThreshold}%
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
@@ -434,7 +451,7 @@ const DDActivationPage = () => {
   // BIP9 Explanation Section
   const BIP9Explanation = () => (
     <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px' }}>
-      <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, color: isTestnet ? '#2e7d32' : '#002352' }}>
+      <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, color: primaryColor }}>
         How DigiDollar Activates &mdash; BIP9 Explained
       </Typography>
 
@@ -447,7 +464,7 @@ const DDActivationPage = () => {
         <Grid item xs={12} md={6}>
           <Paper elevation={1} sx={{ p: 2, backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
             <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
-              The 4 Stages:
+              The 5 BIP9 States:
             </Typography>
             <Box component="ol" sx={{ pl: 2, m: 0 }}>
               <Typography component="li" variant="body2" sx={{ mb: 1 }}>
@@ -464,6 +481,9 @@ const DDActivationPage = () => {
               <Typography component="li" variant="body2">
                 <strong>ACTIVE</strong> &mdash; DigiDollar is live! Minting, sending, redeeming &mdash; everything unlocks.
               </Typography>
+              <Typography component="li" variant="body2">
+                <strong>FAILED</strong> &mdash; Timeout was reached before enough signaling blocks appeared.
+              </Typography>
             </Box>
           </Paper>
         </Grid>
@@ -473,16 +493,14 @@ const DDActivationPage = () => {
               Why Does This Matter?
             </Typography>
             <Typography variant="body2" sx={{ mb: 2 }}>
-              {isTestnet
-                ? 'This testnet deployment tests the full activation lifecycle with accelerated parameters (200-block windows instead of 40,320). On mainnet, the timeline is longer but the mechanism is identical.'
-                : 'BIP9 ensures network consensus before activating new features. By requiring 70% miner support, the upgrade proceeds only when the network is ready.'}
+              {params.explainer}
             </Typography>
             <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
               Monitor via CLI:
             </Typography>
             <Paper sx={{ p: 1.5, backgroundColor: '#1e1e1e', borderRadius: '4px' }}>
               <Typography variant="body2" sx={{ fontFamily: 'monospace', color: '#4caf50', fontSize: '0.85rem' }}>
-                digibyte-cli {isTestnet ? '-testnet ' : ''}getdigidollardeploymentinfo
+                {network.cliDeploymentCommand}
               </Typography>
             </Paper>
           </Paper>
@@ -494,8 +512,8 @@ const DDActivationPage = () => {
   // Technical Parameters Section
   const TechnicalParameters = () => (
     <Card elevation={3} sx={{ p: 3, borderRadius: '12px' }}>
-      <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, color: isTestnet ? '#2e7d32' : '#002352' }}>
-        {isTestnet ? 'Testnet' : 'Mainnet'} Activation Parameters
+      <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, color: primaryColor }}>
+        {displayName} Activation Parameters
       </Typography>
 
       <Grid container spacing={3}>
@@ -508,7 +526,7 @@ const DDActivationPage = () => {
               { label: 'Signaling Bit', value: params.bit },
               { label: 'Activation Window', value: `${params.activationWindow.toLocaleString()} blocks` },
               { label: 'Required Threshold', value: `${params.thresholdBlocks.toLocaleString()} blocks (${params.activationThreshold}%)` },
-              { label: 'Min Activation Height', value: params.minActivationHeight.toLocaleString() },
+              { label: params.minActivationLabel, value: params.minActivationHeight.toLocaleString() },
             ].map(({ label, value }) => (
               <Box key={label} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Typography variant="body2" color="text.secondary">{label}:</Typography>
@@ -544,7 +562,7 @@ const DDActivationPage = () => {
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <HeroSection />
         <Box sx={{ textAlign: 'center', py: 8 }}>
-          <CircularProgress size={40} sx={{ color: isTestnet ? '#2e7d32' : '#002352' }} />
+          <CircularProgress size={40} sx={{ color: primaryColor }} />
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
             Loading activation data...
           </Typography>

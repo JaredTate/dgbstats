@@ -18,11 +18,15 @@ const Footer = () => {
   });
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchVisitStats = async () => {
       try {
         const response = await axios.get(`${config.apiBaseUrl}/api/visitstats`);
         console.log('Fetched visit stats:', response.data);
-        setVisitStats(response.data);
+        if (isMounted) {
+          setVisitStats(response.data);
+        }
       } catch (error) {
         console.error('Error fetching visit stats:', error);
       }
@@ -36,6 +40,7 @@ const Footer = () => {
 
     // Clean up the interval on component unmount
     return () => {
+      isMounted = false;
       clearInterval(interval);
     };
   }, []);

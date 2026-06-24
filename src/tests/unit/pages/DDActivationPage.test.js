@@ -154,6 +154,23 @@ describe('DDActivationPage', () => {
       expect(ws.readyState).toBe(WebSocket.CLOSED);
     });
 
+    it('should show default network activation state when WebSocket closes before deployment data', async () => {
+      renderWithProviders(<DDActivationPage />, { network: 'mainnet-pre' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      act(() => {
+        ws.onclose({ type: 'close', code: 1006, reason: 'abnormal closure' });
+      });
+
+      await waitFor(() => {
+        expect(screen.queryByText('Loading activation data...')).not.toBeInTheDocument();
+        expect(screen.getByText('Is DigiDollar Active?')).toBeInTheDocument();
+        expect(screen.getByText('Mainnet-PRE Activation Parameters')).toBeInTheDocument();
+        expect(screen.getByText('70 blocks (70%)')).toBeInTheDocument();
+      });
+    });
+
     it('should remove loading state after receiving ddDeploymentData', async () => {
       renderWithProviders(<DDActivationPage />, { network: 'testnet' });
       await waitForAsync();
@@ -751,7 +768,7 @@ describe('DDActivationPage', () => {
       });
     });
 
-    it('should show the 4 stages explanation', async () => {
+    it('should show the 5 BIP9 states explanation', async () => {
       renderWithProviders(<DDActivationPage />, { network: 'testnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
@@ -759,12 +776,13 @@ describe('DDActivationPage', () => {
       sendDeploymentData(ws, mockDeploymentStarted);
 
       await waitFor(() => {
-        expect(screen.getByText('The 4 Stages:')).toBeInTheDocument();
+        expect(screen.getByText('The 5 BIP9 States:')).toBeInTheDocument();
         // Check stage descriptions in the explanation
         const definedTexts = screen.getAllByText(/DigiDollar code exists but is dormant/);
         expect(definedTexts.length).toBeGreaterThan(0);
         expect(screen.getByText(/Miners can begin signaling support/)).toBeInTheDocument();
         expect(screen.getByText(/Activation is guaranteed. No going back./)).toBeInTheDocument();
+        expect(screen.getByText(/Timeout was reached before enough signaling blocks appeared/)).toBeInTheDocument();
       });
     });
 
@@ -800,7 +818,7 @@ describe('DDActivationPage', () => {
       sendDeploymentData(ws, mockDeploymentStarted);
 
       await waitFor(() => {
-        expect(screen.getByText(/200-block windows instead of 40,320/)).toBeInTheDocument();
+        expect(screen.getByText(/tests the full activation lifecycle with accelerated parameters/)).toBeInTheDocument();
       });
     });
 
@@ -1113,6 +1131,28 @@ describe('DDActivationPage', () => {
         expect(screen.getByText('Mainnet Activation Parameters')).toBeInTheDocument();
         expect(screen.getByText('40,320 blocks')).toBeInTheDocument();
         expect(screen.getByText('28,224 blocks (70%)')).toBeInTheDocument();
+        expect(screen.getByText('23,627,520')).toBeInTheDocument();
+      });
+    });
+
+    it('should use mainnet-pre parameters and WebSocket when rendered on mainnet-pre', async () => {
+      renderWithProviders(<DDActivationPage />, { network: 'mainnet-pre' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      sendDeploymentData(ws, {
+        ...mockDeploymentStarted,
+        threshold: 70,
+        period_blocks: 100
+      });
+
+      await waitFor(() => {
+        expect(mockWebSocket).toHaveBeenCalledWith('ws://localhost:5004');
+        expect(screen.getByText('DigiDollar Mainnet-PRE Activation')).toBeInTheDocument();
+        expect(screen.getByText('Mainnet-PRE Activation Parameters')).toBeInTheDocument();
+        expect(screen.getByText('100 blocks')).toBeInTheDocument();
+        expect(screen.getByText('70 blocks (70%)')).toBeInTheDocument();
+        expect(screen.getByText(/digibyte-cli -datadir=<mainnet-pre-datadir> getdigidollardeploymentinfo/)).toBeInTheDocument();
       });
     });
 

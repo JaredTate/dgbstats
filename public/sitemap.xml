@@ -61,6 +61,21 @@
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
+  <url>
+    <loc>https://digibyte.io/activation</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://digibyte.io/oracles</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://digibyte.io/ddstats</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.7</priority>
+  </url>
 
   <!-- Testnet Pages -->
   <url>
@@ -107,5 +122,37 @@
     <loc>https://digibyte.io/testnet/digidollar</loc>
     <changefreq>daily</changefreq>
     <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://digibyte.io/testnet/activation</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://digibyte.io/testnet/oracles</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://digibyte.io/testnet/ddstats</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- Modified Mainnet / PRE Pages -->
+  <url>
+    <loc>https://digibyte.io/mainnet-pre/activation</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://digibyte.io/mainnet-pre/oracles</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://digibyte.io/mainnet-pre/ddstats</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.4</priority>
   </url>
 </urlset>

@@ -46,9 +46,9 @@ describe('Header', () => {
     it('should show Testnet switch button on mainnet', () => {
       renderWithProviders(<Header />, { network: 'mainnet' });
 
-      // Find the testnet switch button
-      const testnetButton = screen.getByRole('link', { name: /Testnet/i });
-      expect(testnetButton).toBeInTheDocument();
+      const testnetButton = screen.getAllByRole('link', { name: /^Testnet$/i }).find(link =>
+        link.getAttribute('href') === '/testnet'
+      );
       expect(testnetButton).toHaveAttribute('href', '/testnet');
     });
 
@@ -96,9 +96,9 @@ describe('Header', () => {
     it('should show Mainnet switch button on testnet', () => {
       renderWithProviders(<Header />, { network: 'testnet' });
 
-      // Find the mainnet switch button (desktop)
-      const mainnetButton = screen.getByRole('link', { name: /Mainnet/i });
-      expect(mainnetButton).toBeInTheDocument();
+      const mainnetButton = screen.getAllByRole('link', { name: /^Mainnet$/i }).find(link =>
+        link.getAttribute('href') === '/'
+      );
       expect(mainnetButton).toHaveAttribute('href', '/');
     });
 
@@ -128,6 +128,18 @@ describe('Header', () => {
     });
   });
 
+  describe('Mainnet-PRE Mode', () => {
+    it('should show MAINNET-PRE chip and only the PRE DigiDollar status pages', () => {
+      renderWithProviders(<Header />, { network: 'mainnet-pre' });
+
+      expect(screen.getAllByText('MAINNET-PRE').length).toBeGreaterThan(0);
+      expect(screen.getByRole('link', { name: 'Activation' })).toHaveAttribute('href', '/mainnet-pre/activation');
+      expect(screen.getByRole('link', { name: 'Oracles' })).toHaveAttribute('href', '/mainnet-pre/oracles');
+      expect(screen.getByRole('link', { name: 'DD Stats' })).toHaveAttribute('href', '/mainnet-pre/ddstats');
+      expect(screen.queryByRole('link', { name: 'DigiDollar' })).not.toBeInTheDocument();
+    });
+  });
+
   describe('Mobile Drawer', () => {
     it('should open mobile drawer when menu button is clicked', () => {
       renderWithProviders(<Header />, { network: 'mainnet' });
@@ -136,9 +148,9 @@ describe('Header', () => {
       const menuButton = screen.getByLabelText('menu');
       fireEvent.click(menuButton);
 
-      // Drawer should be open - look for drawer content
-      // The drawer has network switch text
-      expect(screen.getByText(/Switch to Testnet/i)).toBeInTheDocument();
+      expect(screen.getAllByRole('link', { name: /^Mainnet$/i }).length).toBeGreaterThan(0);
+      expect(screen.getAllByRole('link', { name: /^Testnet$/i }).length).toBeGreaterThan(0);
+      expect(screen.getAllByRole('link', { name: /^Mainnet-PRE$/i }).length).toBeGreaterThan(0);
     });
 
     it('should show correct network switch in mobile drawer for mainnet', () => {
@@ -147,7 +159,14 @@ describe('Header', () => {
       const menuButton = screen.getByLabelText('menu');
       fireEvent.click(menuButton);
 
-      expect(screen.getByText(/Switch to Testnet/i)).toBeInTheDocument();
+      const testnetLinks = screen.getAllByRole('link', { name: /^Testnet$/i }).filter(link =>
+        link.getAttribute('href') === '/testnet'
+      );
+      const preLinks = screen.getAllByRole('link', { name: /^Mainnet-PRE$/i }).filter(link =>
+        link.getAttribute('href') === '/mainnet-pre/activation'
+      );
+      expect(testnetLinks.length).toBeGreaterThan(0);
+      expect(preLinks.length).toBeGreaterThan(0);
     });
 
     it('should show correct network switch in mobile drawer for testnet', () => {
@@ -156,7 +175,14 @@ describe('Header', () => {
       const menuButton = screen.getByLabelText('menu');
       fireEvent.click(menuButton);
 
-      expect(screen.getByText(/Switch to Mainnet/i)).toBeInTheDocument();
+      const mainnetLinks = screen.getAllByRole('link', { name: /^Mainnet$/i }).filter(link =>
+        link.getAttribute('href') === '/'
+      );
+      const preLinks = screen.getAllByRole('link', { name: /^Mainnet-PRE$/i }).filter(link =>
+        link.getAttribute('href') === '/mainnet-pre/activation'
+      );
+      expect(mainnetLinks.length).toBeGreaterThan(0);
+      expect(preLinks.length).toBeGreaterThan(0);
     });
 
     it('should show TESTNET chip in mobile drawer when on testnet', () => {

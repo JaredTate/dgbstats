@@ -74,6 +74,27 @@ export const handlers = [
     });
   }),
 
+  http.get('http://localhost:5001/api/getblockchaininfo', () => {
+    return HttpResponse.json({
+      blocks: 17456789,
+      difficulty: 12345678.9,
+      size_on_disk: 123456789012,
+      difficulties: {}
+    });
+  }),
+
+  http.get('http://localhost:5001/api/getchaintxstats', () => {
+    return HttpResponse.json({ txcount: 123456789 });
+  }),
+
+  http.get('http://localhost:5001/api/getblockreward', () => {
+    return HttpResponse.json({ blockReward: { blockreward: 625 } });
+  }),
+
+  http.get('http://localhost:5001/api/visitstats', () => {
+    return HttpResponse.json({ visitsLast30Days: 0, totalVisits: 0, uniqueVisitors: 0 });
+  }),
+
   // Handle any other endpoint on port 5001
   http.get('http://localhost:5001/*', ({ request }) => {
     console.error(`Unhandled GET request on port 5001: ${request.url}`);

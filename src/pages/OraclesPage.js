@@ -33,14 +33,13 @@ const EMPTY_ORACLE_PRICE = {
   volatility: 0
 };
 
-// RC44 oracle configuration: 35 active testnet roster keys. Live RPC is the
+// Default oracle configuration. Live RPC is the
 // authority, with these constants only used before data arrives.
 const ORACLE_TOTAL_SLOTS = 35;
 const ACTIVE_ORACLE_COUNT = 35;
 const MAX_ACTIVE_ORACLE_ID = 34; // fallback for older RPCs with no in_consensus flag
 const ORACLE_THRESHOLD = 7;      // consensus requires 7 signatures
-const ORACLE_CONSENSUS_LABEL = `${ORACLE_THRESHOLD} of ${ORACLE_TOTAL_SLOTS}`;
-const EXPECTED_MUSIG2_CONTEXT_VERSION = 2; // RC44 attempt/evidence-bound context protocol
+const EXPECTED_MUSIG2_CONTEXT_VERSION = 2;
 const ORACLE_EPOCH_BLOCKS = 40;
 const TARGET_BLOCK_SECONDS = 15;
 
@@ -126,14 +125,22 @@ const getHeartbeatChipColor = (status, signatureValid) => {
 };
 
 /**
- * OraclesPage Component - DigiDollar Oracle Network Status (Testnet Only)
+ * OraclesPage Component - DigiDollar Oracle Network Status
  *
  * Displays real-time information about the decentralized oracle network
  * that provides DGB/USD price feeds for the DigiDollar system.
  * Receives data via WebSocket push from the backend.
  */
 const OraclesPage = () => {
-  const { isTestnet, wsBaseUrl } = useNetwork();
+  const network = useNetwork();
+  const { wsBaseUrl, theme: networkTheme, digiDollarLabel, displayName } = network;
+  const oracleConfig = network.oracle || {};
+  const primaryColor = networkTheme.primary;
+  const secondaryColor = networkTheme.secondary;
+  const oracleTotalSlots = oracleConfig.totalSlots || ORACLE_TOTAL_SLOTS;
+  const activeOracleSlots = oracleConfig.activeSlots || ACTIVE_ORACLE_COUNT;
+  const oracleThreshold = oracleConfig.threshold || ORACLE_THRESHOLD;
+  const oracleConsensusLabel = `${oracleThreshold} of ${oracleTotalSlots}`;
 
   // State for oracle data - start empty, no mock data
   const [oraclePrice, setOraclePrice] = useState(EMPTY_ORACLE_PRICE);
@@ -223,7 +230,7 @@ const OraclesPage = () => {
           });
 
           // Only show consensus roster oracles. Older RPCs did not expose
-          // in_consensus, so mapping above falls back to IDs 0-34 for RC44.
+          // in_consensus, so mapping above falls back to IDs 0-34.
           const activeOracles = mappedOracles.filter(o => o.in_consensus);
           setOracles(activeOracles);
           setLastUpdated(new Date());
@@ -259,12 +266,12 @@ const OraclesPage = () => {
   const hasData = oraclePrice.oracle_count > 0 || oracles.length > 0;
 
   // Count oracles that are actively signing prices and publishing heartbeats.
-  const activeOracleCount = oracles.length || ACTIVE_ORACLE_COUNT;
+  const activeOracleCount = oracles.length || activeOracleSlots;
   const isOracleSigningPrice = (oracle) => oracle.status === 'reporting' && oracle.signature_valid;
   const priceSigningCount = oracles.filter(isOracleSigningPrice).length;
   const latestBundle = oracleSigners?.bundles?.[0] || null;
   const hasLatestBundleSignerData = Boolean(latestBundle && Array.isArray(latestBundle.signer_ids));
-  const latestBundleRequired = Number(oracleSigners?.required_signers) || ORACLE_THRESHOLD;
+  const latestBundleRequired = Number(oracleSigners?.required_signers) || oracleThreshold;
   const latestBundleSignerCount = oracles.filter(o => o.signed_latest_bundle).length || Number(latestBundle?.signer_count) || 0;
   const freshHeartbeatCount = oracles.filter(o => o.heartbeat_status === 'fresh' && o.heartbeat_signature_valid).length;
   const rc43ContextCount = oracles.filter(o =>
@@ -274,9 +281,9 @@ const OraclesPage = () => {
   ).length;
   const locallyRunningCount = oracles.filter(o => o.is_running_locally).length;
   const consensusReady = (!hasLatestBundleSignerData || latestBundleSignerCount >= latestBundleRequired) &&
-    priceSigningCount >= ORACLE_THRESHOLD &&
-    freshHeartbeatCount >= ORACLE_THRESHOLD &&
-    rc43ContextCount >= ORACLE_THRESHOLD;
+    priceSigningCount >= oracleThreshold &&
+    freshHeartbeatCount >= oracleThreshold &&
+    rc43ContextCount >= oracleThreshold;
   const versionBuckets = Object.values(oracles.reduce((buckets, oracle) => {
     const version = oracle.software_version || 'No version reported';
     if (!buckets[version]) {
@@ -319,7 +326,7 @@ const OraclesPage = () => {
     const blocksUntilNextEpoch = currentHeight > 0
       ? Math.max(0, nextEpochHeight - currentHeight)
       : ORACLE_EPOCH_BLOCKS;
-    const requiredSigners = Number(ddDeploymentInfo?.oracle_consensus_required) || ORACLE_THRESHOLD;
+    const requiredSigners = Number(ddDeploymentInfo?.oracle_consensus_required) || oracleThreshold;
 
     return {
       epoch,
@@ -382,33 +389,31 @@ const OraclesPage = () => {
         borderRadius: '12px',
         mb: 4,
         overflow: 'hidden',
-        backgroundImage: isTestnet
-          ? 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)'
-          : 'linear-gradient(135deg, #f8f9fa 0%, #e8eef7 100%)',
-        border: `1px solid ${isTestnet ? 'rgba(46, 125, 50, 0.2)' : 'rgba(0, 35, 82, 0.1)'}`
+        backgroundImage: `linear-gradient(135deg, ${primaryColor}12 0%, ${secondaryColor}24 100%)`,
+        border: `1px solid ${primaryColor}26`
       }}
     >
       <CardContent sx={{ py: 3, textAlign: 'center' }}>
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
-          <SensorsIcon sx={{ fontSize: '3rem', color: isTestnet ? '#2e7d32' : '#002352', mr: 2 }} />
+          <SensorsIcon sx={{ fontSize: '3rem', color: primaryColor, mr: 2 }} />
           <Typography
             variant="h2"
             component="h1"
             fontWeight="800"
             sx={{
-              color: isTestnet ? '#2e7d32' : '#002352',
+              color: primaryColor,
               letterSpacing: '0.5px',
               fontSize: { xs: '1.8rem', sm: '2.3rem', md: '2.8rem' }
             }}
           >
-            DigiDollar Testnet Oracles
+            DigiDollar {digiDollarLabel} Oracles
           </Typography>
         </Box>
 
         <Typography
           variant="h5"
           sx={{
-            color: isTestnet ? '#4caf50' : '#0066cc',
+            color: secondaryColor,
             mb: 2,
             fontWeight: 600
           }}
@@ -416,7 +421,7 @@ const OraclesPage = () => {
           Decentralized Price Feed Network
         </Typography>
 
-        <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 2, borderColor: isTestnet ? '#4caf50' : '#0066cc', borderWidth: 2 }} />
+        <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 2, borderColor: secondaryColor, borderWidth: 2 }} />
 
         <Typography
           variant="body1"
@@ -434,7 +439,7 @@ const OraclesPage = () => {
 
   // Current Price Card
   const CurrentPriceCard = () => (
-    <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px', borderTop: `4px solid ${isTestnet ? '#4caf50' : '#0066cc'}` }}>
+    <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px', borderTop: `4px solid ${secondaryColor}` }}>
       {/* Error Alert - only show when no data is available */}
       {error && !hasData && (
         <Alert severity="warning" sx={{ mb: 2 }}>
@@ -444,9 +449,9 @@ const OraclesPage = () => {
 
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <AttachMoneyIcon sx={{ fontSize: '2rem', color: isTestnet ? '#2e7d32' : '#002352', mr: 1 }} />
-          <Typography variant="h5" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
-            Testnet Oracle Price
+          <AttachMoneyIcon sx={{ fontSize: '2rem', color: primaryColor, mr: 1 }} />
+          <Typography variant="h5" fontWeight="bold" sx={{ color: primaryColor }}>
+            {displayName} Oracle Price
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -460,7 +465,7 @@ const OraclesPage = () => {
 
       {loading ? (
         <Box sx={{ textAlign: 'center', py: 4 }}>
-          <CircularProgress size={40} sx={{ color: isTestnet ? '#2e7d32' : '#002352' }} />
+          <CircularProgress size={40} sx={{ color: primaryColor }} />
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>Loading oracle data...</Typography>
         </Box>
       ) : !hasData && ddDeploymentStatus && ddDeploymentStatus !== 'active' ? (
@@ -483,7 +488,7 @@ const OraclesPage = () => {
             <Tooltip title="Consensus price from oracle network - median of all active oracle price feeds with outlier filtering" arrow placement="top">
               <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help', minHeight: 160, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <Typography variant="body2" color="text.secondary">DGB/USD Price</Typography>
-                <Typography variant="h3" fontWeight="bold" sx={{ color: oraclePrice.price_micro_usd > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
+                <Typography variant="h3" fontWeight="bold" sx={{ color: oraclePrice.price_micro_usd > 0 ? primaryColor : '#9e9e9e' }}>
                   {formatPrice(oraclePrice.price_micro_usd)}
                 </Typography>
                 {oraclePrice.price_micro_usd > 0 && (
@@ -498,8 +503,8 @@ const OraclesPage = () => {
             <Tooltip title="Latest on-chain MuSig2 bundle signer count decoded from Core's participation bitmap. This is the actual 7-oracle signing set for the newest bundle." arrow placement="top">
               <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help', minHeight: 160, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <Typography variant="body2" color="text.secondary">Oracle Consensus</Typography>
-                <Typography variant="h3" fontWeight="bold" sx={{ color: latestBundleSignerCount > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
-                  {ORACLE_THRESHOLD}/{ORACLE_TOTAL_SLOTS}
+                <Typography variant="h3" fontWeight="bold" sx={{ color: latestBundleSignerCount > 0 ? primaryColor : '#9e9e9e' }}>
+                  {oracleThreshold}/{oracleTotalSlots}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   signatures required
@@ -516,7 +521,7 @@ const OraclesPage = () => {
             <Tooltip title="Block height when the oracle price was last updated. Price becomes stale after 20 blocks without update" arrow placement="top">
               <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px', cursor: 'help', minHeight: 160, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <Typography variant="body2" color="text.secondary">Last Update</Typography>
-                <Typography variant="h4" fontWeight="bold" sx={{ color: oraclePrice.last_update_height > 0 ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}>
+                <Typography variant="h4" fontWeight="bold" sx={{ color: oraclePrice.last_update_height > 0 ? primaryColor : '#9e9e9e' }}>
                   {oraclePrice.last_update_height > 0 ? `Block ${oraclePrice.last_update_height.toLocaleString()}` : 'No Data'}
                 </Typography>
                 {oraclePrice.last_update_height > 0 && (
@@ -533,13 +538,11 @@ const OraclesPage = () => {
         </Grid>
       )}
 
-      {isTestnet && (
-        <Box sx={{ mt: 2, p: 1.5, backgroundColor: 'rgba(46, 125, 50, 0.08)', borderRadius: '8px', textAlign: 'center' }}>
-          <Typography variant="body2" color="text.secondary">
-            <strong>RC44 Phase Two:</strong> {ORACLE_CONSENSUS_LABEL} signatures required | 35-slot reserved roster | {activeOracleCount} testnet roster oracles | MuSig2 aggregate signing (v0x03)
-          </Typography>
-        </Box>
-      )}
+      <Box sx={{ mt: 2, p: 1.5, backgroundColor: `${primaryColor}12`, borderRadius: '8px', textAlign: 'center' }}>
+        <Typography variant="body2" color="text.secondary">
+          <strong>{oracleConfig.releaseLabel}:</strong> {oracleConfig.phaseSummary} | {activeOracleCount} {oracleConfig.rosterLabel} oracles visible
+        </Typography>
+      </Box>
     </Card>
   );
 
@@ -548,7 +551,7 @@ const OraclesPage = () => {
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 2, flexWrap: 'wrap' }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <VerifiedIcon sx={{ fontSize: '2rem', color: consensusReady ? '#2e7d32' : '#ed6c02', mr: 1 }} />
-          <Typography variant="h5" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
+          <Typography variant="h5" fontWeight="bold" sx={{ color: primaryColor }}>
             Oracle Network Status
           </Typography>
         </Box>
@@ -574,8 +577,8 @@ const OraclesPage = () => {
           <SitrepMetric
             label="Live Price Feeds"
             value={`${priceSigningCount}/${activeOracleCount}`}
-            detail={`${ORACLE_THRESHOLD} valid signed price feeds required`}
-            ok={priceSigningCount >= ORACLE_THRESHOLD}
+            detail={`${oracleThreshold} valid signed price feeds required`}
+            ok={priceSigningCount >= oracleThreshold}
             progressValue={priceSigningCount}
           />
         </Grid>
@@ -584,7 +587,7 @@ const OraclesPage = () => {
             label="Online Heartbeats"
             value={`${freshHeartbeatCount}/${activeOracleCount}`}
             detail="signed operator status, fresh under 30 minutes"
-            ok={freshHeartbeatCount >= ORACLE_THRESHOLD}
+            ok={freshHeartbeatCount >= oracleThreshold}
             progressValue={freshHeartbeatCount}
           />
         </Grid>
@@ -593,29 +596,29 @@ const OraclesPage = () => {
             label="Compatible Software"
             value={`${rc43ContextCount}/${activeOracleCount}`}
             detail={`MuSig2 context ${EXPECTED_MUSIG2_CONTEXT_VERSION}+ with valid heartbeat`}
-            ok={rc43ContextCount >= ORACLE_THRESHOLD}
+            ok={rc43ContextCount >= oracleThreshold}
             progressValue={rc43ContextCount}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={2.4}>
           <SitrepMetric
             label="Roster Oracles"
-            value={`${activeOracleCount}/${ORACLE_TOTAL_SLOTS}`}
-            detail={`configured testnet roster from Core; ${locallyRunningCount} local oracle${locallyRunningCount === 1 ? '' : 's'} visible`}
-            ok={activeOracleCount >= ORACLE_THRESHOLD}
+            value={`${activeOracleCount}/${oracleTotalSlots}`}
+            detail={`configured ${oracleConfig.rosterLabel} from Core; ${locallyRunningCount} local oracle${locallyRunningCount === 1 ? '' : 's'} visible`}
+            ok={activeOracleCount >= oracleThreshold}
             progressValue={activeOracleCount}
-            progressTotal={ORACLE_TOTAL_SLOTS}
+            progressTotal={oracleTotalSlots}
           />
         </Grid>
       </Grid>
 
       <Alert severity="info" sx={{ mt: 2 }}>
-        Signing means this oracle actually signed the newest on-chain DigiDollar price bundle. Live price feed means the oracle is online and broadcasting a valid signed price. Roster oracles are the configured testnet oracles loaded from Core.
+        Signing means this oracle actually signed the newest on-chain DigiDollar price bundle. Live price feed means the oracle is online and broadcasting a valid signed price. Roster oracles are the configured {oracleConfig.rosterLabel} loaded from Core.
       </Alert>
 
       {versionBuckets.length > 0 && (
         <Box sx={{ mt: 3 }}>
-          <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1, color: isTestnet ? '#2e7d32' : '#002352' }}>
+          <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1, color: primaryColor }}>
             Oracle Versions
           </Typography>
           <Grid container spacing={1.5}>
@@ -630,7 +633,7 @@ const OraclesPage = () => {
                     backgroundColor: bucket.version === 'No version reported' ? '#fafafa' : 'rgba(46, 125, 50, 0.05)'
                   }}
                 >
-                  <Typography variant="body2" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
+                  <Typography variant="body2" fontWeight="bold" sx={{ color: primaryColor }}>
                     {bucket.version}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
@@ -659,7 +662,7 @@ const OraclesPage = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 2, flexWrap: 'wrap' }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <HourglassTopIcon sx={{ fontSize: '2rem', color: stateOk ? '#2e7d32' : '#ed6c02', mr: 1 }} />
-            <Typography variant="h5" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
+            <Typography variant="h5" fontWeight="bold" sx={{ color: primaryColor }}>
               Oracle Round Clock
             </Typography>
           </Box>
@@ -674,7 +677,7 @@ const OraclesPage = () => {
           <Grid item xs={12} sm={6} md={3}>
             <Paper elevation={0} sx={{ p: 2, height: '100%', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
               <Typography variant="body2" color="text.secondary">Current Round</Typography>
-              <Typography variant="h4" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
+              <Typography variant="h4" fontWeight="bold" sx={{ color: primaryColor }}>
                 Round {epochInfo.epoch.toLocaleString()}
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -685,7 +688,7 @@ const OraclesPage = () => {
           <Grid item xs={12} sm={6} md={3}>
             <Paper elevation={0} sx={{ p: 2, height: '100%', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
               <Typography variant="body2" color="text.secondary">Round Blocks</Typography>
-              <Typography variant="h6" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
+              <Typography variant="h6" fontWeight="bold" sx={{ color: primaryColor }}>
                 Blocks {epochInfo.epochStartHeight.toLocaleString()}-{epochInfo.epochEndHeight.toLocaleString()}
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -696,7 +699,7 @@ const OraclesPage = () => {
           <Grid item xs={12} sm={6} md={3}>
             <Paper elevation={0} sx={{ p: 2, height: '100%', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
               <Typography variant="body2" color="text.secondary">Next Round</Typography>
-              <Typography variant="h6" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
+              <Typography variant="h6" fontWeight="bold" sx={{ color: primaryColor }}>
                 Next round: block {epochInfo.nextEpochHeight.toLocaleString()}
               </Typography>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
@@ -738,7 +741,7 @@ const OraclesPage = () => {
   // What Are Oracles Section
   const WhatAreOraclesSection = () => (
     <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px' }}>
-      <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, color: isTestnet ? '#2e7d32' : '#002352' }}>
+      <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, color: primaryColor }}>
         What Are Oracles?
       </Typography>
 
@@ -784,18 +787,18 @@ const OraclesPage = () => {
   // Become an Oracle Operator Section
   const BecomeOracleSection = () => (
     <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px', backgroundColor: '#fafafa' }}>
-      <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, color: isTestnet ? '#2e7d32' : '#002352' }}>
+      <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, color: primaryColor }}>
         Become an Oracle Operator
       </Typography>
 
       <Typography variant="body1" sx={{ mb: 3 }}>
-        Help secure the DigiDollar network by running an assigned testnet26 oracle slot.
+        Help secure the DigiDollar network by running an {oracleConfig.operatorSlotLabel}.
       </Typography>
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>
-          <Paper elevation={2} sx={{ p: 3, textAlign: 'center', height: '100%', borderTop: `4px solid ${isTestnet ? '#4caf50' : '#0066cc'}` }}>
-            <KeyIcon sx={{ fontSize: '3rem', color: isTestnet ? '#4caf50' : '#0066cc', mb: 2 }} />
+          <Paper elevation={2} sx={{ p: 3, textAlign: 'center', height: '100%', borderTop: `4px solid ${secondaryColor}` }}>
+            <KeyIcon sx={{ fontSize: '3rem', color: secondaryColor, mb: 2 }} />
             <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
               Step 1: Create Oracle Key
             </Typography>
@@ -806,8 +809,8 @@ const OraclesPage = () => {
           </Paper>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Paper elevation={2} sx={{ p: 3, textAlign: 'center', height: '100%', borderTop: `4px solid ${isTestnet ? '#4caf50' : '#0066cc'}` }}>
-            <SendIcon sx={{ fontSize: '3rem', color: isTestnet ? '#4caf50' : '#0066cc', mb: 2 }} />
+          <Paper elevation={2} sx={{ p: 3, textAlign: 'center', height: '100%', borderTop: `4px solid ${secondaryColor}` }}>
+            <SendIcon sx={{ fontSize: '3rem', color: secondaryColor, mb: 2 }} />
             <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
               Step 2: Coordinate Slot Assignment
             </Typography>
@@ -818,8 +821,8 @@ const OraclesPage = () => {
           </Paper>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Paper elevation={2} sx={{ p: 3, textAlign: 'center', height: '100%', borderTop: `4px solid ${isTestnet ? '#4caf50' : '#0066cc'}` }}>
-            <CloudDoneIcon sx={{ fontSize: '3rem', color: isTestnet ? '#4caf50' : '#0066cc', mb: 2 }} />
+          <Paper elevation={2} sx={{ p: 3, textAlign: 'center', height: '100%', borderTop: `4px solid ${secondaryColor}` }}>
+            <CloudDoneIcon sx={{ fontSize: '3rem', color: secondaryColor, mb: 2 }} />
             <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
               Step 3: Start Oracle
             </Typography>
@@ -838,8 +841,8 @@ const OraclesPage = () => {
           href="https://github.com/DigiByte-Core/digibyte/blob/feature/digidollar-v1/DIGIDOLLAR_ORACLE_SETUP.md"
           target="_blank"
           sx={{
-            backgroundColor: isTestnet ? '#2e7d32' : '#002352',
-            '&:hover': { backgroundColor: isTestnet ? '#1b5e20' : '#001c41' }
+            backgroundColor: primaryColor,
+            '&:hover': { backgroundColor: primaryColor }
           }}
         >
           Oracle Setup Guide
@@ -850,8 +853,8 @@ const OraclesPage = () => {
           href="https://github.com/DigiByte-Core/digibyte/issues"
           target="_blank"
           sx={{
-            borderColor: isTestnet ? '#2e7d32' : '#002352',
-            color: isTestnet ? '#2e7d32' : '#002352'
+            borderColor: primaryColor,
+            color: primaryColor
           }}
         >
           Coordinate Operator Slot
@@ -865,16 +868,16 @@ const OraclesPage = () => {
     return (
       <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <SecurityIcon sx={{ fontSize: '2rem', color: isTestnet ? '#2e7d32' : '#002352', mr: 1 }} />
-          <Typography variant="h5" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
-            Testnet Oracle Network
+          <SecurityIcon sx={{ fontSize: '2rem', color: primaryColor, mr: 1 }} />
+          <Typography variant="h5" fontWeight="bold" sx={{ color: primaryColor }}>
+            {displayName} Oracle Network
           </Typography>
           {oracles.length > 0 ? (
             <Chip
               label={hasLatestBundleSignerData
                 ? `${latestBundleSignerCount} / ${latestBundleRequired} Signing`
                 : `${priceSigningCount} / ${activeOracleCount} Live Price Feeds`}
-              color={(hasLatestBundleSignerData ? latestBundleSignerCount >= latestBundleRequired : priceSigningCount >= ORACLE_THRESHOLD) ? 'success' : 'warning'}
+              color={(hasLatestBundleSignerData ? latestBundleSignerCount >= latestBundleRequired : priceSigningCount >= oracleThreshold) ? 'success' : 'warning'}
               size="small"
               sx={{ ml: 2 }}
             />
@@ -890,7 +893,7 @@ const OraclesPage = () => {
 
         {loading ? (
           <Box sx={{ textAlign: 'center', py: 4 }}>
-            <CircularProgress size={40} sx={{ color: isTestnet ? '#2e7d32' : '#002352' }} />
+            <CircularProgress size={40} sx={{ color: primaryColor }} />
             <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>Loading oracle network...</Typography>
           </Box>
         ) : oracles.length === 0 ? (
@@ -904,7 +907,7 @@ const OraclesPage = () => {
 
         <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e0e0e0', overflowX: 'visible' }}>
           <Table sx={{ tableLayout: 'fixed', width: '100%' }}>
-            <TableHead sx={{ backgroundColor: isTestnet ? 'rgba(46, 125, 50, 0.1)' : 'rgba(0, 35, 82, 0.05)' }}>
+            <TableHead sx={{ backgroundColor: `${primaryColor}12` }}>
               <TableRow>
                 <TableCell sx={{ width: '15%' }}>
                   <Tooltip title="Oracle operator name and unique identifier" arrow>
@@ -922,7 +925,7 @@ const OraclesPage = () => {
                   </Tooltip>
                 </TableCell>
                 <TableCell sx={{ width: '28%' }}>
-                  <Tooltip title="Signed RC44 operator heartbeat and software/protocol versions reported by this oracle" arrow>
+                  <Tooltip title="Signed operator heartbeat and software/protocol versions reported by this oracle" arrow>
                     <strong style={{ cursor: 'help' }}>Heartbeat / Version</strong>
                   </Tooltip>
                 </TableCell>
@@ -949,7 +952,7 @@ const OraclesPage = () => {
                 >
                   <TableCell>
                     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                      <Typography variant="body2" fontWeight="bold" sx={{ color: isTestnet ? '#2e7d32' : '#002352' }}>
+                      <Typography variant="body2" fontWeight="bold" sx={{ color: primaryColor }}>
                         {oracle.name || `Oracle ${oracle.oracle_id}`}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
@@ -975,7 +978,7 @@ const OraclesPage = () => {
                     <Typography
                       variant="body2"
                       fontWeight="bold"
-                      sx={{ color: oracle.status === 'reporting' ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e' }}
+                      sx={{ color: oracle.status === 'reporting' ? primaryColor : '#9e9e9e' }}
                     >
                       {oracle.status === 'reporting' ? formatPrice(oracle.price_micro_usd) : '--'}
                     </Typography>
@@ -1000,7 +1003,7 @@ const OraclesPage = () => {
                           {formatAgeSeconds(oracle.heartbeat_age_seconds)}
                         </Typography>
                       </Box>
-                      <Typography variant="body2" fontWeight="bold" sx={{ color: oracle.software_version ? (isTestnet ? '#2e7d32' : '#002352') : '#9e9e9e', overflowWrap: 'anywhere' }}>
+                      <Typography variant="body2" fontWeight="bold" sx={{ color: oracle.software_version ? primaryColor : '#9e9e9e', overflowWrap: 'anywhere' }}>
                         {oracle.software_version || 'No version reported'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
@@ -1048,10 +1051,10 @@ const OraclesPage = () => {
                             textOverflow: 'ellipsis',
                             display: 'block',
                             textDecoration: 'none',
-                            color: isTestnet ? '#2e7d32' : '#002352',
+                            color: primaryColor,
                             '&:hover': {
                               textDecoration: 'underline',
-                              color: isTestnet ? '#4caf50' : '#0066cc'
+                              color: secondaryColor
                             }
                           }}
                         >
@@ -1071,7 +1074,7 @@ const OraclesPage = () => {
         <Box sx={{ mt: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
           <Typography variant="body2" color="text.secondary">
             <strong>Price Format:</strong> Oracle prices use micro-USD format where 1,000,000 = $1.00.
-            This ensures exact arithmetic with no floating-point errors. RC44 consensus is {ORACLE_CONSENSUS_LABEL} across {ORACLE_TOTAL_SLOTS} reserved slots, with {activeOracleCount} testnet roster oracles displayed above.
+            This ensures exact arithmetic with no floating-point errors. Consensus is {oracleConsensusLabel} across {oracleTotalSlots} reserved slots, with {activeOracleCount} {oracleConfig.rosterLabel} oracles displayed above.
           </Typography>
         </Box>
         </>
@@ -1083,7 +1086,7 @@ const OraclesPage = () => {
   // Technical Details Section
   const TechnicalSection = () => (
     <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px' }}>
-      <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, color: isTestnet ? '#2e7d32' : '#002352' }}>
+      <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, color: primaryColor }}>
         Technical Specifications
       </Typography>
 
@@ -1091,28 +1094,28 @@ const OraclesPage = () => {
         <Grid item xs={12} md={6}>
           <Paper elevation={1} sx={{ p: 2, backgroundColor: '#f8f9fa' }}>
             <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 2 }}>
-              Phase Two (Testnet)
+              {displayName} Oracle Configuration
             </Typography>
             <Box component="ul" sx={{ pl: 2, m: 0 }}>
-              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>7-signature oracle quorum</Typography>
-              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>7 of 35 reserved oracle slots required for consensus, with 35 testnet roster oracles</Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>{oracleThreshold}-signature oracle quorum</Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>{oracleConsensusLabel} reserved oracle slots required for consensus, with {activeOracleSlots} {oracleConfig.rosterLabel} oracles</Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>{network.digiDollarRelease.version} on {network.digiDollarRelease.network}, P2P port {network.digiDollarRelease.p2pPort}</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>MuSig2 aggregate signing (v0x03) only</Typography>
-              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Exchange fetch and oracle broadcast every 60 seconds</Typography>
-              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Compact 22-byte storage per block</Typography>
-              <Typography component="li" variant="body2">BIP-340 Schnorr signatures</Typography>
+              <Typography component="li" variant="body2">BIP9 deployment status comes from the local Core RPC feed</Typography>
             </Box>
           </Paper>
         </Grid>
         <Grid item xs={12} md={6}>
           <Paper elevation={1} sx={{ p: 2, backgroundColor: '#f8f9fa' }}>
             <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 2 }}>
-              Mainnet (Planned)
+              Shared Production Rules
             </Typography>
             <Box component="ul" sx={{ pl: 2, m: 0 }}>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>MuSig2 aggregate signing (v0x03)</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>35-slot oracle roster with 7 of 35 signature quorum</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>BIP9 activation for deployment</Typography>
-              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Same consensus mechanism as testnet</Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Exchange fetch and oracle broadcast every 60 seconds</Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Compact 22-byte storage per block</Typography>
               <Typography component="li" variant="body2">Production oracle endpoints</Typography>
             </Box>
           </Paper>
@@ -1139,7 +1142,7 @@ const OraclesPage = () => {
         severity="info"
         sx={{ mb: 3, borderRadius: '12px' }}
         action={
-          <Button color="inherit" size="small" component={RouterLink} to="/testnet/activation">
+          <Button color="inherit" size="small" component={RouterLink} to={network.getNetworkPath('/activation')}>
             Track Activation →
           </Button>
         }

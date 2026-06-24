@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
   Container, Typography, Box, Grid, Card, CardContent,
   Divider, Chip, LinearProgress, Paper, Alert, Tooltip,
-  IconButton, CircularProgress, Button
+  Button
 } from '@mui/material';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import LockIcon from '@mui/icons-material/Lock';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
@@ -18,16 +17,6 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import { Link as RouterLink } from 'react-router-dom';
 import { useNetwork } from '../context/NetworkContext';
 import IntegrationGuides from '../components/IntegrationGuides';
-
-const TESTNET_RELEASE = {
-  version: 'v9.26.0-RC44',
-  network: 'testnet26',
-  p2pPort: '12033',
-  activationHeight: 600,
-  oracleTotalSlots: 35,
-  activeOracleSlots: 35,
-  oracleThreshold: 7
-};
 
 // Empty initial state - no mock data
 const EMPTY_DD_STATS = {
@@ -53,7 +42,7 @@ const EMPTY_DD_STATS = {
 };
 
 /**
- * DDStatsPage Component - DigiDollar Network Statistics (Testnet Only)
+ * DDStatsPage Component - DigiDollar Network Statistics
  *
  * Displays real-time network-wide DigiDollar statistics including:
  * - Total DD supply and collateral locked
@@ -63,11 +52,15 @@ const EMPTY_DD_STATS = {
  * Receives data via WebSocket push from the backend.
  */
 const DDStatsPage = () => {
-  const { theme: networkTheme, isTestnet, wsBaseUrl } = useNetwork();
+  const network = useNetwork();
+  const { theme: networkTheme, wsBaseUrl, digiDollarLabel } = network;
+  const release = network.digiDollarRelease;
+  const primaryColor = networkTheme.primary;
+  const secondaryColor = networkTheme.secondary;
 
   // State for DD stats - start empty, no mock data
   const [ddStats, setDdStats] = useState(EMPTY_DD_STATS);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [oracleCount, setOracleCount] = useState(0); // Track active oracles separately
@@ -170,33 +163,31 @@ const DDStatsPage = () => {
         borderRadius: '12px',
         mb: 4,
         overflow: 'hidden',
-        backgroundImage: isTestnet
-          ? 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)'
-          : 'linear-gradient(135deg, #f8f9fa 0%, #e8eef7 100%)',
-        border: `1px solid ${isTestnet ? 'rgba(46, 125, 50, 0.2)' : 'rgba(0, 35, 82, 0.1)'}`
+        backgroundImage: `linear-gradient(135deg, ${primaryColor}12 0%, ${secondaryColor}24 100%)`,
+        border: `1px solid ${primaryColor}26`
       }}
     >
       <CardContent sx={{ py: 4, textAlign: 'center' }}>
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
-          <ShowChartIcon sx={{ fontSize: '3rem', color: isTestnet ? '#2e7d32' : '#002352', mr: 2 }} />
+          <ShowChartIcon sx={{ fontSize: '3rem', color: primaryColor, mr: 2 }} />
           <Typography
             variant="h2"
             component="h1"
             fontWeight="800"
             sx={{
-              color: isTestnet ? '#2e7d32' : '#002352',
+              color: primaryColor,
               letterSpacing: '0.5px',
               fontSize: { xs: '1.8rem', sm: '2.3rem', md: '2.8rem' }
             }}
           >
-            DigiDollar Testnet Stats
+            DigiDollar {digiDollarLabel} Stats
           </Typography>
         </Box>
 
         <Typography
           variant="h5"
           sx={{
-            color: isTestnet ? '#4caf50' : '#0066cc',
+            color: secondaryColor,
             mb: 2,
             fontWeight: 600
           }}
@@ -204,7 +195,7 @@ const DDStatsPage = () => {
           Real-Time Network Health & Statistics
         </Typography>
 
-        <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 3, borderColor: isTestnet ? '#4caf50' : '#0066cc', borderWidth: 2 }} />
+        <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 3, borderColor: secondaryColor, borderWidth: 2 }} />
 
         <Typography
           variant="subtitle1"
@@ -223,11 +214,11 @@ const DDStatsPage = () => {
             maxWidth: '860px',
             mx: 'auto',
             mt: 2,
-            color: isTestnet ? '#2e7d32' : '#0066cc',
+            color: secondaryColor,
             fontWeight: 700
           }}
         >
-          {TESTNET_RELEASE.version} on {TESTNET_RELEASE.network}: block {TESTNET_RELEASE.activationHeight} activation, P2P port {TESTNET_RELEASE.p2pPort}, {TESTNET_RELEASE.oracleThreshold} of {TESTNET_RELEASE.oracleTotalSlots} oracle consensus.
+          {release.version} on {release.network}: {release.activationSummary}, P2P port {release.p2pPort}, {release.oracleThreshold} of {release.oracleTotalSlots} oracle consensus.
         </Typography>
       </CardContent>
     </Card>
@@ -246,7 +237,7 @@ const DDStatsPage = () => {
       {/* Header */}
       <Box
         sx={{
-          backgroundColor: isTestnet ? '#2e7d32' : '#002352',
+          backgroundColor: primaryColor,
           color: 'white',
           p: 2,
           display: 'flex',
@@ -261,17 +252,15 @@ const DDStatsPage = () => {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {isTestnet && (
-            <Chip
-              label={`${TESTNET_RELEASE.version} / ${TESTNET_RELEASE.network}`}
-              size="small"
-              sx={{
-                backgroundColor: 'rgba(255,255,255,0.18)',
-                color: 'white',
-                fontWeight: 'bold'
-              }}
-            />
-          )}
+          <Chip
+            label={`${release.version} / ${release.network}`}
+            size="small"
+            sx={{
+              backgroundColor: 'rgba(255,255,255,0.18)',
+              color: 'white',
+              fontWeight: 'bold'
+            }}
+          />
           {lastUpdated && (
             <Typography variant="caption" sx={{ opacity: 0.8 }}>
               {lastUpdated.toLocaleTimeString()}
@@ -305,7 +294,7 @@ const DDStatsPage = () => {
                 p: 2,
                 backgroundColor: '#f5f5f5',
                 borderRadius: '8px',
-                borderLeft: `4px solid ${isTestnet ? '#2e7d32' : '#0066cc'}`,
+                borderLeft: `4px solid ${primaryColor}`,
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
@@ -356,7 +345,7 @@ const DDStatsPage = () => {
                   elevation={2}
                   sx={{
                     p: 2.5,
-                    backgroundColor: isTestnet ? '#1b5e20' : '#002352',
+                    backgroundColor: primaryColor,
                     color: 'white',
                     borderRadius: '12px',
                     textAlign: 'center',
@@ -435,10 +424,10 @@ const DDStatsPage = () => {
     <Grid container spacing={3} sx={{ mb: 4 }}>
       {/* DCA Card */}
       <Grid item xs={12} md={6}>
-        <Card elevation={3} sx={{ height: '100%', borderRadius: '12px', borderTop: `4px solid ${isTestnet ? '#4caf50' : '#0066cc'}` }}>
+        <Card elevation={3} sx={{ height: '100%', borderRadius: '12px', borderTop: `4px solid ${secondaryColor}` }}>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <SecurityIcon sx={{ fontSize: '2rem', color: isTestnet ? '#2e7d32' : '#002352', mr: 1 }} />
+              <SecurityIcon sx={{ fontSize: '2rem', color: primaryColor, mr: 1 }} />
               <Typography variant="h6" fontWeight="bold">
                 Dynamic Collateral Adjustment (DCA)
               </Typography>
@@ -570,7 +559,7 @@ const DDStatsPage = () => {
   // How System Health Works
   const SystemHealthExplainer = () => (
     <Card elevation={3} sx={{ p: 3, borderRadius: '12px' }}>
-      <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, color: isTestnet ? '#2e7d32' : '#002352' }}>
+      <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, color: primaryColor }}>
         How System Health Works
       </Typography>
 
@@ -623,7 +612,7 @@ const DDStatsPage = () => {
         severity="info"
         sx={{ mb: 3, borderRadius: '12px' }}
         action={
-          <Button color="inherit" size="small" component={RouterLink} to="/testnet/activation">
+          <Button color="inherit" size="small" component={RouterLink} to={network.getNetworkPath('/activation')}>
             Track Activation →
           </Button>
         }

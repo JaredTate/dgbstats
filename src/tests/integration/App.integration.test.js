@@ -144,6 +144,29 @@ describe('App Integration Tests', () => {
     });
   });
 
+  describe('DigiDollar Network Routes', () => {
+    const routes = [
+      { route: '/activation', title: 'DigiDollar Mainnet Activation', wsUrl: 'ws://localhost:5002' },
+      { route: '/oracles', title: 'DigiDollar Mainnet Oracles', wsUrl: 'ws://localhost:5002' },
+      { route: '/ddstats', title: 'DigiDollar Mainnet Stats', wsUrl: 'ws://localhost:5002' },
+      { route: '/testnet/activation', title: 'DigiDollar Testnet Activation', wsUrl: 'ws://localhost:5003' },
+      { route: '/testnet/oracles', title: 'DigiDollar Testnet Oracles', wsUrl: 'ws://localhost:5003' },
+      { route: '/testnet/ddstats', title: 'DigiDollar Testnet Stats', wsUrl: 'ws://localhost:5003' },
+      { route: '/mainnet-pre/activation', title: 'DigiDollar Mainnet-PRE Activation', wsUrl: 'ws://localhost:5004' },
+      { route: '/mainnet-pre/oracles', title: 'DigiDollar Mainnet-PRE Oracles', wsUrl: 'ws://localhost:5004' },
+      { route: '/mainnet-pre/ddstats', title: 'DigiDollar Mainnet-PRE Stats', wsUrl: 'ws://localhost:5004' }
+    ];
+
+    it.each(routes)('renders $route with the correct network feed', async ({ route, title, wsUrl }) => {
+      renderApp({ route });
+
+      expect(screen.getByText(title)).toBeInTheDocument();
+
+      await waitForAsync();
+      expect(webSocketInstances[0].url).toBe(wsUrl);
+    });
+  });
+
   describe('Data Flow', () => {
     it('should share theme across all pages', async () => {
       renderApp();

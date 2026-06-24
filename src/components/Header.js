@@ -13,26 +13,39 @@ const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const network = useNetwork();
   const isTestnet = network?.isTestnet || false;
+  const isMainnetPre = network?.isMainnetPre || false;
   const networkTheme = network?.theme || { gradient: 'linear-gradient(135deg, #002352 0%, #0066cc 100%)' };
+  const basePath = network?.basePath || '';
+  const networkBadge = isTestnet ? 'TESTNET' : isMainnetPre ? 'MAINNET-PRE' : null;
+  const networkHomePath = basePath || '/';
+
+  const withBase = (path) => {
+    if (path === '/') return networkHomePath;
+    return `${basePath}${path}`;
+  };
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
   // Primary navigation items (internal site links)
-  const primaryMenuItems = isTestnet ? [
-    { text: 'Home', path: '/testnet' },
-    { text: 'Blocks', path: '/testnet/blocks' },
-    { text: 'Txs', path: '/testnet/txs' },
-    { text: 'Supply', path: '/testnet/supply' },
-    { text: 'Algos', path: '/testnet/algos' },
-    { text: 'Difficulties', path: '/testnet/difficulties' },
-    { text: 'Hashrate', path: '/testnet/hashrate' },
-    { text: 'Nodes', path: '/testnet/nodes' },
-    { text: 'Activation', path: '/testnet/activation' },
-    { text: 'Oracles', path: '/testnet/oracles' },
-    { text: 'DD Stats', path: '/testnet/ddstats' },
-    { text: 'DigiDollar', path: '/testnet/digidollar' },
+  const primaryMenuItems = isMainnetPre ? [
+    { text: 'Activation', path: withBase('/activation') },
+    { text: 'Oracles', path: withBase('/oracles') },
+    { text: 'DD Stats', path: withBase('/ddstats') },
+  ] : isTestnet ? [
+    { text: 'Home', path: withBase('/') },
+    { text: 'Blocks', path: withBase('/blocks') },
+    { text: 'Txs', path: withBase('/txs') },
+    { text: 'Supply', path: withBase('/supply') },
+    { text: 'Algos', path: withBase('/algos') },
+    { text: 'Difficulties', path: withBase('/difficulties') },
+    { text: 'Hashrate', path: withBase('/hashrate') },
+    { text: 'Nodes', path: withBase('/nodes') },
+    { text: 'Activation', path: withBase('/activation') },
+    { text: 'Oracles', path: withBase('/oracles') },
+    { text: 'DD Stats', path: withBase('/ddstats') },
+    { text: 'DigiDollar', path: withBase('/digidollar') },
   ] : [
     { text: 'Home', path: '/' },
     { text: 'Blocks', path: '/blocks' },
@@ -46,6 +59,9 @@ const Header = () => {
     { text: 'Downloads', path: '/downloads' },
     { text: 'Roadmap', path: '/roadmap' },
     { text: 'DigiDollar', path: '/digidollar' },
+    { text: 'Activation', path: '/activation' },
+    { text: 'Oracles', path: '/oracles' },
+    { text: 'DD Stats', path: '/ddstats' },
   ];
 
   // External links
@@ -79,12 +95,12 @@ const Header = () => {
         <Typography variant="h6" fontWeight="bold">
           DigiByte Stats
         </Typography>
-        {isTestnet && (
+        {networkBadge && (
           <Chip
-            label="TESTNET"
+            label={networkBadge}
             size="small"
             sx={{
-              bgcolor: '#4caf50',
+              bgcolor: network?.theme?.secondary || '#4caf50',
               color: 'white',
               fontWeight: 'bold',
               ml: 1
@@ -144,20 +160,27 @@ const Header = () => {
       {/* Network switch */}
       <Divider />
       <List>
-        <ListItem
-          button
-          component={RouterLink}
-          to={isTestnet ? '/' : '/testnet'}
-          sx={{
-            bgcolor: isTestnet ? 'rgba(0, 35, 82, 0.1)' : 'rgba(46, 125, 50, 0.1)',
-            '&:hover': { bgcolor: isTestnet ? 'rgba(0, 35, 82, 0.2)' : 'rgba(46, 125, 50, 0.2)' }
-          }}
-        >
-          <ListItemText
-            primary={isTestnet ? '← Switch to Mainnet' : 'Switch to Testnet →'}
-            sx={{ textAlign: 'center', fontWeight: 'bold' }}
-          />
-        </ListItem>
+        {[
+          { text: 'Mainnet', path: '/', active: network?.isMainnet },
+          { text: 'Testnet', path: '/testnet', active: isTestnet },
+          { text: 'Mainnet-PRE', path: '/mainnet-pre/activation', active: isMainnetPre }
+        ].map((item) => (
+          <ListItem
+            button
+            component={RouterLink}
+            to={item.path}
+            key={item.text}
+            sx={{
+              bgcolor: item.active ? 'rgba(0, 102, 204, 0.12)' : 'transparent',
+              '&:hover': { bgcolor: 'rgba(0, 102, 204, 0.18)' }
+            }}
+          >
+            <ListItemText
+              primary={item.text}
+              sx={{ textAlign: 'center', fontWeight: item.active ? 'bold' : 'normal' }}
+            />
+          </ListItem>
+        ))}
       </List>
     </Box>
   );
@@ -168,7 +191,7 @@ const Header = () => {
       <AppBar
         position="sticky"
         sx={{
-          background: isTestnet ? networkTheme.gradient : '#0066cc',
+          background: isTestnet || isMainnetPre ? networkTheme.gradient : '#0066cc',
           boxShadow: 'none'
         }}
       >
@@ -177,7 +200,7 @@ const Header = () => {
             {/* Logo and title */}
             <Box
               component={RouterLink}
-              to={isTestnet ? '/testnet' : '/'}
+              to={networkHomePath}
               sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -203,12 +226,12 @@ const Header = () => {
               >
                 DigiByte Stats
               </Typography>
-              {isTestnet && (
+              {networkBadge && (
                 <Chip
-                  label="TESTNET"
+                  label={networkBadge}
                   size="small"
                   sx={{
-                    bgcolor: '#4caf50',
+                    bgcolor: network?.theme?.secondary || '#4caf50',
                     color: 'white',
                     fontWeight: 'bold',
                     ml: 1,
@@ -321,26 +344,34 @@ const Header = () => {
               <Box sx={{ width: '1px', height: 20, bgcolor: 'rgba(255, 255, 255, 0.3)', mx: 2 }} />
 
               {/* Network switch */}
-              <Button
-                component={RouterLink}
-                to={isTestnet ? '/' : '/testnet'}
-                size="small"
-                sx={{
-                  color: 'white',
-                  fontSize: '0.8rem',
-                  textTransform: 'none',
-                  fontWeight: 'bold',
-                  py: 0.5,
-                  px: 2,
-                  bgcolor: isTestnet ? '#0066cc' : '#4caf50',
-                  border: isTestnet ? '1px solid #0066cc' : '1px solid #4caf50',
-                  '&:hover': {
-                    backgroundColor: isTestnet ? '#0055aa' : '#388e3c'
-                  }
-                }}
-              >
-                {isTestnet ? 'Mainnet →' : 'Testnet →'}
-              </Button>
+              {[
+                { text: 'Mainnet', path: '/', active: network?.isMainnet, color: '#0066cc' },
+                { text: 'Testnet', path: '/testnet', active: isTestnet, color: '#4caf50' },
+                { text: 'Mainnet-PRE', path: '/mainnet-pre/activation', active: isMainnetPre, color: '#0a9396' }
+              ].map((item) => (
+                <Button
+                  key={item.text}
+                  component={RouterLink}
+                  to={item.path}
+                  size="small"
+                  sx={{
+                    color: 'white',
+                    fontSize: '0.78rem',
+                    textTransform: 'none',
+                    fontWeight: item.active ? 'bold' : 500,
+                    py: 0.5,
+                    px: 1.25,
+                    ml: 0.5,
+                    bgcolor: item.active ? item.color : 'rgba(255,255,255,0.12)',
+                    border: `1px solid ${item.active ? item.color : 'rgba(255,255,255,0.24)'}`,
+                    '&:hover': {
+                      backgroundColor: item.active ? item.color : 'rgba(255,255,255,0.2)'
+                    }
+                  }}
+                >
+                  {item.text}
+                </Button>
+              ))}
           </Box>
         </Container>
       </Box>
