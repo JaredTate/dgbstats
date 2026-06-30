@@ -162,8 +162,7 @@ const Header = () => {
       <List>
         {[
           { text: 'Mainnet', path: '/', active: network?.isMainnet },
-          { text: 'Testnet', path: '/testnet', active: isTestnet },
-          { text: 'Mainnet-PRE', path: '/mainnet-pre/activation', active: isMainnetPre }
+          { text: 'Testnet', path: '/testnet', active: isTestnet }
         ].map((item) => (
           <ListItem
             button
@@ -346,8 +345,7 @@ const Header = () => {
               {/* Network switch */}
               {[
                 { text: 'Mainnet', path: '/', active: network?.isMainnet, color: '#0066cc' },
-                { text: 'Testnet', path: '/testnet', active: isTestnet, color: '#4caf50' },
-                { text: 'Mainnet-PRE', path: '/mainnet-pre/activation', active: isMainnetPre, color: '#0a9396' }
+                { text: 'Testnet', path: '/testnet', active: isTestnet, color: '#4caf50' }
               ].map((item) => (
                 <Button
                   key={item.text}

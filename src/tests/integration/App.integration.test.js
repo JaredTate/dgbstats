@@ -151,10 +151,8 @@ describe('App Integration Tests', () => {
       { route: '/ddstats', title: 'DigiDollar Mainnet Stats', wsUrl: 'ws://localhost:5002' },
       { route: '/testnet/activation', title: 'DigiDollar Testnet Activation', wsUrl: 'ws://localhost:5003' },
       { route: '/testnet/oracles', title: 'DigiDollar Testnet Oracles', wsUrl: 'ws://localhost:5003' },
-      { route: '/testnet/ddstats', title: 'DigiDollar Testnet Stats', wsUrl: 'ws://localhost:5003' },
-      { route: '/mainnet-pre/activation', title: 'DigiDollar Mainnet-PRE Activation', wsUrl: 'ws://localhost:5004' },
-      { route: '/mainnet-pre/oracles', title: 'DigiDollar Mainnet-PRE Oracles', wsUrl: 'ws://localhost:5004' },
-      { route: '/mainnet-pre/ddstats', title: 'DigiDollar Mainnet-PRE Stats', wsUrl: 'ws://localhost:5004' }
+      { route: '/testnet/ddstats', title: 'DigiDollar Testnet Stats', wsUrl: 'ws://localhost:5003' }
+      // Mainnet-PRE (rehearsal) routes were removed in v9.26.2; only Mainnet and Testnet remain.
     ];
 
     it.each(routes)('renders $route with the correct network feed', async ({ route, title, wsUrl }) => {

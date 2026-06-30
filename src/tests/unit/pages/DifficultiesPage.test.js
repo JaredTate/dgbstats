@@ -81,8 +81,27 @@ Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { screen, waitFor, act } from '@testing-library/react';
-import DifficultiesPage from '../../../pages/DifficultiesPage';
+import DifficultiesPage, { computeDisplayedAlgos } from '../../../pages/DifficultiesPage';
 import { renderWithProviders, createWebSocketMock, waitForAsync } from '../../utils/testUtils';
+
+describe('computeDisplayedAlgos (Myriad-Groestl visibility)', () => {
+  const base = ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo'];
+
+  it('shows only the five active algorithms when Myriad-Groestl has no recent blocks', () => {
+    const difficulties = { SHA256D: [1], Scrypt: [1], Skein: [1], Qubit: [1], Odo: [1], 'Myriad-Groestl': [] };
+    expect(computeDisplayedAlgos(difficulties)).toEqual(base);
+  });
+
+  it('omits Myriad-Groestl entirely when the key is absent (post-rejection state)', () => {
+    const difficulties = { SHA256D: [1], Scrypt: [1], Skein: [1], Qubit: [1], Odo: [1] };
+    expect(computeDisplayedAlgos(difficulties)).toEqual(base);
+  });
+
+  it('adds Myriad-Groestl while it is still being mined (has recent blocks)', () => {
+    const difficulties = { SHA256D: [1], Scrypt: [1], Skein: [1], Qubit: [1], Odo: [1], 'Myriad-Groestl': [1757.6, 926.9] };
+    expect(computeDisplayedAlgos(difficulties)).toEqual([...base, 'Myriad-Groestl']);
+  });
+});
 
 describe('DifficultiesPage', () => {
   let wsSetup;

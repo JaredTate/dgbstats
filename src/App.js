@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { formatNumber, numberWithCommas } from './utils';
 import styles from './App.module.css';
@@ -13,7 +13,6 @@ import DownloadsPage from './pages/DownloadsPage';
 import NodesPage from './pages/NodesPage';
 import MainnetLayout from './components/MainnetLayout';
 import TestnetLayout from './components/TestnetLayout';
-import MainnetPreLayout from './components/MainnetPreLayout';
 import config from './config';
 import HashratePage from './pages/HashratePage';
 import TaprootPage from './pages/TaprootPage';
@@ -24,6 +23,7 @@ import OraclesPage from './pages/OraclesPage';
 import DDStatsPage from './pages/DDStatsPage';
 import DDActivationPage from './pages/DDActivationPage';
 import WalletConvertPage from './pages/WalletConvertPage';
+import PoolUpgradeTrackerPage from './pages/PoolUpgradeTrackerPage';
 
 export const parseBlockRewardResponse = (data) => {
   const rewardValue = data?.blockReward?.blockreward ?? data?.blockreward ?? data?.blockReward;
@@ -167,6 +167,7 @@ const App = () => {
               <Route path="/ddstats" element={<DDStatsPage />} />
               <Route path="/nodes" element={<NodesPage />} />
               <Route path="/pools" element={<PoolsPage />} />
+              <Route path="/pool-upgrades" element={<PoolUpgradeTrackerPage />} />
               <Route path="/supply" element={<SupplyPage txOutsetInfo={txOutsetInfo} worldPopulation={worldPopulation} />} />
               <Route path="/algos" element={<AlgosPage />} />
               <Route path="/difficulties" element={<DifficultiesPage difficultiesData={blockchainInfo?.difficulties} />} />
@@ -192,20 +193,13 @@ const App = () => {
               <Route path="difficulties" element={<DifficultiesPage />} />
               <Route path="hashrate" element={<HashratePage />} />
               <Route path="nodes" element={<NodesPage />} />
+              <Route path="pool-upgrades" element={<PoolUpgradeTrackerPage />} />
               <Route path="activation" element={<DDActivationPage />} />
               <Route path="oracles" element={<OraclesPage />} />
               <Route path="ddstats" element={<DDStatsPage />} />
               <Route path="digidollar" element={<DigiDollarPage />} />
               <Route path="convert" element={<WalletConvertPage />} />
               <Route path="taproot" element={<TaprootPage />} />
-            </Route>
-
-            {/* Modified mainnet / PRE routes */}
-            <Route path="/mainnet-pre" element={<MainnetPreLayout />}>
-              <Route index element={<Navigate to="activation" replace />} />
-              <Route path="activation" element={<DDActivationPage />} />
-              <Route path="oracles" element={<OraclesPage />} />
-              <Route path="ddstats" element={<DDStatsPage />} />
             </Route>
           </Routes>
         </div>

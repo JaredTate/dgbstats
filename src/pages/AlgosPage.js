@@ -18,6 +18,8 @@ const ALGO_COLORS = {
   'qubit': '#9c27b0',     // Purple - Lightweight algorithm
   'odo': '#f44336',       // Red - ASIC-resistant
   'odocrypt': '#f44336',  // Red - DigiByte's unique changing algorithm
+  'myriad-groestl': '#795548', // Brown - retired algorithm (rejected from v9.26.2 activation)
+  'groestl': '#795548',   // Alias for Myriad-Groestl
 };
 
 /**

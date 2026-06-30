@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Chart, registerables } from 'chart.js';
 import 'chartjs-adapter-luxon';
 import { LineController } from 'chart.js';
@@ -18,6 +18,30 @@ Chart.register(LineController);
  */
 const algoNames = ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo'];
 
+/**
+ * Retired algorithm (Myriad-Groestl). It is no longer one of the five active
+ * algorithms, but it is being mined again during the v9.26.2 incident, so it is
+ * tracked and shown while it still produces blocks. Once v9.26.2 rejects it at the
+ * activation height, no new Myriad-Groestl blocks arrive and it drops off the page.
+ */
+const RETIRED_ALGO_NAME = 'Myriad-Groestl';
+
+/** All algorithms whose difficulty we collect (active five plus the retired one). */
+const trackedAlgoNames = [...algoNames, RETIRED_ALGO_NAME];
+
+/**
+ * Decide which algorithms to display. The five active algorithms are always shown.
+ * Myriad-Groestl is shown only while it still has recent blocks; when those drain
+ * from the recent-block window (after v9.26.2 rejects it) the card disappears.
+ * @param {Object} difficulties - map of algo name -> array of recent difficulty values
+ * @returns {string[]} ordered list of algorithms to render
+ */
+export const computeDisplayedAlgos = (difficulties) => {
+  const groestlSeries = difficulties?.[RETIRED_ALGO_NAME];
+  const hasGroestl = Array.isArray(groestlSeries) && groestlSeries.length > 0;
+  return hasGroestl ? [...algoNames, RETIRED_ALGO_NAME] : [...algoNames];
+};
+
 const normalizeAlgoName = (algo) => {
   const normalized = String(algo || '').toLowerCase();
   const algoMap = {
@@ -26,10 +50,14 @@ const normalizeAlgoName = (algo) => {
     skein: 'Skein',
     qubit: 'Qubit',
     odo: 'Odo',
-    odocrypt: 'Odo'
+    odocrypt: 'Odo',
+    // DigiByte's ALGO_GROESTL is Myriad-Groestl (groestl512 -> sha256, "groestlsha2").
+    groestl: RETIRED_ALGO_NAME,
+    groestlsha2: RETIRED_ALGO_NAME,
+    'myriad-groestl': RETIRED_ALGO_NAME
   };
 
-  return algoMap[normalized] || (algoNames.includes(algo) ? algo : null);
+  return algoMap[normalized] || (trackedAlgoNames.includes(algo) ? algo : null);
 };
 
 /**
@@ -42,6 +70,7 @@ const algoColors = {
   'Skein': '#ff9800', // Orange - SHA-3 finalist
   'Qubit': '#9c27b0', // Purple - Lightweight algorithm
   'Odo': '#f44336', // Red - ASIC-resistant algorithm
+  'Myriad-Groestl': '#795548', // Brown - retired algorithm (rejected at v9.26.2 activation)
 };
 
 /**
@@ -285,7 +314,7 @@ const DifficultiesPage = ({ difficultiesData }) => {
 
   // State for algorithm difficulty data - initialized with empty arrays for each algorithm
   const [difficulties, setDifficulties] = useState(
-    algoNames.reduce((acc, algo) => ({ ...acc, [algo]: [] }), {})
+    trackedAlgoNames.reduce((acc, algo) => ({ ...acc, [algo]: [] }), {})
   );
 
   // Local state for fetched difficulties when prop is not provided
@@ -314,6 +343,11 @@ const DifficultiesPage = ({ difficultiesData }) => {
 
   // Use the prop if provided, otherwise use local state
   const currentDifficulties = difficultiesData || localDifficulties;
+
+  // Algorithms to render: the five active ones, plus Myriad-Groestl while it is
+  // still being mined. Recomputed whenever the difficulty series change so the
+  // Myriad-Groestl card appears/disappears automatically.
+  const displayedAlgos = useMemo(() => computeDisplayedAlgos(difficulties), [difficulties]);
 
   /**
    * WebSocket connection effect for real-time difficulty updates
@@ -347,7 +381,7 @@ const DifficultiesPage = ({ difficultiesData }) => {
          * Filters blocks by algorithm and extracts difficulty values
          * Each algorithm gets its own array of recent difficulty values
          */
-        const updatedDifficulties = algoNames.reduce((acc, algo) => {
+        const updatedDifficulties = trackedAlgoNames.reduce((acc, algo) => {
           const algoDifficulties = message.data
             .filter((block) => normalizeAlgoName(block.algo) === algo)
             .map((block) => block.difficulty);
@@ -399,7 +433,7 @@ const DifficultiesPage = ({ difficultiesData }) => {
     // Track chart instances created in this effect for proper cleanup
     const localChartInstances = [];
     
-    algoNames.forEach((algo, index) => {
+    displayedAlgos.forEach((algo, index) => {
       const ctx = chartRefs.current[index]?.getContext('2d');
       if (!ctx) return;
       
@@ -576,7 +610,7 @@ const DifficultiesPage = ({ difficultiesData }) => {
           <LoadingCard />
         ) : (
           <Grid container spacing={3}>
-            {algoNames.map((algo, index) => (
+            {displayedAlgos.map((algo, index) => (
               <AlgorithmCard
                 key={algo}
                 algo={algo}

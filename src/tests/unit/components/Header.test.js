@@ -150,7 +150,8 @@ describe('Header', () => {
 
       expect(screen.getAllByRole('link', { name: /^Mainnet$/i }).length).toBeGreaterThan(0);
       expect(screen.getAllByRole('link', { name: /^Testnet$/i }).length).toBeGreaterThan(0);
-      expect(screen.getAllByRole('link', { name: /^Mainnet-PRE$/i }).length).toBeGreaterThan(0);
+      // Mainnet-PRE was removed from the network switch in v9.26.2.
+      expect(screen.queryAllByRole('link', { name: /^Mainnet-PRE$/i }).length).toBe(0);
     });
 
     it('should show correct network switch in mobile drawer for mainnet', () => {
@@ -162,11 +163,9 @@ describe('Header', () => {
       const testnetLinks = screen.getAllByRole('link', { name: /^Testnet$/i }).filter(link =>
         link.getAttribute('href') === '/testnet'
       );
-      const preLinks = screen.getAllByRole('link', { name: /^Mainnet-PRE$/i }).filter(link =>
-        link.getAttribute('href') === '/mainnet-pre/activation'
-      );
       expect(testnetLinks.length).toBeGreaterThan(0);
-      expect(preLinks.length).toBeGreaterThan(0);
+      // Only Mainnet and Testnet remain; Mainnet-PRE is gone.
+      expect(screen.queryAllByRole('link', { name: /^Mainnet-PRE$/i }).length).toBe(0);
     });
 
     it('should show correct network switch in mobile drawer for testnet', () => {
@@ -178,11 +177,9 @@ describe('Header', () => {
       const mainnetLinks = screen.getAllByRole('link', { name: /^Mainnet$/i }).filter(link =>
         link.getAttribute('href') === '/'
       );
-      const preLinks = screen.getAllByRole('link', { name: /^Mainnet-PRE$/i }).filter(link =>
-        link.getAttribute('href') === '/mainnet-pre/activation'
-      );
       expect(mainnetLinks.length).toBeGreaterThan(0);
-      expect(preLinks.length).toBeGreaterThan(0);
+      // Only Mainnet and Testnet remain; Mainnet-PRE is gone.
+      expect(screen.queryAllByRole('link', { name: /^Mainnet-PRE$/i }).length).toBe(0);
     });
 
     it('should show TESTNET chip in mobile drawer when on testnet', () => {
