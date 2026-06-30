@@ -41,7 +41,7 @@ const DigiDollarPage = () => {
 
   // Collateral requirements data (10-tier system)
   const collateralData = [
-    { period: '1 hour', ratio: '1000%', dgbFor100: '1000 DGB', undercollateralized: '90% drop', testOnly: true },
+    { period: '1 hour', ratio: '1000%', dgbFor100: '1000 DGB', undercollateralized: '90% drop' },
     { period: '30 days', ratio: '500%', dgbFor100: '500 DGB', undercollateralized: '80% drop' },
     { period: '3 months', ratio: '400%', dgbFor100: '400 DGB', undercollateralized: '75% drop' },
     { period: '6 months', ratio: '350%', dgbFor100: '350 DGB', undercollateralized: '71.4% drop' },
@@ -137,7 +137,7 @@ const DigiDollarPage = () => {
           <Typography variant="body2">
             <strong>Status:</strong> Implementation is <strong>95% complete</strong> with 50,000+ lines of functional,
             tested code. Currently active on testnet with <strong>1,850+ tests passing</strong> (311 functional tests + 1,539 C++ unit tests).
-            Oracle system is in <strong>Phase Two</strong> on testnet26 (port 12033) with a 7-signature MuSig2 quorum and 35 reserved oracle slots.
+            Oracle system is live on testnet26 (port 12033) with a 7-signature MuSig2 quorum and 35 active oracle slots (0-34).
           </Typography>
         </Alert>
       </CardContent>
@@ -499,7 +499,8 @@ const DigiDollarPage = () => {
             </Typography>
             <Typography variant="body2">
               Users lock DigiByte as collateral in a time-locked P2TR output.
-              The amount depends on the lock period (200%-500% of DigiDollar value).
+              The amount depends on the lock period (200%-1000% of DigiDollar value,
+              with shorter locks requiring more collateral).
             </Typography>
           </Paper>
         </Grid>
@@ -540,8 +541,8 @@ const DigiDollarPage = () => {
               3. Use & Redeem
             </Typography>
             <Typography variant="body2">
-              Use DigiDollars for stable transactions. Redeem them anytime to
-              unlock your DGB collateral after the lock period expires.
+              Use DigiDollars for stable transactions. After the lock period expires,
+              burn the required DigiDollars to unlock your full DGB collateral.
             </Typography>
           </Paper>
         </Grid>
@@ -606,9 +607,11 @@ const DigiDollarPage = () => {
 
       <Alert severity="info" sx={{ mt: 2 }}>
         <Typography variant="body2">
-          <strong>Note:</strong> 10-tier collateral system ranging from 200% (10 years) to 500% (30 days).
-          The 1-hour 1000% tier is for regtest/testnet testing only. The "Undercollateralized After" column
-          shows how much DGB price can drop before position becomes undercollateralized.
+          <strong>Note:</strong> 10-tier collateral system ranging from 1000% (1 hour) to 200% (10 years).
+          The 1-hour tier is canonical on all networks (mainnet, testnet, and regtest) and locks real
+          collateral until expiry. Mint validation enforces the canonical tier window declared in the
+          mint OP_RETURN; under-locked or custom durations are rejected. The "Undercollateralized After"
+          column shows how much DGB price can drop before a position becomes undercollateralized.
         </Typography>
       </Alert>
     </Card>
@@ -737,7 +740,7 @@ const DigiDollarPage = () => {
               <ListItemIcon><SecurityIcon sx={{ color: '#002352' }} /></ListItemIcon>
               <ListItemText
                 primary="Decentralized Oracles"
-                secondary="Phase Two active on testnet26 (port 12033): 7-signature MuSig2 quorum, 35 reserved oracle slots. Oracle bundle format: v0x03."
+                secondary="Live on testnet26 (port 12033): 7-signature MuSig2 quorum, 35 active oracle slots (0-34). On-chain oracle bundle format: v0x03 (MuSig2)."
               />
             </ListItem>
             <ListItem>
@@ -845,7 +848,7 @@ const DigiDollarPage = () => {
                 <ListItemIcon><SecurityIcon sx={{ color: '#0066cc' }} /></ListItemIcon>
                 <ListItemText
                   primary="Oracle Validation"
-                  secondary="Phase Two active on testnet26 (port 12033): 7-signature MuSig2 quorum, 35 reserved oracle slots. Oracle bundle format: v0x03."
+                  secondary="Live on testnet26 (port 12033): 7-signature MuSig2 quorum, 35 active oracle slots (0-34). On-chain oracle bundle format: v0x03 (MuSig2)."
                 />
               </ListItem>
               <ListItem>
@@ -900,7 +903,7 @@ const DigiDollarPage = () => {
                 2. Oracle Verification
               </Typography>
               <Typography variant="body2">
-                35 reserved oracle slots with 35 active testnet operators and a 7-signature MuSig2 quorum on testnet26.
+                35 active oracle slots (0-34) with a 7-signature MuSig2 quorum on testnet26.
                 Six active exchange APIs (Binance, KuCoin, Gate.io, HTX,
                 Crypto.com, CoinGecko) feed oracle signatures using MuSig2 aggregate signing (v0x03).
               </Typography>
@@ -974,11 +977,11 @@ const DigiDollarPage = () => {
               <Chip label="First Defense" size="small" sx={{ ml: 'auto', backgroundColor: '#e3f2fd' }} />
             </Box>
             <Typography variant="body2" paragraph>
-              The 500%→200% sliding scale provides massive buffer against price drops.
-              Short-term positions require up to 5x collateral, protecting against volatility.
+              The 1000%→200% sliding scale provides massive buffer against price drops.
+              The one-hour tier requires 10x collateral, protecting against short-term volatility.
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              <strong>Example:</strong> With 500% collateral, DGB can drop 80% before undercollateralization.
+              <strong>Example:</strong> With 1000% collateral, DGB can drop 90% before undercollateralization.
             </Typography>
           </Paper>
         </Grid>
@@ -1011,17 +1014,17 @@ const DigiDollarPage = () => {
               </ListItem>
               <ListItem sx={{ pl: 0, py: 0 }}>
                 <Typography variant="caption">
-                  • 120-149%: +20% collateral (1.2x)
+                  • 120-149%: +25% collateral (1.25x)
                 </Typography>
               </ListItem>
               <ListItem sx={{ pl: 0, py: 0 }}>
                 <Typography variant="caption">
-                  • 100-119%: +50% collateral (1.5x)
+                  • 110-119%: +50% collateral (1.5x)
                 </Typography>
               </ListItem>
               <ListItem sx={{ pl: 0, py: 0 }}>
                 <Typography variant="caption">
-                  • &lt;100%: +100% collateral (2.0x)
+                  • &lt;110%: +100% collateral (2.0x)
                 </Typography>
               </ListItem>
             </List>
@@ -1229,13 +1232,13 @@ const DigiDollarPage = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <CheckCircleIcon sx={{ color: '#4caf50', mr: 1, fontSize: '1.2rem' }} />
                 <Typography variant="body2">
-                  <strong>Oracle System (Phase Two)</strong> - 7-signature MuSig2 quorum active on testnet26
+                  <strong>Oracle System</strong> - 7-signature MuSig2 quorum across 35 active oracle slots, live on testnet26
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <ConstructionIcon sx={{ color: '#ff9800', mr: 1, fontSize: '1.2rem' }} />
                 <Typography variant="body2" color="text.secondary">
-                  <strong>MuSig2 Oracle Validation (9-of-35 reserved roster)</strong> - In Progress
+                  <strong>MuSig2 Oracle Validation (7-of-35 active roster)</strong> - In Progress
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -1250,9 +1253,9 @@ const DigiDollarPage = () => {
               9/11 milestones completed • 2 in progress • 1,850+ tests passing
             </Typography>
 
-            <Alert severity="info" sx={{ mt: 2 }}>
+            <Alert severity="success" sx={{ mt: 2 }}>
               <Typography variant="caption">
-                <strong>TARGET:</strong> Mainnet release v9.26 May, 2026 - Miners can start signaling for activation
+                <strong>RELEASED:</strong> DigiByte v9.26.2 launched on mainnet June 29, 2026 — miners can now signal for DigiDollar activation
               </Typography>
             </Alert>
           </Paper>
@@ -1271,10 +1274,10 @@ const DigiDollarPage = () => {
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h5" fontWeight="bold" color="#002352">
-                DigiByte v9.26 DigiDollar Release
+                DigiByte v9.26.2 DigiDollar Release
               </Typography>
               <Chip
-                label="TESTNET ACTIVE"
+                label="MAINNET RELEASED"
                 size="small"
                 sx={{
                   backgroundColor: '#4caf50',
@@ -1285,7 +1288,7 @@ const DigiDollarPage = () => {
             </Box>
 
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Oracle System - Phase Two Active (testnet26, 35 reserved slots, 7-signature MuSig2 quorum)
+              Oracle System - 35 active oracle slots (0-34), 7-signature MuSig2 quorum (BIP-327 over BIP-340 Schnorr)
             </Typography>
 
             <List dense sx={{ pl: 0, maxHeight: '400px', overflowY: 'auto' }}>
@@ -1307,14 +1310,14 @@ const DigiDollarPage = () => {
                 <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
                   primary="P2P Message Handling"
-                  secondary="Complete - ORACLEPRICE, ORACLEBUNDLE, GETORACLES"
+                  secondary="Complete - ORACLEPRICE, MuSig2 nonce/context/partial-sig, GETORACLES"
                 />
               </ListItem>
               <ListItem sx={{ pl: 0 }}>
                 <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
                   primary="Testnet/Regtest Block Validation"
-                  secondary="Complete - Activation heights: Testnet 550, Regtest 650"
+                  secondary="Complete - Activation heights: Testnet26 600, Regtest 650"
                 />
               </ListItem>
               <ListItem sx={{ pl: 0 }}>
@@ -1327,8 +1330,8 @@ const DigiDollarPage = () => {
               <ListItem sx={{ pl: 0 }}>
                 <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
-                  primary="Phase Two Oracle Consensus (7-signature MuSig2)"
-                  secondary="Active on testnet26 - 35 reserved slots, 35 active testnet operators, 7 signatures required"
+                  primary="Oracle Consensus (7-signature MuSig2)"
+                  secondary="Active on testnet26 - 35 active oracle slots (0-34), 7 signatures required"
                 />
               </ListItem>
               <ListItem sx={{ pl: 0 }}>
@@ -1339,16 +1342,16 @@ const DigiDollarPage = () => {
                 />
               </ListItem>
               <ListItem sx={{ pl: 0 }}>
-                <ListItemIcon><ConstructionIcon sx={{ color: '#ff9800', fontSize: '1.2rem' }} /></ListItemIcon>
+                <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
-                  primary="Mainnet Release Preparation"
-                  secondary="In Progress - Target: May, 2026 mainnet release"
+                  primary="DigiByte v9.26.2 Mainnet Release"
+                  secondary="Complete - Released June 29, 2026; DigiDollar activation pending via BIP9 signaling"
                 />
               </ListItem>
             </List>
 
             <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
-              7/8 milestones completed • 1 in progress • Mainnet release: May, 2026
+              8/8 milestones completed • Mainnet v9.26.2 released June 29, 2026
             </Typography>
           </Paper>
         </Grid>
@@ -1356,10 +1359,10 @@ const DigiDollarPage = () => {
 
       <Alert severity="success" sx={{ mt: 3 }}>
         <Typography variant="body2">
-          <strong>Current Status:</strong> DigiDollar is 95% complete with 1,850+ tests passing. Oracle system
-          in Phase Two on testnet26 with a 7-signature MuSig2 quorum and 35 reserved oracle slots. DigiDollar active on testnet (v9.26.0-RC44).
-          Mainnet release targeted for <strong>May, 2026</strong> with activation window through May, 2028.
-          For complete details and all other upgrades, see the full{' '}
+          <strong>Current Status:</strong> DigiByte <strong>v9.26.2 released on mainnet June 29, 2026</strong> with DigiDollar
+          and a 7-signature MuSig2 oracle quorum across 35 active oracle slots (0-34). DigiDollar is already active on testnet26.
+          On mainnet, DigiDollar activates through BIP9 miner signaling (version bit 23, 70% threshold, minimum activation
+          height 23,627,520). For complete details and all other upgrades, see the full{' '}
           <a href="/roadmap" style={{ color: '#0066cc', fontWeight: 'bold' }}>
             DigiByte Roadmap
           </a>.

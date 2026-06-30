@@ -107,8 +107,8 @@ describe('DigiDollarPage', () => {
       expect(screen.getAllByText(/testnet26/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/12033/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/v9\.26\.0-RC44/i).length).toBeGreaterThan(0);
-      expect(screen.getAllByText(/35 active testnet operators/i).length).toBeGreaterThan(0);
-      expect(screen.getAllByText(/35 reserved oracle slots|35 reserved slots/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/35 active oracle slots/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/7-signature MuSig2 quorum/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/six active exchange APIs|six active exchanges/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/v0x03/i).length).toBeGreaterThan(0);
       expect(screen.queryByText(/v9\.26\.0-RC42/i)).not.toBeInTheDocument();

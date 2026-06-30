@@ -7,8 +7,19 @@ import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange';
 import LaunchIcon from '@mui/icons-material/Launch';
 import IntegrationInstructionsIcon from '@mui/icons-material/IntegrationInstructions';
 
-const WALLET_GUIDE_URL = 'https://github.com/DigiByte-Core/digibyte/blob/feature/digidollar-v1/DIGIDOLLAR_WALLET_INTEGRATION.md';
-const EXCHANGE_GUIDE_URL = 'https://github.com/DigiByte-Core/digibyte/blob/feature/digidollar-v1/DIGIDOLLAR_EXCHANGE_INTEGRATION.md';
+const DOC_BASE = 'https://github.com/DigiByte-Core/digibyte/blob/feature/digidollar-v1/';
+const WALLET_GUIDE_URL = `${DOC_BASE}DIGIDOLLAR_WALLET_INTEGRATION.md`;
+const EXCHANGE_GUIDE_URL = `${DOC_BASE}DIGIDOLLAR_EXCHANGE_INTEGRATION.md`;
+
+// Core DigiDollar reference docs (in the DigiByte repo root). Code-aligned with v9.26.2.
+const DIGIDOLLAR_DOCS = [
+  { label: 'DigiDollar Explainer', file: 'DIGIDOLLAR_EXPLAINER.md' },
+  { label: 'DigiDollar Architecture', file: 'DIGIDOLLAR_ARCHITECTURE.md' },
+  { label: 'Oracle Explainer', file: 'DIGIDOLLAR_ORACLE_EXPLAINER.md' },
+  { label: 'Oracle Architecture', file: 'DIGIDOLLAR_ORACLE_ARCHITECTURE.md' },
+  { label: 'BIP9 Activation Explainer', file: 'DIGIDOLLAR_ACTIVATION_EXPLAINER.md' },
+  { label: 'Mining Integration Guide', file: 'DIGIDOLLAR_MINING_INTEGRATION_GUIDE.md' },
+];
 
 /**
  * IntegrationGuides - Reusable section linking to DigiDollar integration docs
@@ -143,6 +154,40 @@ const IntegrationGuides = () => (
       >
         Both guides include a testnet quick start — begin integrating on testnet today
       </Typography>
+
+      {/* Documentation & specifications */}
+      <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid rgba(0, 35, 82, 0.12)' }}>
+        <Typography variant="h6" fontWeight="bold" sx={{ mb: 1, color: '#002352' }}>
+          Documentation &amp; Specifications
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 2, color: '#555' }}>
+          The complete, code-aligned DigiDollar reference docs (DigiByte Core v9.26.2). Start with the
+          DigiDollar Explainer for a plain-language overview, then dive into the architecture, oracle,
+          and activation specifications.
+        </Typography>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+          {DIGIDOLLAR_DOCS.map((doc) => (
+            <Button
+              key={doc.file}
+              variant="outlined"
+              size="small"
+              endIcon={<LaunchIcon sx={{ fontSize: '0.9rem' }} />}
+              href={`${DOC_BASE}${doc.file}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                borderColor: 'rgba(0, 102, 204, 0.4)',
+                color: '#0066cc',
+                textTransform: 'none',
+                fontWeight: 600,
+                '&:hover': { borderColor: '#0066cc', backgroundColor: 'rgba(0, 102, 204, 0.05)' }
+              }}
+            >
+              {doc.label}
+            </Button>
+          ))}
+        </Box>
+      </Box>
     </CardContent>
   </Card>
 );

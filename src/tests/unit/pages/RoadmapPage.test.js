@@ -28,12 +28,12 @@ describe('RoadmapPage oracle consensus copy', () => {
       expect(screen.getByText(/Oracle network \(Phase Two - 35-slot roster, 7-signature MuSig2 quorum\)/i)).toBeInTheDocument();
       expect(screen.getByText(/with Phase Two 7-signature consensus/i)).toBeInTheDocument();
       expect(screen.getByText(/oracle price feeds and a 7-signature quorum across a 35-slot roster/i)).toBeInTheDocument();
-      const validationMatches = screen.getAllByText(/RC44 MuSig2 Oracle Testnet Validation/i);
+      const validationMatches = screen.getAllByText(/MuSig2 Oracle Testnet Validation/i);
       expect(validationMatches.length).toBeGreaterThan(0);
-      expect(screen.getByText(/Complete 7-signature oracle consensus validation on testnet26/i)).toBeInTheDocument();
+      expect(screen.getByText(/7-signature MuSig2 oracle consensus validated on testnet26/i)).toBeInTheDocument();
       expect(screen.getAllByText(/Testnet Release v9\.26\.0-RC44/i).length).toBeGreaterThan(0);
-      expect(screen.getAllByText(/DigiByte v9\.26 Release Candidate 43 \(Current\)/i).length).toBeGreaterThan(0);
-      expect(screen.getByText(/Current testnet26 release candidate \(v9\.26\.0-RC44\)/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Final Testnet Release Candidate \(v9\.26\.0-RC44\)/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/Final testnet26 release candidate before mainnet/i)).toBeInTheDocument();
     });
   });
 });

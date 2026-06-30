@@ -358,20 +358,20 @@ const RoadmapPage = () => {
       {
         id: 'phase4',
         title: 'DigiByte v9.26 Mainnet Release & Activation',
-        subtitle: 'May, 2026 - Mainnet Launch',
-        timeRange: 'March 2026 - May 2028',
+        subtitle: 'June 2026 - Mainnet Launch',
+        timeRange: 'March 2026 - 2027',
         startDate: '2026-03-01',
-        endDate: '2028-05-01',
+        endDate: '2027-06-01',
         status: 'in-progress',
-        progress: 15,
+        progress: 46,
         icon: <SpeedIcon />,
         color: '#ff9800',
-        description: 'DigiByte v9.26 mainnet release on May, 2026. Miners can begin signaling for DigiDollar activation starting May 1st. Activation window: May, 2026 through May, 2028. This is the world\'s first truly decentralized stablecoin on a UTXO blockchain.',
+        description: 'DigiByte v9.26.2 released on mainnet June 29, 2026. Miners can now signal for DigiDollar activation. Activation window: June 2026 through 2027. This is the world\'s first truly decentralized stablecoin on a UTXO blockchain.',
         keyFeatures: [
-          '🚀 v9.26 mainnet release: May, 2026',
-          '⛏️ Miner signaling begins May, 2026',
-          '🗳️ 75% miner threshold required',
-          '📅 Activation window: May, 2026 → May, 2028'
+          '🚀 v9.26.2 mainnet release: June 29, 2026',
+          '⛏️ Miner signaling underway',
+          '🗳️ 70% miner threshold required',
+          '📅 Activation via BIP9 signaling'
         ],
         milestones: [
           {
@@ -384,88 +384,94 @@ const RoadmapPage = () => {
           },
           {
             id: 'v9.26-rc2',
-            title: 'DigiByte v9.26 Release Candidate 43 (Current)',
+            title: 'Final Testnet Release Candidate (v9.26.0-RC44)',
             date: '2026-05-27',
             status: 'completed',
-            description: 'Current testnet26 release candidate (v9.26.0-RC44) — 35-slot oracle roster, 35 active testnet operators, and 7-signature MuSig2 quorum before mainnet',
+            description: 'Final testnet26 release candidate before mainnet — 35-slot active oracle roster (0-34) with a 7-signature MuSig2 quorum',
             completionDate: '2026-05-27'
           },
           {
             id: 'oracle-phase2-testnet',
-            title: 'RC44 MuSig2 Oracle Testnet Validation',
-            date: '2026-03-15',
-            status: 'pending',
-            description: 'Complete 7-signature oracle consensus validation on testnet26'
+            title: 'MuSig2 Oracle Testnet Validation',
+            date: '2026-05-27',
+            status: 'completed',
+            description: '7-signature MuSig2 oracle consensus validated on testnet26 ahead of mainnet',
+            completionDate: '2026-05-27'
           },
           {
             id: 'security-pen-testing',
-            title: 'Security & Penetration Testing',
-            date: '2026-03-30',
-            status: 'pending',
-            description: 'Comprehensive security audit and penetration testing of DigiDollar consensus rules'
+            title: 'Security & Hardening Review',
+            date: '2026-06-15',
+            status: 'completed',
+            description: 'Security review and hardening of DigiDollar consensus rules ahead of the mainnet release',
+            completionDate: '2026-06-29'
           },
           {
             id: 'mining-pool-coordination',
             title: 'Mining Pool & Exchange Outreach',
-            date: '2026-03-15',
+            date: '2026-06-29',
             status: 'in-progress',
-            description: 'Coordinate with mining pools, wallets, and exchanges for v9.26 upgrade'
+            description: 'Coordinating with mining pools, wallets, and exchanges to upgrade to v9.26.2',
+            completionDate: null
           },
           {
             id: 'node-upgrade-campaign',
             title: 'Node Upgrade Campaign',
-            date: '2026-04-15',
-            status: 'pending',
-            description: 'Community outreach for node operators to upgrade to v9.26'
+            date: '2026-06-29',
+            status: 'in-progress',
+            description: 'Community outreach for node operators to upgrade to v9.26.2'
           },
           {
             id: 'bip9-parameters',
             title: 'BIP9 Activation Parameters',
-            date: '2026-04-20',
-            status: 'pending',
-            description: 'Set soft fork activation parameters: start May, 2026, timeout May, 2028'
+            date: '2026-06-29',
+            status: 'completed',
+            description: 'BIP9 parameters set in consensus: version bit 23, start June 1 2026, timeout June 1 2027, minimum activation height 23,627,520, 70% threshold',
+            completionDate: '2026-06-29'
           },
           {
             id: 'v9.26-final-release',
-            title: '🚀 DigiByte v9.26 Mainnet Release',
-            date: '2026-05-01',
-            status: 'pending',
-            description: 'Official mainnet release with DigiDollar - miners can start signaling for activation'
+            title: '🚀 DigiByte v9.26.2 Mainnet Release',
+            date: '2026-06-29',
+            status: 'completed',
+            description: 'Official mainnet release of DigiByte v9.26.2 with DigiDollar - miners can start signaling for activation',
+            completionDate: '2026-06-29'
           },
           {
             id: 'signaling-period-start',
-            title: '⛏️ Miner Signaling Period Begins',
-            date: '2026-05-01',
-            status: 'pending',
-            description: 'BIP9 signaling begins - miners vote on DigiDollar activation'
+            title: '⛏️ Miner Signaling Underway',
+            date: '2026-06-29',
+            status: 'in-progress',
+            description: 'BIP9 bit 23 signaling - miners vote on DigiDollar activation',
+            completionDate: null
           },
           {
             id: 'signaling-threshold',
-            title: '75% Signaling Threshold',
-            date: '2026-06-01',
+            title: '70% Signaling Threshold',
+            date: '2026-07-01',
             status: 'pending',
-            description: 'Monitor for 75% miner support across signaling periods'
+            description: 'Reach 70% miner support (28,224 of 40,320 blocks) in a signaling window'
           },
           {
             id: 'soft-fork-lock-in',
             title: 'Soft Fork Lock-In',
-            date: '2026-07-01',
+            date: '2026-07-15',
             status: 'pending',
-            description: 'Soft fork locks in after meeting 75% activation threshold'
+            description: 'Soft fork locks in after meeting the 70% signaling threshold'
           },
           {
             id: 'digidollar-activation',
             title: '✅ DigiDollar Mainnet Activation',
             date: '2026-08-01',
             status: 'pending',
-            description: 'DigiDollar consensus rules activate on mainnet - first decentralized stablecoin on UTXO blockchain goes live'
+            description: 'DigiDollar consensus rules activate on mainnet (at or after minimum activation height 23,627,520) - first decentralized stablecoin on a UTXO blockchain goes live'
           },
           {
             id: 'activation-window-end',
-            title: 'Activation Window Closes',
-            date: '2028-05-01',
+            title: 'BIP9 Window Timeout',
+            date: '2027-06-01',
             status: 'pending',
-            description: 'End of BIP9 activation window (May, 2026 → May, 2028)'
+            description: 'End of the BIP9 signaling window (timeout June 1, 2027) if the 70% threshold is not reached'
           }
         ]
       },
@@ -914,7 +920,7 @@ const RoadmapPage = () => {
               textShadow: '0 2px 10px rgba(0,0,0,0.3)'
             }}
           >
-            DigiDollar v9.26 Mainnet Release
+            DigiByte v9.26.2 Mainnet Release
           </Typography>
           <RocketLaunchIcon sx={{ fontSize: { xs: '2rem', md: '3rem' }, color: '#ffb74d' }} />
         </Box>
@@ -928,7 +934,7 @@ const RoadmapPage = () => {
             fontSize: { xs: '1.3rem', sm: '1.6rem', md: '2rem' }
           }}
         >
-          May, 2026
+          Released June 29, 2026
         </Typography>
 
         <Divider sx={{ maxWidth: '200px', mx: 'auto', mb: 2, borderColor: 'rgba(255,183,77,0.5)', borderWidth: 2 }} />
@@ -957,10 +963,10 @@ const RoadmapPage = () => {
               }}
             >
               <Typography variant="body2" sx={{ color: '#ffb74d', fontWeight: 'bold' }}>
-                Miner Signaling Begins
+                Miner Signaling
               </Typography>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                May, 2026
+                Underway (bit 23)
               </Typography>
             </Paper>
           </Grid>
@@ -978,7 +984,7 @@ const RoadmapPage = () => {
                 Activation Window
               </Typography>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                May, 2026 → May, 2028
+                June 2026 → 2027
               </Typography>
             </Paper>
           </Grid>
@@ -996,7 +1002,7 @@ const RoadmapPage = () => {
                 Threshold Required
               </Typography>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                75% Miner Support
+                70% Miner Support
               </Typography>
             </Paper>
           </Grid>
@@ -1011,7 +1017,7 @@ const RoadmapPage = () => {
             mx: 'auto'
           }}
         >
-          DigiDollar activated on testnet. Reach out to mining pools, wallets & exchanges to support v9.26 upgrade.
+          v9.26.2 is live on mainnet. Mining pools, wallets & exchanges should upgrade to v9.26.2 and signal for DigiDollar activation.
         </Typography>
       </CardContent>
     </Card>
