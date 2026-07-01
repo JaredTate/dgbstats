@@ -2,11 +2,13 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Container, Typography, Box, Card, CardContent, Divider, Grid,
   LinearProgress, Table, TableContainer, TableHead, TableBody, TableRow, TableCell,
-  Paper, Chip, CircularProgress, Alert
+  Paper, Chip, CircularProgress, Alert, Collapse, IconButton
 } from '@mui/material';
 import SystemUpdateAltIcon from '@mui/icons-material/SystemUpdateAlt';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HourglassTopIcon from '@mui/icons-material/HourglassTop';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { useNetwork } from '../context/NetworkContext';
 import config from '../config';
 
@@ -16,8 +18,7 @@ import config from '../config';
 // DigiByte block versions pack the mining algo into bits 8-11 and the base
 // version into the low byte; BIP9 deployment signals occupy the remaining bits.
 // We track two deployments in the rolling window:
-//   * DigiDollar (bit 23) — the node is running v9.26.x. LIVE now (the DigiDollar
-//     BIP9 window is `started`).
+//   * DigiDollar (bit 23) — the node is running v9.26.x. LIVE now.
 //   * Algolock   (bit 0)  — the node is running v9.26.2 and will reject the retired
 //     Groestl algorithm. Only appears once the algolock BIP9 window is `started`.
 // SHA256D ASIC miners version-roll bits 13-28 (BIP320 / ASICBoost) — which INCLUDES
@@ -64,6 +65,15 @@ function fmtEta(blocks) {
   return `~${hours.toFixed(1)} hours`;
 }
 
+function hex8(v) {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return '—';
+  return '0x' + (v >>> 0).toString(16).padStart(8, '0');
+}
+
+function isGroestl(algo) {
+  return typeof algo === 'string' && algo.toLowerCase().includes('groestl');
+}
+
 const PoolUpgradeTrackerPage = () => {
   const network = useNetwork();
   const { wsBaseUrl, theme: networkTheme, apiPrefix, name: networkName } = network;
@@ -75,8 +85,13 @@ const PoolUpgradeTrackerPage = () => {
   const [ddDeployment, setDdDeployment] = useState(null);
   const [algolockDeployment, setAlgolockDeployment] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState({}); // pool key -> bool
 
   const activationHeight = ACTIVATION_HEIGHT[networkName] ?? null;
+
+  const toggle = useCallback((key) => {
+    setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
 
   // Live block feed over WebSocket (same channel the Pools/Blocks pages use).
   useEffect(() => {
@@ -133,7 +148,7 @@ const PoolUpgradeTrackerPage = () => {
     return () => clearInterval(id);
   }, [fetchOfficial]);
 
-  // Aggregate both signals per pool over the recent-block window.
+  // Aggregate both signals per pool (with a per-algorithm drill-down) over the window.
   const { pools, totalBlocks, ddCount, alCount, ddPct, alPct, rolledCount } = useMemo(() => {
     const map = new Map();
     let total = 0, dd = 0, al = 0, rolled = 0;
@@ -145,26 +160,33 @@ const PoolUpgradeTrackerPage = () => {
       if (c.rolled) rolled += 1;
       const key = poolKey(b);
       if (!map.has(key)) {
-        map.set(key, { key, name: key, total: 0, dd: 0, al: 0, latestHeight: -1, latest: null, algos: new Set() });
+        map.set(key, { key, name: key, total: 0, dd: 0, al: 0, latestHeight: -1, latest: null, latestAlgo: '', algos: new Map() });
       }
       const p = map.get(key);
       p.total += 1;
       if (c.digidollar) p.dd += 1;
       if (c.algolock) p.al += 1;
-      if (b.algo) p.algos.add(b.algo);
-      if ((b.height || 0) > p.latestHeight) {
-        p.latestHeight = b.height || 0;
-        p.latest = c;
+      // per-algorithm breakdown (the drill-down)
+      const algo = b.algo || 'unknown';
+      if (!p.algos.has(algo)) {
+        p.algos.set(algo, { algo, n: 0, dd: 0, al: 0, rolled: 0, sampleVersion: b.version, sampleHeight: b.height || 0 });
       }
+      const a = p.algos.get(algo);
+      a.n += 1;
+      if (c.digidollar) a.dd += 1;
+      if (c.algolock) a.al += 1;
+      if (c.rolled) a.rolled += 1;
+      if ((b.height || 0) > a.sampleHeight) { a.sampleHeight = b.height || 0; a.sampleVersion = b.version; }
+      if ((b.height || 0) > p.latestHeight) { p.latestHeight = b.height || 0; p.latest = c; p.latestAlgo = algo; }
     }
     const list = Array.from(map.values()).map((p) => ({
       ...p,
       ddPct: p.total ? Math.round((p.dd / p.total) * 100) : 0,
       alPct: p.total ? Math.round((p.al / p.total) * 100) : 0,
-      // "upgraded" = running v9.26.x (DigiDollar). Latest block decides current status.
       ddState: p.latest?.digidollar ? 'upgraded' : (p.dd > 0 ? 'partial' : 'none'),
       alState: p.latest?.algolock ? 'ready' : (p.al > 0 ? 'partial' : 'none'),
-      algos: Array.from(p.algos),
+      algoBreakdown: Array.from(p.algos.values()).sort((x, y) => y.n - x.n),
+      algoList: Array.from(p.algos.keys()),
     }));
     list.sort((a, b) => b.total - a.total);
     return {
@@ -237,8 +259,7 @@ const PoolUpgradeTrackerPage = () => {
               Live pool readiness across the last <strong>{totalBlocks || 240}</strong> blocks, tracking two
               BIP9 signals: <strong>DigiDollar</strong> (bit&nbsp;23 — a node running <strong>v9.26.x</strong>,
               live now) and <strong>Algolock</strong> (bit&nbsp;0 — <strong>v9.26.2</strong>, which rejects the
-              retired Groestl algorithm). Version-rolled ASIC blocks are filtered so bit&nbsp;23 counts only
-              genuine signalling.
+              retired Groestl algorithm). Click any pool to drill into its per-algorithm breakdown.
             </Typography>
           </CardContent>
         </Card>
@@ -249,7 +270,6 @@ const PoolUpgradeTrackerPage = () => {
           <>
             {/* Overall readiness — two signals side by side */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
-              {/* DigiDollar (v9.26.x) — live */}
               <Grid item xs={12} md={6}>
                 <Card elevation={3} sx={{ p: 3, borderRadius: '12px', height: '100%' }}>
                   <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5, color: primaryColor }}>
@@ -266,7 +286,6 @@ const PoolUpgradeTrackerPage = () => {
                 </Card>
               </Grid>
 
-              {/* Algolock (v9.26.2) — starts when the BIP9 window opens */}
               <Grid item xs={12} md={6}>
                 <Card elevation={3} sx={{ p: 3, borderRadius: '12px', height: '100%' }}>
                   <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5, color: primaryColor }}>
@@ -333,7 +352,7 @@ const PoolUpgradeTrackerPage = () => {
               </Typography>
             </Card>
 
-            {/* Per-pool table — both signals */}
+            {/* Per-pool table with drill-down */}
             <Card elevation={3} sx={{ borderRadius: '12px' }}>
               <CardContent>
                 <Typography variant="h5" fontWeight="bold" sx={{ mb: 2, color: primaryColor }}>
@@ -343,6 +362,7 @@ const PoolUpgradeTrackerPage = () => {
                   <Table size="small">
                     <TableHead sx={{ backgroundColor: `${primaryColor}12` }}>
                       <TableRow>
+                        <TableCell sx={{ width: 40 }} />
                         <TableCell><strong>Pool / Miner</strong></TableCell>
                         <TableCell align="center"><strong>DigiDollar (v9.26.x)</strong></TableCell>
                         <TableCell align="center"><strong>Algolock (v9.26.2)</strong></TableCell>
@@ -352,32 +372,97 @@ const PoolUpgradeTrackerPage = () => {
                     </TableHead>
                     <TableBody>
                       {pools.map((p) => (
-                        <TableRow key={p.key} sx={{ '&:hover': { backgroundColor: '#f5f5f5' } }}>
-                          <TableCell sx={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            <span title={p.algos.length ? `${p.name} — ${p.algos.join(', ')}` : p.name}>{p.name}</span>
-                          </TableCell>
-                          <TableCell align="center">
-                            {ddChip(p.ddState)}{' '}
-                            <Typography component="span" variant="caption" color="#666">{p.dd}/{p.total} ({p.ddPct}%)</Typography>
-                          </TableCell>
-                          <TableCell align="center">
-                            {alChip(p.alState)}{' '}
-                            <Typography component="span" variant="caption" color="#666">{p.al}/{p.total} ({p.alPct}%)</Typography>
-                          </TableCell>
-                          <TableCell align="right">{p.total}</TableCell>
-                          <TableCell align="right">{p.latestHeight >= 0 ? p.latestHeight.toLocaleString() : '—'}</TableCell>
-                        </TableRow>
+                        <React.Fragment key={p.key}>
+                          <TableRow
+                            hover
+                            onClick={() => toggle(p.key)}
+                            sx={{ cursor: 'pointer', '& > *': { borderBottom: expanded[p.key] ? 'unset' : undefined } }}
+                          >
+                            <TableCell>
+                              <IconButton size="small" aria-label="expand row">
+                                {expanded[p.key] ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                              </IconButton>
+                            </TableCell>
+                            <TableCell sx={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              <span title={p.algoList.length ? `${p.name} — ${p.algoList.join(', ')}` : p.name}>{p.name}</span>
+                            </TableCell>
+                            <TableCell align="center">
+                              <span title={`${p.dd}/${p.total} blocks on v9.26.x · latest block: ${p.latestAlgo || '—'}`}>
+                                {ddChip(p.ddState)}{' '}
+                                <Typography component="span" variant="caption" color="#666">{p.dd}/{p.total} ({p.ddPct}%)</Typography>
+                              </span>
+                            </TableCell>
+                            <TableCell align="center">
+                              {alChip(p.alState)}{' '}
+                              <Typography component="span" variant="caption" color="#666">{p.al}/{p.total} ({p.alPct}%)</Typography>
+                            </TableCell>
+                            <TableCell align="right">{p.total}</TableCell>
+                            <TableCell align="right">{p.latestHeight >= 0 ? p.latestHeight.toLocaleString() : '—'}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell sx={{ py: 0, borderBottom: expanded[p.key] ? undefined : 'none' }} colSpan={6}>
+                              <Collapse in={!!expanded[p.key]} timeout="auto" unmountOnExit>
+                                <Box sx={{ my: 2, mx: 1 }}>
+                                  <Typography variant="subtitle2" sx={{ mb: 1, color: primaryColor }}>
+                                    Algorithm breakdown — {p.name}
+                                  </Typography>
+                                  <Table size="small" sx={{ backgroundColor: '#fafafa', borderRadius: 1 }}>
+                                    <TableHead>
+                                      <TableRow>
+                                        <TableCell><strong>Algorithm</strong></TableCell>
+                                        <TableCell align="right"><strong>Blocks</strong></TableCell>
+                                        <TableCell align="right"><strong>DigiDollar (v9.26.x)</strong></TableCell>
+                                        <TableCell align="right"><strong>Algolock (v9.26.2)</strong></TableCell>
+                                        <TableCell align="right"><strong>Version-rolled</strong></TableCell>
+                                        <TableCell><strong>Latest version</strong></TableCell>
+                                      </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                      {p.algoBreakdown.map((a) => (
+                                        <TableRow key={a.algo} sx={{ backgroundColor: isGroestl(a.algo) ? '#fff3e0' : undefined }}>
+                                          <TableCell>
+                                            {a.algo}
+                                            {isGroestl(a.algo) && (
+                                              <Chip label="rejected at backstop" size="small"
+                                                sx={{ ml: 1, backgroundColor: '#e65100', color: 'white', height: 18, fontSize: '0.65rem' }} />
+                                            )}
+                                          </TableCell>
+                                          <TableCell align="right">{a.n}</TableCell>
+                                          <TableCell align="right" sx={{ color: a.dd ? '#2e7d32' : '#999', fontWeight: a.dd ? 'bold' : 'normal' }}>
+                                            {a.dd}/{a.n}
+                                          </TableCell>
+                                          <TableCell align="right" sx={{ color: a.al ? '#2e7d32' : '#999', fontWeight: a.al ? 'bold' : 'normal' }}>
+                                            {a.al}/{a.n}
+                                          </TableCell>
+                                          <TableCell align="right" sx={{ color: a.rolled ? '#e65100' : '#999' }}>{a.rolled}</TableCell>
+                                          <TableCell><code style={{ fontSize: '0.8rem' }}>{hex8(a.sampleVersion)}</code></TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                  <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#888' }}>
+                                    "DigiDollar" counts clean bit-23 blocks (version rolling excluded). A pool
+                                    showing v9.26.x on some algos but not others is running a mixed backend —
+                                    upgrade the nodes mining the non-signalling algorithms (especially Groestl,
+                                    which is rejected at the backstop height).
+                                  </Typography>
+                                </Box>
+                              </Collapse>
+                            </TableCell>
+                          </TableRow>
+                        </React.Fragment>
                       ))}
                       {pools.length === 0 && (
-                        <TableRow><TableCell colSpan={5} align="center">No recent blocks available.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={6} align="center">No recent blocks available.</TableCell></TableRow>
                       )}
                     </TableBody>
                   </Table>
                 </TableContainer>
                 <Typography variant="caption" sx={{ display: 'block', mt: 2, color: '#888' }}>
                   Status reflects each pool's most recent block; "Partial" means some but not the latest block
-                  signalled. DigiDollar (bit&nbsp;23) is only counted on a clean version — {rolledCount} of the
-                  last {totalBlocks} blocks are version-rolled (SHA256D ASICBoost) and excluded to avoid false
+                  signalled (typical of a multi-node / multi-algo pool mid-rollout — click to see which algos).
+                  DigiDollar (bit&nbsp;23) is only counted on a clean version — {rolledCount} of the last{' '}
+                  {totalBlocks} blocks are version-rolled (SHA256D ASICBoost) and excluded to avoid false
                   positives. Pools are identified by coinbase tag or payout address.
                 </Typography>
               </CardContent>
