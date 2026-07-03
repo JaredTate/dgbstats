@@ -318,8 +318,8 @@ const PoolUpgradeTrackerPage = () => {
             <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 3, borderColor: secondaryColor, borderWidth: 2 }} />
             <Typography variant="subtitle1" sx={{ maxWidth: 820, mx: 'auto' }}>
               Live pool readiness across the last <strong>{totalBlocks || 240}</strong> blocks, tracking two
-              BIP9 signals: <strong>DigiDollar</strong> (bit&nbsp;23 — a node running <strong>v9.26.x</strong>,
-              live now) and <strong>Algolock</strong> (bit&nbsp;0 — <strong>v9.26.2+</strong>, which rejects the
+              BIP9 signals: <strong>DigiDollar</strong> (bit&nbsp;23 — a node running <strong>v9.26.x</strong>;
+              signalling live now, DigiDollar itself not yet active) and <strong>Algolock</strong> (bit&nbsp;0 — <strong>v9.26.2+</strong>, which rejects the
               retired Groestl algorithm). Bit&nbsp;23 lies inside the SHA256D ASIC version-rolling window, so
               rolled blocks are called out separately. Click any pool for its per-algorithm breakdown.
             </Typography>

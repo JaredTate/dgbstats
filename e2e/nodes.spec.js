@@ -47,7 +47,7 @@ test.describe('Nodes Page', () => {
     
     // Check for the stats cards
     await expect(page.locator('text=Total Nodes Seen')).toBeVisible();
-    await expect(page.locator('text=Mapped Active Regions')).toBeVisible();
+    await expect(page.locator('text=Geolocated Nodes')).toBeVisible();
     await expect(page.locator('text=Total Countries')).toBeVisible();
     
     // Check values are not loading
@@ -167,7 +167,7 @@ test.describe('Nodes Page', () => {
     
     // Verify stats cards are showing values
     await expect(page.locator('text=Total Nodes Seen')).toBeVisible();
-    await expect(page.locator('text=Mapped Active Regions')).toBeVisible();
+    await expect(page.locator('text=Geolocated Nodes')).toBeVisible();
     await expect(page.locator('text=Total Countries')).toBeVisible();
     
     // Either data updated or is stable (both valid)

@@ -457,9 +457,9 @@ const DDStatsPage = () => {
               <Typography variant="caption" fontWeight="bold">DCA Tiers:</Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
                 <Chip label="≥150%: 1.0x" size="small" sx={{ backgroundColor: '#4caf50', color: 'white' }} />
-                <Chip label="120-149%: 1.2x" size="small" sx={{ backgroundColor: '#ff9800', color: 'white' }} />
-                <Chip label="100-119%: 1.5x" size="small" sx={{ backgroundColor: '#f44336', color: 'white' }} />
-                <Chip label="<100%: 2.0x" size="small" sx={{ backgroundColor: '#d32f2f', color: 'white' }} />
+                <Chip label="120-149%: 1.25x" size="small" sx={{ backgroundColor: '#ff9800', color: 'white' }} />
+                <Chip label="110-119%: 1.5x" size="small" sx={{ backgroundColor: '#f44336', color: 'white' }} />
+                <Chip label="<110%: 2.0x" size="small" sx={{ backgroundColor: '#d32f2f', color: 'white' }} />
               </Box>
             </Box>
           </CardContent>
@@ -589,16 +589,19 @@ const DDStatsPage = () => {
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Box sx={{ width: 20, height: 20, borderRadius: '50%', backgroundColor: '#ff9800' }} />
-              <Typography variant="body2"><strong>120-149%</strong> - Warning: +20% collateral required</Typography>
+              <Typography variant="body2"><strong>120-149%</strong> - Warning: +25% collateral required</Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Box sx={{ width: 20, height: 20, borderRadius: '50%', backgroundColor: '#f44336' }} />
-              <Typography variant="body2"><strong>100-119%</strong> - Critical: +50% collateral required</Typography>
+              <Typography variant="body2"><strong>110-119%</strong> - Critical: +50% collateral required</Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Box sx={{ width: 20, height: 20, borderRadius: '50%', backgroundColor: '#d32f2f' }} />
-              <Typography variant="body2"><strong>&lt;100%</strong> - Emergency: ERR activates, no new mints</Typography>
+              <Typography variant="body2"><strong>&lt;110%</strong> - Emergency tier: 2.0x collateral required</Typography>
             </Box>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+              ERR activates and new minting stops below 100%.
+            </Typography>
           </Box>
         </Grid>
       </Grid>

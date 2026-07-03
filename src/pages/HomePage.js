@@ -15,7 +15,7 @@ import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { useNetwork } from '../context/NetworkContext';
 
 const TESTNET_RELEASE = {
-  version: 'v9.26.0-RC44',
+  version: 'v9.26.4',
   network: 'testnet26',
   p2pPort: '12033',
   rpcPort: '14026',
@@ -332,10 +332,10 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, flexWrap: 'wrap', mb: 2 }}>
               <Box>
                 <Typography variant="h5" fontWeight="bold" sx={{ color: networkTheme.primary }}>
-                  RC44 Testnet Update
+                  Testnet26 DigiDollar Status
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Current {TESTNET_RELEASE.network} network for DigiDollar validation before mainnet launch decisions.
+                  Current {TESTNET_RELEASE.network} network where DigiDollar has been active since block 600. DigiDollar shipped on mainnet in v9.26.2; mainnet activation now awaits 70% miner BIP9 signaling.
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -354,8 +354,8 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
                 { label: 'P2P Port', value: TESTNET_RELEASE.p2pPort },
                 { label: 'RPC Port', value: TESTNET_RELEASE.rpcPort },
                 { label: 'DD Activation', value: `Block ${TESTNET_RELEASE.activationHeight}` },
-                { label: 'Oracle Roster', value: `35 reserved, ${TESTNET_RELEASE.activeOracleSlots}` },
-                { label: 'Mainnet Floor', value: `Block ${TESTNET_RELEASE.mainnetActivationFloor}` }
+                { label: 'Oracle Roster', value: '35-slot roster, 7-of-35 quorum' },
+                { label: 'Mainnet Min Activation Height (passed)', value: `Block ${TESTNET_RELEASE.mainnetActivationFloor}` }
               ].map(({ label, value }) => (
                 <Grid item xs={12} sm={6} md={4} key={label}>
                   <Box sx={{ p: 1.5, borderRadius: '8px', backgroundColor: '#ffffff', border: '1px solid rgba(46, 125, 50, 0.16)' }}>
@@ -538,7 +538,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
               title="Latest Version"
               value={isTestnet ? TESTNET_RELEASE.version : "v9.26.4"}
               icon={<UpdateIcon />}
-              description={isTestnet ? "Latest testnet release candidate." : "Latest DGB core version."}
+              description="Latest DGB core version."
               loading={false}
               color="#009688"
             />

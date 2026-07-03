@@ -37,7 +37,7 @@ describe('BlocksPage', () => {
       renderWithProviders(<BlocksPage />);
       
       expect(screen.getByText('Realtime DigiByte Blocks')).toBeInTheDocument();
-      expect(screen.getByText(/This page pre-loads the 20 most recent DGB blocks/)).toBeInTheDocument();
+      expect(screen.getByText(/This page pre-loads the 240 most recent DGB blocks \(20 per page\)/)).toBeInTheDocument();
     });
 
     it('should render block card labels', async () => {

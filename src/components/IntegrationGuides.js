@@ -7,7 +7,7 @@ import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange';
 import LaunchIcon from '@mui/icons-material/Launch';
 import IntegrationInstructionsIcon from '@mui/icons-material/IntegrationInstructions';
 
-const DOC_BASE = 'https://github.com/DigiByte-Core/digibyte/blob/feature/digidollar-v1/';
+const DOC_BASE = 'https://github.com/DigiByte-Core/digibyte/blob/develop/';
 const WALLET_GUIDE_URL = `${DOC_BASE}DIGIDOLLAR_WALLET_INTEGRATION.md`;
 const EXCHANGE_GUIDE_URL = `${DOC_BASE}DIGIDOLLAR_EXCHANGE_INTEGRATION.md`;
 

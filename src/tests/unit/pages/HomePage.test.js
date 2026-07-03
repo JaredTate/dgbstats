@@ -78,7 +78,7 @@ describe('HomePage', () => {
       expect(loadingIndicators.length).toBeGreaterThan(0);
     });
 
-    it('should show RC44 as the latest testnet release', () => {
+    it('should show v9.26.4 as the latest testnet release', () => {
       renderWithProviders(
         <HomePage
           numberWithCommas={(x) => x ? x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "0"}
@@ -88,7 +88,7 @@ describe('HomePage', () => {
       );
 
       expect(screen.getByText('Latest Version')).toBeInTheDocument();
-      expect(screen.getAllByText('v9.26.0-RC44').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('v9.26.4').length).toBeGreaterThan(0);
     });
 
     it('should show v9.26.4 as the latest mainnet release', () => {

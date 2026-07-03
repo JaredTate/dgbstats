@@ -36,10 +36,10 @@ const NETWORK_CONFIG = {
       explainer: 'BIP9 ensures network consensus before activating new features. By requiring 70% miner support, the upgrade proceeds only when the network is ready.'
     },
     digiDollarRelease: {
-      version: 'v9.26.0',
+      version: 'v9.26.4',
       network: 'mainnet',
       p2pPort: '12024',
-      activationSummary: 'BIP9 bit 23, earliest activation height 23,627,520',
+      activationSummary: 'BIP9 bit 23 — needs 28,224 of 40,320 blocks (70%) signaling; min activation height 23,627,520 already passed',
       oracleTotalSlots: 35,
       activeOracleSlots: 35,
       oracleThreshold: 7
@@ -86,7 +86,7 @@ const NETWORK_CONFIG = {
       explainer: 'This testnet deployment tests the full activation lifecycle with accelerated parameters. On mainnet, the timeline is longer but the mechanism is identical.'
     },
     digiDollarRelease: {
-      version: 'v9.26.0-RC44',
+      version: 'v9.26.4',
       network: 'testnet26',
       p2pPort: '12033',
       activationSummary: 'block 600 activation',
@@ -98,13 +98,16 @@ const NETWORK_CONFIG = {
       totalSlots: 35,
       activeSlots: 35,
       threshold: 7,
-      releaseLabel: 'RC44 Phase Two',
+      releaseLabel: 'Testnet26',
       rosterLabel: 'testnet roster',
       operatorSlotLabel: 'assigned testnet26 oracle slot',
       phaseSummary: '7 of 35 signatures required | 35-slot reserved roster | 35 testnet roster oracles | MuSig2 aggregate signing (v0x03)'
     },
     cliDeploymentCommand: 'digibyte-cli -testnet getdigidollardeploymentinfo'
   },
+  // Retired: bespoke isolated rehearsal chain used ahead of the v9.26.2 mainnet
+  // release. Its parameters (v9.26.1-pre, port 12046, 100-block/70-threshold
+  // window) describe that one-off deployment and are not part of DigiByte Core.
   'mainnet-pre': {
     name: 'mainnet-pre',
     displayName: 'Mainnet-PRE',
@@ -132,8 +135,8 @@ const NETWORK_CONFIG = {
         active: '600+',
         failed: 'Timeout'
       },
-      description: 'This isolated mainnet PRE rehearsal uses accelerated BIP9 windows for oracle testing.',
-      explainer: 'Mainnet-PRE keeps mainnet oracle keys and economics but compresses the BIP9 signaling window so activation can be rehearsed by block 600 on an isolated chain.'
+      description: 'This isolated mainnet PRE rehearsal used accelerated BIP9 windows for oracle testing ahead of the v9.26.2 mainnet release.',
+      explainer: 'Mainnet-PRE kept mainnet oracle keys and economics but compressed the BIP9 signaling window so activation could be rehearsed by block 600 on an isolated chain. The rehearsal completed before DigiDollar shipped on mainnet.'
     },
     digiDollarRelease: {
       version: 'v9.26.1-pre',

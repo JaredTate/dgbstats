@@ -191,7 +191,7 @@ const DownloadsPage = () => {
           }}
         >
           One way to estimate network size is total amount of DGB core wallets downloaded from GitHub. <br></br> 
-          <br></br> A core wallet is an application that lets you securely store, send, & receive DigiByte's while also maintaining a full copy of the blockchain, helping to keep the network decentralized and secure.
+          <br></br> A core wallet is an application that lets you securely store, send, & receive DigiByte while also maintaining a full copy of the blockchain, helping to keep the network decentralized and secure.
         </Typography>
       </CardContent>
     </Card>
@@ -490,7 +490,8 @@ const DownloadsPage = () => {
                 It provides maximum security and helps support network decentralization.
               </Typography>
               <Typography variant="body2" paragraph>
-                Core wallet users can participate in voting for network upgrades and run DigiAssets nodes.
+                Core wallet users help validate transactions and enforce consensus rules. Network upgrades
+                activate through miner BIP9 signaling once node operators upgrade to a release that includes them.
               </Typography>
             </Box>
           </Grid>

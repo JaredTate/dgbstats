@@ -73,39 +73,21 @@ const ActivationStatusCard = ({ isActive }) => (
 );
 
 /**
- * Card showing recent Taproot support percentage from last hour of blocks
- * @param {Object} props - Component props
- * @param {Array} props.recentBlocks - Array of recent blocks with Taproot signaling data
- * @param {number} props.supportPercentage - Calculated support percentage
- * @returns {JSX.Element} Recent support statistics card
+ * Card explaining that Taproot is active and miner signaling has ended
+ * Miners stopped signaling bit 2 at lock-in, so a live "recent support"
+ * percentage no longer measures anything meaningful post-activation.
+ * @returns {JSX.Element} Static Taproot activation summary card
  */
-const RecentSupportCard = ({ recentBlocks, supportPercentage }) => {
-  const supportingBlocks = recentBlocks.filter(block => block.taprootSignaling).length;
-  
-  return (
-    <Paper className={styles.paper} sx={{ flex: 1, textAlign: 'center' }}>
-      <Typography variant="h5" gutterBottom sx={{ color: '#002456', fontSize: '1.5rem' }}>
-        Recent Taproot Support
-      </Typography>
-      <Typography variant="h3" sx={{ 
-        color: '#4caf50',
-        fontSize: '2.5rem',
-        fontWeight: 'bold'
-      }}>
-        {supportPercentage.toFixed(1)}%
-      </Typography>
-      <Typography variant="body1" sx={{ fontSize: '1.1rem' }}>
-        Blocks supporting Taproot last 1 hour
-      </Typography>
-      <Typography variant="body2" sx={{ fontSize: '0.9rem', mt: 1, color: '#666' }}>
-        ({recentBlocks.length} blocks analyzed)
-      </Typography>
-      <Typography variant="body2" sx={{ fontSize: '0.9rem', color: '#666' }}>
-        ({supportingBlocks}/{recentBlocks.length} supporting blocks)
-      </Typography>
-    </Paper>
-  );
-};
+const RecentSupportCard = () => (
+  <Paper className={styles.paper} sx={{ flex: 1, textAlign: 'center' }}>
+    <Typography variant="h5" gutterBottom sx={{ color: '#002456', fontSize: '1.5rem' }}>
+      Recent Taproot Support
+    </Typography>
+    <Typography variant="body1" sx={{ fontSize: '1.1rem', mt: 2 }}>
+      Taproot has been active since block 21,168,000 — miner signaling ended at lock-in.
+    </Typography>
+  </Paper>
+);
 
 /**
  * Card showing detailed activation information and current status
@@ -272,7 +254,7 @@ const BIP9ExplanationSection = () => (
       <Typography variant="body1" component="ul" sx={{ color: '#002456', textAlign: 'left', fontSize: '1.2rem' }}>
         <li><strong>DEFINED</strong> - Initial state before the start time is reached</li>
         <li><strong>STARTED</strong> - Miners begin signaling readiness for the upgrade</li>
-        <li><strong>LOCKED_IN</strong> - Achieved when 70% of blocks signal support within a difficulty period</li>
+        <li><strong>LOCKED_IN</strong> - Achieved when 70% of blocks (28,224 of 40,320) signal support within a signaling window</li>
         <li><strong>ACTIVE</strong> - The soft fork is fully activated and new rules are enforced</li>
       </Typography>
     </Box>
@@ -296,9 +278,17 @@ const TechnicalParametersSection = ({ taprootStatus }) => (
         <br />
         <strong>Required Threshold:</strong> {Math.floor(ACTIVATION_WINDOW * 0.7).toLocaleString()} blocks (70% of activation window)
         <br />
-        <strong>Current Progress:</strong> {taprootStatus.elapsed} blocks into current window
-        <br />
-        <strong>Supporting Blocks:</strong> {taprootStatus.count} blocks signaling support
+        {taprootStatus.active || taprootStatus.bip9?.status === 'active' ? (
+          <>
+            <strong>Current Progress:</strong> Signaling complete — Taproot activated at block 21,168,000
+          </>
+        ) : (
+          <>
+            <strong>Current Progress:</strong> {taprootStatus.bip9?.statistics?.elapsed} blocks into current window
+            <br />
+            <strong>Supporting Blocks:</strong> {taprootStatus.bip9?.statistics?.count} blocks signaling support
+          </>
+        )}
       </Typography>
     </Box>
   </Paper>

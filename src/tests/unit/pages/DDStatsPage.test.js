@@ -97,7 +97,7 @@ describe('DDStatsPage', () => {
       expect(screen.getByText('DigiDollar Testnet Stats')).toBeInTheDocument();
       expect(screen.getByText('Real-Time Network Health & Statistics')).toBeInTheDocument();
       expect(screen.getByText('Monitor DD Supply, Locked DGB, DCA & ERR Levels')).toBeInTheDocument();
-      expect(screen.getByText(/v9\.26\.0-RC44 on testnet26: block 600 activation, P2P port 12033, 7 of 35 oracle consensus\./)).toBeInTheDocument();
+      expect(screen.getByText(/v9\.26\.4 on testnet26: block 600 activation, P2P port 12033, 7 of 35 oracle consensus\./)).toBeInTheDocument();
     });
 
     it('should render mainnet-pre release details and use PRE WebSocket', async () => {
@@ -280,9 +280,9 @@ describe('DDStatsPage', () => {
       renderWithProviders(<DDStatsPage />, { network: 'testnet' });
 
       expect(screen.getByText(/≥150%: 1.0x/)).toBeInTheDocument();
-      expect(screen.getByText(/120-149%: 1.2x/)).toBeInTheDocument();
-      expect(screen.getByText(/100-119%: 1.5x/)).toBeInTheDocument();
-      expect(screen.getByText(/<100%: 2.0x/)).toBeInTheDocument();
+      expect(screen.getByText(/120-149%: 1.25x/)).toBeInTheDocument();
+      expect(screen.getByText(/110-119%: 1.5x/)).toBeInTheDocument();
+      expect(screen.getByText(/<110%: 2.0x/)).toBeInTheDocument();
     });
   });
 
@@ -390,10 +390,14 @@ describe('DDStatsPage', () => {
       expect(screen.getByText(/- Healthy: Normal operations/)).toBeInTheDocument();
       const warning120 = screen.getAllByText(/120-149%/);
       expect(warning120.length).toBeGreaterThan(0);
-      const critical100 = screen.getAllByText(/100-119%/);
-      expect(critical100.length).toBeGreaterThan(0);
-      const emergency = screen.getAllByText(/<100%/);
+      expect(screen.getByText(/- Warning: \+25% collateral required/)).toBeInTheDocument();
+      const critical110 = screen.getAllByText(/110-119%/);
+      expect(critical110.length).toBeGreaterThan(0);
+      expect(screen.getByText(/- Critical: \+50% collateral required/)).toBeInTheDocument();
+      const emergency = screen.getAllByText(/<110%/);
       expect(emergency.length).toBeGreaterThan(0);
+      expect(screen.getByText(/- Emergency tier: 2.0x collateral required/)).toBeInTheDocument();
+      expect(screen.getByText(/ERR activates and new minting stops below 100%/)).toBeInTheDocument();
     });
 
     it('should show health calculation formula', async () => {

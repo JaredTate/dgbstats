@@ -72,7 +72,8 @@ describe('AlgosPage', () => {
       
       expect(screen.getByText('Realtime DigiByte Blocks By Algo')).toBeInTheDocument();
       expect(screen.getByText(/This page preloads the last 240 DGB blocks/)).toBeInTheDocument();
-      expect(screen.getByText(/DGB has 5 independent mining algorithms/)).toBeInTheDocument();
+      expect(screen.getByText(/DGB has 5 active mining algorithms/)).toBeInTheDocument();
+      expect(screen.getByText(/retired Myriad-Groestl algorithm currently appear as a sixth slice/)).toBeInTheDocument();
     });
 
     it('should render the pie chart container', () => {

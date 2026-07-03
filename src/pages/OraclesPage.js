@@ -1040,7 +1040,7 @@ const OraclesPage = () => {
                     {oracle.pubkey ? (
                       <Tooltip title={`${oracle.pubkey} (Click to view in source code)`}>
                         <Link
-                          href={`https://github.com/DigiByte-Core/digibyte/blob/feature/digidollar-v1/src/kernel/chainparams.cpp#L${553 + oracle.oracle_id}`}
+                          href="https://github.com/DigiByte-Core/digibyte/blob/feature/digidollar-v1/src/kernel/chainparams.cpp"
                           target="_blank"
                           rel="noopener noreferrer"
                           sx={{
@@ -1115,7 +1115,7 @@ const OraclesPage = () => {
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>35-slot oracle roster with 7 of 35 signature quorum</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>BIP9 activation for deployment</Typography>
               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Exchange fetch and oracle broadcast every 60 seconds</Typography>
-              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Compact 22-byte storage per block</Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Compact MuSig2 v0x03 bundle per block (~91 bytes: participation bitmap, price, timestamp, 64-byte aggregate signature)</Typography>
               <Typography component="li" variant="body2">Production oracle endpoints</Typography>
             </Box>
           </Paper>

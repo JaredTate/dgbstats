@@ -19,8 +19,11 @@ describe('DigiDollarPage', () => {
       // Check for alert content - look for the status text (may appear multiple times)
       const statusTexts = screen.getAllByText(/Status:/);
       expect(statusTexts.length).toBeGreaterThan(0);
-      const implementationTexts = screen.getAllByText(/Implementation is/);
-      expect(implementationTexts.length).toBeGreaterThan(0);
+      // Shipped on mainnet in v9.26.2; current release v9.26.4 (pruned-node support)
+      const shippedTexts = screen.getAllByText(/Shipped — released on mainnet/);
+      expect(shippedTexts.length).toBeGreaterThan(0);
+      const currentRelease = screen.getAllByText(/v9\.26\.4/);
+      expect(currentRelease.length).toBeGreaterThan(0);
     });
 
     it('should render all main sections', () => {

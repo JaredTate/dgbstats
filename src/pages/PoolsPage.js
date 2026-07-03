@@ -199,31 +199,17 @@ const PoolsPage = () => {
       setLoading(false);
     }
     
-    // Fallback dummy data for testing/development
-    const timer = setTimeout(() => {
-      if (loading) {
-        console.log('Creating fallback test data as WebSocket connection might have failed');
-        const dummyBlocks = [
-          { minerAddress: 'DBxgT5CiVZD1VnT7eoJ2nRiPXoKYwQ9QZe', poolIdentifier: 'Pool A', algo: 'sha256d', height: 1 },
-          { minerAddress: 'DBxgT5CiVZD1VnT7eoJ2nRiPXoKYwQ9QZe', poolIdentifier: 'Pool A', algo: 'sha256d', height: 2 },
-          { minerAddress: 'DAZsPUx62tQJ9BySDffwRZ9MV1a7CYoMqJ', poolIdentifier: 'Pool B', algo: 'scrypt', height: 3 },
-          { minedTo: 'DTz96gvwijeYKLpWBFoUCKpHVvzJZH5uoC', poolIdentifier: 'Pool C', algo: 'skein', height: 4 },
-          { minedTo: 'DAgMQJKykuV2MqXkiMszh5xY5ECMjYXKLM', poolIdentifier: 'Pool D', algo: 'qubit', height: 5 },
-          { minedTo: 'D7pKtbMzjZej7RaHpGK4hpgCwjMTcLNfMQ', poolIdentifier: 'Pool E', algo: 'odocrypt', height: 6 }
-        ];
-        setBlocks(dummyBlocks);
-        setLoading(false);
-      }
-    }, 2000);
-    
+    // No fallback data: if the WebSocket has not delivered real block data,
+    // the page keeps showing its loading state rather than fabricated pools.
+
     // Cleanup function
     return () => {
-      clearTimeout(timer);
       if (socket) {
         socket.close();
       }
     };
-  }, [loading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /**
    * D3.js pie chart rendering for mining pool distribution

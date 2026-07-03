@@ -804,8 +804,8 @@ describe('OraclesPage', () => {
     it('should apply testnet styling', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
 
-      const phaseTwo = screen.getAllByText(/Phase Two/);
-      expect(phaseTwo.length).toBeGreaterThan(0);
+      const releaseLabel = screen.getAllByText(/Testnet26/);
+      expect(releaseLabel.length).toBeGreaterThan(0);
       const consensus = screen.getAllByText(/7 signatures required|35-slot oracle roster/);
       expect(consensus.length).toBeGreaterThan(0);
     });

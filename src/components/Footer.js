@@ -70,7 +70,7 @@ const Footer = () => {
               </Typography>
             </Box>
             <Typography variant="body2" sx={{ mb: 2 }}>
-              Providing real-time statistics for the DigiByte blockchain since 2024
+              Providing real-time statistics for the DigiByte blockchain since 2023
             </Typography>
             <Stack direction="row" spacing={1}>
               <IconButton 

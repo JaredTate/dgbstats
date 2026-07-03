@@ -614,7 +614,8 @@ const NodesPage = () => {
           }}
         >
           This page displays unique nodes seen in the peers.dat file of the DigiHash mining pool
-          wallet since the wallet node was upgraded to v8.26 on Aug 29th, 2025.
+          wallet since the wallet node was upgraded to a v8.26 pre-release build on Aug 29th, 2025
+          (the node now runs DigiByte Core v9.26.4).
         </Typography>
         
         {/* Important disclaimers about the data */}
@@ -729,9 +730,9 @@ const NodesPage = () => {
               gradient="linear-gradient(135deg, #ffffff 0%, #f5f9ff 100%)"
             />
             <StatsCard 
-              title="Mapped Active Regions"
+              title="Geolocated Nodes"
               value={validNodes.length}
-              description="Unique geographic node locations"
+              description="Node IPs with mappable coordinates"
               icon={<LocationOnIcon />}
               color="#4caf50"
               gradient="linear-gradient(135deg, #ffffff 0%, #f1f9f2 100%)"
@@ -739,7 +740,7 @@ const NodesPage = () => {
             <StatsCard 
               title="Total Countries"
               value={Object.keys(nodesByCountry).filter(country => country !== 'Unknown').length}
-              description="Nations with active DigiByte nodes"
+              description="Nations where DigiByte nodes have been seen"
               icon={<FlagIcon />}
               color="#ff9800"
               gradient="linear-gradient(135deg, #ffffff 0%, #fff9f0 100%)"

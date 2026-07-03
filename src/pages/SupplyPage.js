@@ -20,11 +20,11 @@ Chart.register(...registerables);
  * These values are approximations that will be updated with real-time data when available
  */
 const DEFAULT_SUPPLY_DATA = {
-  total_amount: 15700000000, // Approximate current supply as of May 2025
-  height: 18500000,          // Estimated current height
+  total_amount: 18363414093, // Approximate current supply as of July 2026 (gettxoutsetinfo snapshot)
+  height: 23785928,          // Snapshot block height (July 2026)
   bestblock: "00000000000000000000000000000000",
-  txouts: 20000000,
-  bogosize: 1500000000
+  txouts: 15906225,
+  bogosize: 1190129395
 };
 
 /**
@@ -185,11 +185,11 @@ const SupplyPage = ({ worldPopulation, txOutsetInfo: propTxOutsetInfo }) => {
     // Start with default data to render chart immediately
     // This ensures the page is functional even if WebSocket fails
     const defaultSupplyData = {
-      total_amount: 15700000000, // Approximate current supply as of May 2025
-      height: 18500000,          // Estimated current height
+      total_amount: 18363414093, // Approximate current supply as of July 2026 (gettxoutsetinfo snapshot)
+      height: 23785928,          // Snapshot block height (July 2026)
       bestblock: "00000000000000000000000000000000",
-      txouts: 20000000,
-      bogosize: 1500000000
+      txouts: 15906225,
+      bogosize: 1190129395
     };
 
     // Initialize with default data for immediate display
@@ -524,7 +524,7 @@ const SupplyPage = ({ worldPopulation, txOutsetInfo: propTxOutsetInfo }) => {
   const remainingSupply = totalSupply - currentSupply;
   const currentSupplyPercentage = ((currentSupply / totalSupply) * 100).toFixed(1);
   const remainingSupplyPercentage = ((remainingSupply / totalSupply) * 100).toFixed(1);
-  const dgbPerPerson = worldPopulation ? (currentSupply / worldPopulation).toFixed(2) : "2.00";
+  const dgbPerPerson = worldPopulation ? (currentSupply / worldPopulation).toFixed(2) : (currentSupply / 8200000000).toFixed(2);
 
   /**
    * HeroSection - Page header with title and description
@@ -633,7 +633,7 @@ const SupplyPage = ({ worldPopulation, txOutsetInfo: propTxOutsetInfo }) => {
         <StatCard
           title="DGB Per Person"
           value={`${dgbPerPerson} DGB`}
-          percentage={worldPopulation ? worldPopulation.toLocaleString() : "8,000,000,000"}
+          percentage={worldPopulation ? worldPopulation.toLocaleString() : "8,200,000,000"}
           percentageLabel="World Population"
           description="The amount of DigiByte available per person on Earth if evenly distributed based on current supply."
           icon={<PeopleIcon sx={{ color: 'white' }} />}

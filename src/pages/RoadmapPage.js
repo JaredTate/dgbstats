@@ -53,7 +53,7 @@ const RoadmapPage = () => {
 
   // Roadmap data structure for the next three years
   const initialRoadmapData = {
-    lastUpdated: new Date().toISOString(),
+    lastUpdated: '2026-07-03', // Update whenever roadmap content changes
     overallProgress: 55, // Updated Feb 2026 - Phase 1-3 complete, Phase 4 in progress
     phases: [
       {
@@ -185,7 +185,7 @@ const RoadmapPage = () => {
             title: 'Define Collateral Ratio System',
             date: '2025-10-05',
             status: 'completed',
-            description: 'Define sliding collateral ratios (400% at 1 month to 100% at 10 years)',
+            description: 'Define sliding collateral ratios (1000% at 1 hour down to 200% at 10 years)',
             completionDate: '2025-10-05'
           },
           {
@@ -265,7 +265,7 @@ const RoadmapPage = () => {
         progress: 100,
         icon: <TokenIcon />,
         color: '#4caf50',
-        description: 'Implementation of DigiDollar v9.26 with new opcodes, oracle system, and Taproot-based stablecoin functionality. DigiDollar is now active on testnet with 1,850+ tests passing (311 functional + 1,539 C++ unit tests).',
+        description: 'Implementation of DigiDollar v9.26 with new opcodes, oracle system, and Taproot-based stablecoin functionality. DigiDollar is active on testnet26 with a comprehensive functional and C++ unit test suite passing.',
         keyFeatures: [
           '💻 OP_DIGIDOLLAR implementation',
           '🔧 Oracle network (Phase Two - 35-slot roster, 7-signature MuSig2 quorum)',
@@ -286,7 +286,7 @@ const RoadmapPage = () => {
             title: 'Time-Locked Collateral Mechanism',
             date: '2025-11-05',
             status: 'completed',
-            description: 'Implement 10-tier sliding collateral ratios: 500% (30 days) to 200% (10 years)',
+            description: 'Implement 10-tier sliding collateral ratios: 1000% (1 hour) to 200% (10 years)',
             completionDate: '2025-11-05'
           },
           {
@@ -302,7 +302,7 @@ const RoadmapPage = () => {
             title: 'Oracle Price Feed Implementation',
             date: '2025-12-01',
             status: 'completed',
-            description: 'Six active exchange APIs (Binance, KuCoin, Gate.io, HTX, Crypto.com, CoinGecko) with Phase Two 7-signature consensus',
+            description: 'Live DGB/USD price aggregation across 12 exchange/API fetchers (Binance, Coinbase, Kraken, KuCoin, Gate.io, HTX, Crypto.com, CoinGecko, and more) with Phase Two 7-signature consensus',
             completionDate: '2026-01-15'
           },
           {
@@ -350,7 +350,7 @@ const RoadmapPage = () => {
             title: 'Testnet Release v9.26.0-RC44',
             date: '2026-05-27',
             status: 'completed',
-            description: 'Current testnet26 release candidate before mainnet with full DigiDollar functionality and RC44 oracle roster',
+            description: 'Final testnet26 release candidate ahead of the v9.26.2 mainnet release, with full DigiDollar functionality and the RC44 oracle roster',
             completionDate: '2026-05-27'
           }
         ]
@@ -411,7 +411,7 @@ const RoadmapPage = () => {
             title: 'Mining Pool & Exchange Outreach',
             date: '2026-06-29',
             status: 'in-progress',
-            description: 'Coordinating with mining pools, wallets, and exchanges to upgrade to v9.26.2',
+            description: 'Coordinating with mining pools, wallets, and exchanges to upgrade to the latest release (currently v9.26.4)',
             completionDate: null
           },
           {
@@ -419,7 +419,7 @@ const RoadmapPage = () => {
             title: 'Node Upgrade Campaign',
             date: '2026-06-29',
             status: 'in-progress',
-            description: 'Community outreach for node operators to upgrade to v9.26.2'
+            description: 'Community outreach for node operators to upgrade to the latest release (currently v9.26.4)'
           },
           {
             id: 'bip9-parameters',
@@ -832,7 +832,7 @@ const RoadmapPage = () => {
         color="text.secondary" 
         sx={{ mb: 3, fontSize: { xs: '1.1rem', md: '1.5rem' } }}
       >
-        Next Three Years: 2025 - 2028
+        Development Roadmap: 2025 - 2029
       </Typography>
       <Typography 
         variant="body1" 
@@ -1017,7 +1017,7 @@ const RoadmapPage = () => {
             mx: 'auto'
           }}
         >
-          v9.26.2 is live on mainnet. Mining pools, wallets & exchanges should upgrade to v9.26.2 and signal for DigiDollar activation.
+          DigiDollar launched on mainnet in v9.26.2; the current release is v9.26.4. Mining pools, wallets & exchanges should upgrade to v9.26.4 and signal for DigiDollar activation.
         </Typography>
       </CardContent>
     </Card>

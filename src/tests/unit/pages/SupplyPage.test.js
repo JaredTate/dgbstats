@@ -82,8 +82,8 @@ describe('SupplyPage', () => {
     it('should display default values initially', () => {
       renderWithProviders(<SupplyPage />);
       
-      // Check for default supply value (15.70 Billion DGB)
-      expect(screen.getByText(/15\.70 Billion DGB/)).toBeInTheDocument();
+      // Check for default supply value (18.36 Billion DGB, July 2026 snapshot)
+      expect(screen.getByText(/18\.36 Billion DGB/)).toBeInTheDocument();
     });
   });
 

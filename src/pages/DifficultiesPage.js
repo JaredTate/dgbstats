@@ -275,6 +275,11 @@ const DigiShieldInfoSection = () => (
             </Box>
           </Grid>
         </Grid>
+
+        <Typography variant="body2" sx={{ mt: 1, color: '#666' }}>
+          Note: Myriad-Groestl is a retired algorithm shown temporarily while it still produces blocks;
+          it will be rejected by consensus from block 23,808,000 and its card will disappear.
+        </Typography>
       </CardContent>
     </Card>
   </Grid>

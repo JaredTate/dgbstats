@@ -97,7 +97,7 @@ const WalletConvertPage = () => {
       const buffer = e.target.result;
 
       if (!isSqliteFile(buffer)) {
-        setError('This is not a valid SQLite database. wallet.dat files are SQLite databases — please select a valid wallet file.');
+        setError('This is not a valid SQLite database. Descriptor wallet.dat files are SQLite databases — legacy (Berkeley DB) wallets are not supported by this tool.');
         setFileBuffer(null);
         setCurrentAppId(null);
         setCurrentNetwork('');
@@ -192,7 +192,7 @@ const WalletConvertPage = () => {
           <Typography variant="body1" sx={{ maxWidth: '800px', mx: 'auto', color: '#555' }}>
             Patch the SQLite <code>application_id</code> bytes in a wallet.dat file to migrate between testnet versions.
             Use this when copying an oracle wallet from one testnet to another —
-            RC44 uses the fresh testnet26 genesis, P2P port 12033, and network magic bytes <code>0xFEC6B9E7</code>,
+            Testnet26 (introduced in RC44 and current through v9.26.4) uses a fresh genesis, P2P port 12033, and network magic bytes <code>0xFEC6B9E7</code>,
             so oracle wallets from older testnets will be rejected until their SQLite application_id is converted.
           </Typography>
         </CardContent>
@@ -438,8 +438,9 @@ const WalletConvertPage = () => {
                   </Typography>
                 </Paper>
                 <Typography variant="body2" color="text.secondary">
-                  This flag tells the DigiByte node to accept wallets with a different network's application_id.
-                  It is required for cross-testnet wallet migration.
+                  This flag tells the DigiByte node to load a wallet whose recorded best block belongs to a
+                  different chain (the wallet still remembers the old testnet's genesis). The application_id
+                  must still match the target network exactly — that is the part this tool patches.
                 </Typography>
 
                 <Divider sx={{ my: 2 }} />

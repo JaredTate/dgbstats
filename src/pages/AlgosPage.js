@@ -121,7 +121,9 @@ const HeroSection = ({ isTestnet, networkTheme }) => (
         }}
       >
         This page preloads the last 240 DGB blocks (1 hour) & will keep incrementing in realtime as blocks are mined.
-        DGB has 5 independent mining algorithms & each should mine roughly 20% of all blocks.
+        DGB has 5 active mining algorithms & each should mine roughly 20% of all blocks.
+        Note: blocks from the retired Myriad-Groestl algorithm currently appear as a sixth slice;
+        they will be rejected by consensus from block 23,808,000.
       </Typography>
     </CardContent>
   </Card>
@@ -174,6 +176,10 @@ const MultiAlgoInfoSection = () => (
         </Box>
       ))}
     </Box>
+    <Typography variant="body2" sx={{ color: '#666', mb: 2 }}>
+      You may also see Myriad-Groestl, a retired algorithm whose blocks are temporarily being mined again;
+      the network rejects them permanently from block 23,808,000.
+    </Typography>
     <Typography variant="body1" sx={{ mt: 2 }}>
       This multi-algorithm approach contributes to DigiByte's enhanced security and decentralization, making it more resilient against potential attacks.
     </Typography>

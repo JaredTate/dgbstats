@@ -86,7 +86,7 @@ const HeroSection = ({ isTestnet, networkTheme }) => (
           fontSize: '1.1rem'
         }}
       >
-        This page pre-loads the 20 most recent DGB blocks & will keep incrementing in realtime as long as you leave it open as blocks are mined.
+        This page pre-loads the 240 most recent DGB blocks (20 per page) & will keep incrementing in realtime as long as you leave it open as blocks are mined.
       </Typography>
     </CardContent>
   </Card>

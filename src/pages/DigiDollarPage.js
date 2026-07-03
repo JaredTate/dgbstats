@@ -121,7 +121,7 @@ const DigiDollarPage = () => {
             fontWeight: 600
           }}
         >
-          DGB becomes the strategic reserve asset (21B max, 1.94 per person) • Everything happens inside DigiByte Core wallet •
+          DGB becomes the strategic reserve asset (21B max, ~2.59 per person) • Everything happens inside DigiByte Core wallet •
           You never give up control of your private keys
         </Typography>
 
@@ -135,9 +135,11 @@ const DigiDollarPage = () => {
           }}
         >
           <Typography variant="body2">
-            <strong>Status:</strong> Implementation is <strong>95% complete</strong> with 50,000+ lines of functional,
-            tested code. Currently active on testnet with <strong>1,850+ tests passing</strong> (311 functional tests + 1,539 C++ unit tests).
-            Oracle system is live on testnet26 (port 12033) with a 7-signature MuSig2 quorum and 35 active oracle slots (0-34).
+            <strong>Status:</strong> <strong>Shipped — released on mainnet</strong> in DigiByte v9.26.2
+            (June 29, 2026); current release <strong>v9.26.4</strong> adds pruned-node support.
+            Mainnet activation is now in miners&apos; hands via BIP9 signaling (bit&nbsp;23) — track it
+            live on the Activation page. Fully operational on testnet26, where the oracle network runs
+            a 7-signature MuSig2 quorum across 35 oracle slots, backed by an extensive automated test suite.
           </Typography>
         </Alert>
       </CardContent>
@@ -163,7 +165,7 @@ const DigiDollarPage = () => {
       >
         <Typography variant="body1">
           <strong>DGB is a Limited, Finite Strategic Reserve Asset:</strong> With a maximum supply of
-          21 billion DGB, there are only <strong style={{ color: '#0066cc', fontSize: '1.1em' }}>1.94 DGB
+          21 billion DGB, there are only <strong style={{ color: '#0066cc', fontSize: '1.1em' }}>2.59 DGB
           per person</strong> on Earth (based on 8.1 billion world population). Combined with DigiByte's
           <strong style={{ color: '#0066cc' }}> 15-second block speed</strong> (40x faster than Bitcoin),
           this extreme scarcity and fast settlement makes DGB ideal as collateral for DigiDollar -
@@ -188,7 +190,7 @@ const DigiDollarPage = () => {
             <Typography variant="body1" paragraph>
               DigiDollar is a stable digital currency that equals $1 USD,
               created by locking up DigiByte (DGB) as collateral. DGB becomes the
-              strategic reserve asset - with only 21 billion max supply (just 1.94 DGB per person
+              strategic reserve asset - with only 21 billion max supply (just ~2.59 DGB per person
               on Earth), it's a truly finite asset backing the stability of DigiDollars.
             </Typography>
             <Typography variant="body1" paragraph>
@@ -393,7 +395,7 @@ const DigiDollarPage = () => {
                 }}
               >
                 <Typography variant="h4" fontWeight="bold" color="#002352">
-                  1.94 DGB
+                  2.59 DGB
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Per person on Earth
@@ -810,7 +812,7 @@ const DigiDollarPage = () => {
                 <ListItemIcon><CodeIcon sx={{ color: '#002352' }} /></ListItemIcon>
                 <ListItemText
                   primary="OP_CHECKLOCKTIMEVERIFY (CLTV)"
-                  secondary="Enforces time-based collateral lock periods (30 days to 10 years)"
+                  secondary="Enforces time-based collateral lock periods (1 hour to 10 years)"
                 />
               </ListItem>
               <ListItem>
@@ -1053,7 +1055,7 @@ const DigiDollarPage = () => {
               but you <strong>ALWAYS get 100% of your collateral back</strong>.
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              <strong>ERR Tiers:</strong> 95-100% → burn 105% DD | 90-95% → burn 111% DD | 85-90% → burn 118% DD | &lt;85% → burn 125% DD
+              <strong>ERR Tiers:</strong> 95-100% → burn 105.3% DD | 90-95% → burn 111.1% DD | 85-90% → burn 117.6% DD | &lt;85% → burn 125% DD
             </Typography>
             <Typography variant="caption" color="text.secondary">
               Example: At 80% system health, burn 125 DD to redeem 100 DD position → get FULL collateral back
@@ -1128,7 +1130,7 @@ const DigiDollarPage = () => {
           </Grid>
         </Grid>
         <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
-          Accessible via RPC command: <code style={{ backgroundColor: '#f5f5f5', padding: '2px 4px', borderRadius: '3px' }}>getdigidollarsystemstatus</code>
+          Accessible via RPC command: <code style={{ backgroundColor: '#f5f5f5', padding: '2px 4px', borderRadius: '3px' }}>getdigidollarstats</code>
         </Typography>
       </Paper>
 
@@ -1166,7 +1168,7 @@ const DigiDollarPage = () => {
                 DigiDollar Implementation Specs
               </Typography>
               <Chip
-                label="95% COMPLETE"
+                label="SHIPPED — v9.26.4"
                 size="small"
                 sx={{
                   backgroundColor: '#4caf50',
@@ -1177,7 +1179,7 @@ const DigiDollarPage = () => {
             </Box>
 
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Implementation Phase - 95% Complete
+              All milestones complete — shipped in v9.26.2, current release v9.26.4
             </Typography>
 
             <Box sx={{ mb: 3, maxHeight: '400px', overflowY: 'auto' }}>
@@ -1236,21 +1238,21 @@ const DigiDollarPage = () => {
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <ConstructionIcon sx={{ color: '#ff9800', mr: 1, fontSize: '1.2rem' }} />
-                <Typography variant="body2" color="text.secondary">
-                  <strong>MuSig2 Oracle Validation (7-of-35 active roster)</strong> - In Progress
+                <CheckCircleIcon sx={{ color: '#4caf50', mr: 1, fontSize: '1.2rem' }} />
+                <Typography variant="body2">
+                  <strong>MuSig2 Oracle Validation (7-of-35 active roster)</strong> - Complete
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <ConstructionIcon sx={{ color: '#ff9800', mr: 1, fontSize: '1.2rem' }} />
-                <Typography variant="body2" color="text.secondary">
-                  <strong>Final Mainnet Hardening</strong> - In Progress
+                <CheckCircleIcon sx={{ color: '#4caf50', mr: 1, fontSize: '1.2rem' }} />
+                <Typography variant="body2">
+                  <strong>Mainnet Release (v9.26.2) + Pruned-Node Support (v9.26.4)</strong> - Complete
                 </Typography>
               </Box>
             </Box>
 
             <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
-              9/11 milestones completed • 2 in progress • 1,850+ tests passing
+              11/11 milestones completed • shipped on mainnet
             </Typography>
 
             <Alert severity="success" sx={{ mt: 2 }}>
@@ -1361,8 +1363,9 @@ const DigiDollarPage = () => {
         <Typography variant="body2">
           <strong>Current Status:</strong> DigiByte <strong>v9.26.2 released on mainnet June 29, 2026</strong> with DigiDollar
           and a 7-signature MuSig2 oracle quorum across 35 active oracle slots (0-34). DigiDollar is already active on testnet26.
-          On mainnet, DigiDollar activates through BIP9 miner signaling (version bit 23, 70% threshold, minimum activation
-          height 23,627,520). For complete details and all other upgrades, see the full{' '}
+          On mainnet, DigiDollar activates through BIP9 miner signaling (version bit 23, 70% threshold — 28,224 of 40,320
+          blocks per signaling window; the minimum activation height of 23,627,520 has already passed, so activation now
+          depends solely on miner signaling). For complete details and all other upgrades, see the full{' '}
           <a href="/roadmap" style={{ color: '#0066cc', fontWeight: 'bold' }}>
             DigiByte Roadmap
           </a>.

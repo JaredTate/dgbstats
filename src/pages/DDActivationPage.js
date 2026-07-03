@@ -399,7 +399,7 @@ const DDActivationPage = () => {
                   {stage.label}
                 </Typography>
                 <Typography variant="caption" sx={{ display: 'block', color: '#666', mb: 1 }}>
-                  Blocks {stage.blocks}
+                  {/^\d/.test(String(stage.blocks)) ? `Blocks ${stage.blocks}` : stage.blocks}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {stage.description}
