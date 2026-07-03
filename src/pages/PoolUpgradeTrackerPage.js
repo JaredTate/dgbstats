@@ -339,8 +339,9 @@ const PoolUpgradeTrackerPage = () => {
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 2, color: '#555' }}>
                     {ddRawCount} of {totalBlocks} recent blocks carry bit&nbsp;23 — the raw count BIP9
-                    consensus uses. {ddCleanCount} are clean (non-rolled) proof of v9.26.x;{' '}
-                    {rolledCount} are version-rolled SHA256D blocks where bit&nbsp;23 is a coin flip.
+                    consensus uses ({ddCleanCount} clean, hard proof of v9.26.x, plus{' '}
+                    {ddRawCount - ddCleanCount} riding on rolled blocks). Separately, {rolledCount} of
+                    the {totalBlocks} are version-rolled SHA256D blocks, where bit&nbsp;23 is a coin flip.
                   </Typography>
                   <ReadinessBar pct={ddRawPct} />
                   <Typography variant="h6" fontWeight="bold" color={ddRawPct >= 70 ? '#2e7d32' : '#e65100'}>

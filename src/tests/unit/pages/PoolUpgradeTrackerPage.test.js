@@ -252,12 +252,14 @@ describe('PoolUpgradeTrackerPage', () => {
       });
 
       // Network-wide aggregates: raw bit 23 on 4 of 6 blocks (BIP9 consensus
-      // count), 3 clean (non-rolled) proofs, 2 version-rolled blocks. The
-      // rolled 0x33fcc202 block has bit 28 set, so it signals nothing.
+      // count) = 3 clean proofs + 1 riding on a rolled block; 2 of the 6 are
+      // version-rolled. The rolled 0x33fcc202 block has bit 28 set, so it
+      // signals nothing.
       expect(screen.getByText(/4 of 6 recent blocks carry bit 23/)).toBeInTheDocument();
       expect(
-        screen.getByText(/3 are clean \(non-rolled\) proof of v9\.26\.x; 2 are version-rolled/)
+        screen.getByText(/3 clean, hard proof of v9\.26\.x, plus 1 riding on rolled blocks/)
       ).toBeInTheDocument();
+      expect(screen.getByText(/2 of the 6 are version-rolled SHA256D blocks/)).toBeInTheDocument();
       expect(screen.getByText(/67% of recent blocks signalling \(70% needed\)/)).toBeInTheDocument();
 
       // Per-pool upgrade states inferred from the version bits alone
