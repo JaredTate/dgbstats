@@ -242,22 +242,26 @@ const BlockCard = ({ block, index, isMobile }) => (
           </Grid>
           
           <Grid item xs={6} sm={3} md={1.5}>
-            {block.taprootSignaling ? (
+            {/* DigiDollar BIP9 signal (bit 23) — raw consensus semantics. Rolled
+                SHA256D blocks flip bit 23 randomly (ASICBoost), so they get their
+                own neutral state instead of reading as a "no" vote. Taproot is
+                active/buried, so its chip was retired in favour of this one. */}
+            {block.digidollarSignaling ? (
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <VerifiedIcon sx={{ fontSize: '1.2rem', mr: 1, color: '#4caf50' }} />
                 <Box>
                   <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                    Status
+                    DD Signal
                   </Typography>
-                  <Chip 
-                    label="Taproot" 
-                    size="small" 
-                    sx={{ 
-                      bgcolor: 'rgba(76, 175, 80, 0.1)',
-                      color: '#4caf50',
+                  <Chip
+                    label={block.versionRolled ? 'Bit 23 (rolled)' : 'DigiDollar'}
+                    size="small"
+                    sx={{
+                      bgcolor: block.versionRolled ? 'rgba(96, 125, 139, 0.12)' : 'rgba(76, 175, 80, 0.1)',
+                      color: block.versionRolled ? '#607d8b' : '#4caf50',
                       fontWeight: 'medium',
                       fontSize: '0.75rem'
-                    }} 
+                    }}
                   />
                 </Box>
               </Box>
@@ -265,11 +269,24 @@ const BlockCard = ({ block, index, isMobile }) => (
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <Box>
                   <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                    Status
+                    DD Signal
                   </Typography>
-                  <Typography variant="body2" fontWeight="medium">
-                    Normal
-                  </Typography>
+                  {block.versionRolled ? (
+                    <Chip
+                      label="Rolling"
+                      size="small"
+                      sx={{
+                        bgcolor: 'rgba(96, 125, 139, 0.12)',
+                        color: '#607d8b',
+                        fontWeight: 'medium',
+                        fontSize: '0.75rem'
+                      }}
+                    />
+                  ) : (
+                    <Typography variant="body2" fontWeight="medium">
+                      None
+                    </Typography>
+                  )}
                 </Box>
               </Box>
             )}

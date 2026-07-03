@@ -60,6 +60,13 @@ describe('Header', () => {
       expect(screen.getByRole('link', { name: 'Downloads' })).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Roadmap' })).toBeInTheDocument();
     });
+
+    it('should have the Pool Upgrades nav item linking to /pool-upgrades', () => {
+      renderWithProviders(<Header />, { network: 'mainnet' });
+
+      expect(screen.getByRole('link', { name: 'Pool Upgrades' }))
+        .toHaveAttribute('href', '/pool-upgrades');
+    });
   });
 
   describe('Testnet Mode', () => {
@@ -117,6 +124,13 @@ describe('Header', () => {
       expect(screen.queryByRole('link', { name: 'Pools' })).not.toBeInTheDocument();
       expect(screen.queryByRole('link', { name: 'Downloads' })).not.toBeInTheDocument();
       expect(screen.queryByRole('link', { name: 'Roadmap' })).not.toBeInTheDocument();
+    });
+
+    it('should have the Pool Upgrades nav item linking to /testnet/pool-upgrades', () => {
+      renderWithProviders(<Header />, { network: 'testnet' });
+
+      expect(screen.getByRole('link', { name: 'Pool Upgrades' }))
+        .toHaveAttribute('href', '/testnet/pool-upgrades');
     });
 
     it('should use testnet gradient color for app bar', () => {

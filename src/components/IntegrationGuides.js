@@ -11,7 +11,7 @@ const DOC_BASE = 'https://github.com/DigiByte-Core/digibyte/blob/feature/digidol
 const WALLET_GUIDE_URL = `${DOC_BASE}DIGIDOLLAR_WALLET_INTEGRATION.md`;
 const EXCHANGE_GUIDE_URL = `${DOC_BASE}DIGIDOLLAR_EXCHANGE_INTEGRATION.md`;
 
-// Core DigiDollar reference docs (in the DigiByte repo root). Code-aligned with v9.26.2.
+// Core DigiDollar reference docs (in the DigiByte repo root). Code-aligned with v9.26.4.
 const DIGIDOLLAR_DOCS = [
   { label: 'DigiDollar Explainer', file: 'DIGIDOLLAR_EXPLAINER.md' },
   { label: 'DigiDollar Architecture', file: 'DIGIDOLLAR_ARCHITECTURE.md' },
@@ -161,7 +161,7 @@ const IntegrationGuides = () => (
           Documentation &amp; Specifications
         </Typography>
         <Typography variant="body2" sx={{ mb: 2, color: '#555' }}>
-          The complete, code-aligned DigiDollar reference docs (DigiByte Core v9.26.2). Start with the
+          The complete, code-aligned DigiDollar reference docs (DigiByte Core v9.26.4). Start with the
           DigiDollar Explainer for a plain-language overview, then dive into the architecture, oracle,
           and activation specifications.
         </Typography>

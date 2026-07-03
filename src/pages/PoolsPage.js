@@ -5,6 +5,7 @@ import {
   Paper, Chip, CircularProgress, Pagination
 } from '@mui/material';
 import PoolIcon from '@mui/icons-material/LocationCity';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import * as d3 from 'd3';
 import config from '../config';
 
@@ -41,6 +42,48 @@ const PoolsPage = () => {
   const { sortedAddresses, singleBlockAddresses } = useMemo(() => {
     if (!blocks.length) return { sortedAddresses: [], singleBlockAddresses: [] };
 
+    // DigiDollar upgrade signal per block. Server-computed flags preferred;
+    // falls back to raw version bits for older servers. Bit 23 on a
+    // version-rolled SHA256D block is a coin flip (ASICBoost rolls bits 13-28),
+    // so rolled-only miners are 'rolling' (indeterminate), not 'none'.
+    const signalsOf = (block) => {
+      if (block && typeof block.digidollarSignaling === 'boolean') {
+        return { ddRaw: block.digidollarSignaling, rolled: !!block.versionRolled, algolock: !!block.algolockSignaling };
+      }
+      const v = block && block.version;
+      if (typeof v !== 'number' || (v & 0xe0000000) !== 0x20000000) {
+        return { ddRaw: false, rolled: false, algolock: false };
+      }
+      // DigiByte consensus requires bit 28 clear (TOP_MASK 0xF0000000) for a
+      // block to count toward any deployment; bit 28 is itself rollable.
+      const top = (v & 0xf0000000) === 0x20000000;
+      return {
+        ddRaw: top && (v & 0x00800000) !== 0,
+        rolled: (v & ~(0x20000000 | 0x00000f00 | 0x000000ff) & ~0x00800000) !== 0,
+        algolock: top && (v & 1) !== 0,
+      };
+    };
+    const upgradeStateOf = (minerBlocks) => {
+      let ddClean = 0, ddRaw = 0, rolled = 0, algolock = 0;
+      minerBlocks.forEach(b => {
+        const c = signalsOf(b);
+        if (c.ddRaw) ddRaw += 1;
+        if (c.ddRaw && !c.rolled) ddClean += 1;
+        if (c.rolled) rolled += 1;
+        if (c.algolock) algolock += 1;
+      });
+      if (algolock > 0 || ddClean > 0) return 'upgraded';
+      // Clean (non-rolled) blocks without a single bit 23 outweigh any rolled
+      // blocks the same miner produced.
+      if (minerBlocks.length > rolled) return 'none';
+      // All blocks rolled: >=4 all carrying bit 23 means the stack preserves
+      // the bit through rolling (2^-n odds by chance) => upgraded; all missing
+      // it => not upgraded; anything else is a genuine coin flip.
+      if (rolled >= 4 && ddRaw === rolled) return 'upgraded';
+      if (rolled >= 4 && ddRaw === 0) return 'none';
+      return rolled > 0 ? 'rolling' : 'none';
+    };
+
     // Track mining addresses and their block counts
     const multiAddresses = new Set();
     const addressCounts = {};
@@ -58,11 +101,12 @@ const PoolsPage = () => {
     // Process multi-block miners (likely pools or large solo miners)
     const multipleMiners = Array.from(multiAddresses)
       .map(address => {
-        const blockData = blocks.find(b => (b.minerAddress || b.minedTo) === address);
+        const minerBlocks = blocks.filter(b => (b.minerAddress || b.minedTo) === address);
         return {
           address,
           count: addressCounts[address],
-          poolIdentifier: blockData.poolIdentifier || 'Unknown'
+          poolIdentifier: minerBlocks[0].poolIdentifier || 'Unknown',
+          upgradeState: upgradeStateOf(minerBlocks)
         };
       })
       .sort((a, b) => b.count - a.count) // Sort by block count descending
@@ -82,6 +126,7 @@ const PoolsPage = () => {
         poolIdentifier: block.poolIdentifier || 'Unknown',
         timestamp: block.timestamp,
         height: block.height,
+        upgradeState: upgradeStateOf([block]),
         rank: index + 1
       }));
 
@@ -487,6 +532,8 @@ const PoolsPage = () => {
       }}
     >
       <ListItemText
+        primaryTypographyProps={{ component: 'div' }}
+        secondaryTypographyProps={{ component: 'div' }}
         primary={
           <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
             {/* Rank badge */}
@@ -523,6 +570,37 @@ const PoolsPage = () => {
                   fontWeight: 'bold',
                   ml: 'auto'
                 }}
+              />
+            )}
+
+            {/* DigiDollar upgrade signal (mirrors the retired Taproot chip) */}
+            {item.upgradeState === 'upgraded' && (
+              <Chip
+                icon={<CheckCircleIcon sx={{ fontSize: '1rem' }} />}
+                label="v9.26.x"
+                size="small"
+                sx={{ backgroundColor: '#e8f5e9', color: '#2e7d32', fontWeight: 'medium', ml: isMultiBlock ? 0 : 'auto' }}
+              />
+            )}
+            {item.upgradeState === 'partial' && (
+              <Chip
+                label="Partial"
+                size="small"
+                sx={{ backgroundColor: '#fff3e0', color: '#e65100', fontWeight: 'medium', ml: isMultiBlock ? 0 : 'auto' }}
+              />
+            )}
+            {item.upgradeState === 'rolling' && (
+              <Chip
+                label="Rolling"
+                size="small"
+                sx={{ backgroundColor: '#eceff1', color: '#607d8b', fontWeight: 'medium', ml: isMultiBlock ? 0 : 'auto' }}
+              />
+            )}
+            {item.upgradeState === 'none' && (
+              <Chip
+                label="No signal"
+                size="small"
+                sx={{ backgroundColor: '#f5f5f5', color: '#9e9e9e', fontWeight: 'medium', ml: isMultiBlock ? 0 : 'auto' }}
               />
             )}
           </Box>

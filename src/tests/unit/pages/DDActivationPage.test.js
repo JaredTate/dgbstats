@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, waitFor, act } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import DDActivationPage from '../../../pages/DDActivationPage';
 import { renderWithProviders, createWebSocketMock, waitForAsync } from '../../utils/testUtils';
+import { server } from '../../mocks/server';
+import { mockApiResponses } from '../../mocks/mockData';
 
 // Mock data for WebSocket responses
 // Backend sends: { type: 'ddDeploymentData', data: { ... } }
@@ -83,6 +86,19 @@ describe('DDActivationPage', () => {
     mockWebSocket = wsSetup.MockWebSocket;
     webSocketInstances = wsSetup.instances;
     global.WebSocket = mockWebSocket;
+
+    // The tests in this file (outside the 'Official deployment data' block)
+    // exercise the WebSocket ddDeploymentData fallback path used with older
+    // servers. Return 404 from getdeploymentinfo so the authoritative RPC
+    // payload does not override the WS-driven deployment state under test.
+    // The 'Official deployment data' describe block below restores the real
+    // handler via server.resetHandlers().
+    const notFound = () => HttpResponse.json({ error: 'Not found' }, { status: 404 });
+    server.use(
+      http.get('http://localhost:5001/api/getdeploymentinfo', notFound),
+      http.get('http://localhost:5001/api/testnet/getdeploymentinfo', notFound),
+      http.get('http://localhost:5001/api/mainnet-pre/getdeploymentinfo', notFound)
+    );
   });
 
   afterEach(() => {
@@ -1165,6 +1181,67 @@ describe('DDActivationPage', () => {
 
       await waitFor(() => {
         expect(screen.getByText('digibyte-cli getdigidollardeploymentinfo')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Official deployment data (getdeploymentinfo)', () => {
+    // Restore the real MSW handler for getdeploymentinfo (the outer
+    // beforeEach pins it to 404 for the WS-fallback tests above). These
+    // tests exercise the authoritative RPC path: deployments.digidollar
+    // (status 'started', statistics.possible false) and deployments.algolock.
+    beforeEach(() => {
+      server.resetHandlers();
+    });
+
+    const ddStats = mockApiResponses.deploymentInfo.deployments.digidollar.bip9.statistics;
+
+    it('should render official digidollar window statistics from getdeploymentinfo', async () => {
+      renderWithProviders(<DDActivationPage />, { network: 'mainnet' });
+      await waitForAsync();
+
+      await waitFor(() => {
+        // count / period from statistics {count: 10808, period: 40320, elapsed: 36377}
+        expect(screen.getByText(/10,808 \/ 40,320 blocks signaling \(36,377 elapsed in window\)/)).toBeInTheDocument();
+        expect(screen.getByText(/Need 28,224 for lock-in/)).toBeInTheDocument();
+      });
+    });
+
+    it('should warn that lock-in is no longer possible when statistics.possible is false', async () => {
+      expect(ddStats.possible).toBe(false);
+
+      renderWithProviders(<DDActivationPage />, { network: 'mainnet' });
+      await waitForAsync();
+
+      await waitFor(() => {
+        expect(screen.getByText(/Lock-in is no longer possible in this window/)).toBeInTheDocument();
+      });
+      // The warning includes the next window start: height 23,784,900 with a
+      // 40,320-block period resets at block 590 * 40320 = 23,788,800 (the
+      // height also appears in the algolock section, hence getAllByText).
+      expect(screen.getByText(/The count resets at\s+block/)).toBeInTheDocument();
+      expect(screen.getAllByText('23,788,800').length).toBeGreaterThan(0);
+    });
+
+    it('should render the Algolock — Groestl Removal (bit 0) section', async () => {
+      renderWithProviders(<DDActivationPage />, { network: 'mainnet' });
+      await waitForAsync();
+
+      await waitFor(() => {
+        expect(screen.getByText('Algolock — Groestl Removal (bit 0)')).toBeInTheDocument();
+      });
+      // algolock deployment is status 'defined' -> window not open yet
+      expect(screen.getByText(/Algolock signalling has not opened yet/)).toBeInTheDocument();
+      const definedChips = screen.getAllByText('DEFINED');
+      expect(definedChips.length).toBeGreaterThan(0);
+    });
+
+    it('should render the algolock section on testnet via /api/testnet/getdeploymentinfo', async () => {
+      renderWithProviders(<DDActivationPage />, { network: 'testnet' });
+      await waitForAsync();
+
+      await waitFor(() => {
+        expect(screen.getByText('Algolock — Groestl Removal (bit 0)')).toBeInTheDocument();
       });
     });
   });

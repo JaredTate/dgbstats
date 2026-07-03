@@ -234,18 +234,36 @@ export const mockApiResponses = {
   },
 
   // Blocks data
+  // Per-block BIP9 signal fields mirror what dgbstats-server ships on every block:
+  //   version             raw block version (number)
+  //   digidollarSignaling raw bit 23 with the DigiByte consensus top-mask 0xF0000000
+  //   algolockSignaling   bit 0 (window not open yet in fixtures -> false)
+  //   versionRolled       BIP310 ASIC version-rolling detected
+  //   taprootSignaling    legacy taproot signal flag
+  // Realistic versions used:
+  //   skein, clean bit-23 signal:            0x20800602
+  //   sha256d, version-rolled with bit 23:   0x20810202
+  //   scrypt/qubit/odocrypt, non-signaling:  0x20000002
   blocksData: {
-    blocks: Array.from({ length: 50 }, (_, i) => ({
-      height: 17456789 - i,
-      hash: `000000000000000000${i.toString().padStart(6, '0')}abcdef1234567890`,
-      time: Date.now() - i * 15000,
-      size: 1234 + Math.floor(Math.random() * 1000),
-      txCount: 5 + Math.floor(Math.random() * 20),
-      poolIdentifier: i % 3 === 0 ? 'DigiHash Pool' : i % 3 === 1 ? 'Mining Dutch' : 'Unknown',
-      algo: ['sha256d', 'scrypt', 'skein', 'qubit', 'odocrypt'][i % 5],
-      difficulty: 12345678.90 + Math.random() * 1000000,
-      taprootSignaling: i % 2 === 0
-    })),
+    blocks: Array.from({ length: 50 }, (_, i) => {
+      const algo = ['sha256d', 'scrypt', 'skein', 'qubit', 'odocrypt'][i % 5];
+      const version = algo === 'skein' ? 0x20800602 : algo === 'sha256d' ? 0x20810202 : 0x20000002;
+      return {
+        height: 17456789 - i,
+        hash: `000000000000000000${i.toString().padStart(6, '0')}abcdef1234567890`,
+        time: Date.now() - i * 15000,
+        size: 1234 + Math.floor(Math.random() * 1000),
+        txCount: 5 + Math.floor(Math.random() * 20),
+        poolIdentifier: i % 3 === 0 ? 'DigiHash Pool' : i % 3 === 1 ? 'Mining Dutch' : 'Unknown',
+        algo,
+        difficulty: 12345678.90 + Math.random() * 1000000,
+        version,
+        digidollarSignaling: algo === 'skein' || algo === 'sha256d',
+        algolockSignaling: false,
+        versionRolled: algo === 'sha256d',
+        taprootSignaling: i % 2 === 0
+      };
+    }),
     pagination: {
       total: 17456789,
       page: 1,
@@ -340,6 +358,51 @@ export const mockApiResponses = {
       blocks: 1000,
       start: 17456000,
       end: 17457000
+    }
+  },
+
+  // getdeploymentinfo RPC payload (BIP9 deployments: taproot buried/active,
+  // digidollar signalling on bit 23, algolock defined on bit 0)
+  deploymentInfo: {
+    hash: '000000000000000000123456789abcdef0123456789abcdef0123456789abcde',
+    height: 23784900,
+    deployments: {
+      taproot: {
+        type: 'bip9',
+        active: true,
+        height: 21168000
+      },
+      digidollar: {
+        type: 'bip9',
+        active: false,
+        bip9: {
+          bit: 23,
+          start_time: 1780272000,
+          timeout: 1811808000,
+          min_activation_height: 23627520,
+          status: 'started',
+          since: 23627520,
+          statistics: {
+            period: 40320,
+            threshold: 28224,
+            elapsed: 36377,
+            count: 10808,
+            possible: false
+          }
+        }
+      },
+      algolock: {
+        type: 'bip9',
+        active: false,
+        bip9: {
+          bit: 0,
+          start_time: 1782691200,
+          timeout: 1814227200,
+          min_activation_height: 0,
+          status: 'defined',
+          since: 0
+        }
+      }
     }
   },
 

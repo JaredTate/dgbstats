@@ -156,6 +156,32 @@ describe('PoolsPage', () => {
       });
     });
 
+    it('should show the correct upgrade chip per miner from block signal fields', async () => {
+      renderWithProviders(<PoolsPage />);
+
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      const blocks = [
+        // Pool A: clean bit-23 signals on every block -> upgraded (v9.26.x)
+        { minerAddress: 'DAddr1', poolIdentifier: 'Pool A', height: 1, version: 0x20800602, digidollarSignaling: true, algolockSignaling: false, versionRolled: false, taprootSignaling: true },
+        { minerAddress: 'DAddr1', poolIdentifier: 'Pool A', height: 2, version: 0x20800602, digidollarSignaling: true, algolockSignaling: false, versionRolled: false, taprootSignaling: true },
+        // Pool B: only version-rolled SHA256D blocks, bit 23 a coin flip -> rolling
+        { minerAddress: 'DAddr2', poolIdentifier: 'Pool B', height: 3, version: 0x20810202, digidollarSignaling: true, algolockSignaling: false, versionRolled: true, taprootSignaling: true },
+        { minerAddress: 'DAddr2', poolIdentifier: 'Pool B', height: 4, version: 0x20010202, digidollarSignaling: false, algolockSignaling: false, versionRolled: true, taprootSignaling: true },
+        // Pool C: clean blocks without bit 23 -> not upgraded (No signal)
+        { minerAddress: 'DAddr3', poolIdentifier: 'Pool C', height: 5, version: 0x20000002, digidollarSignaling: false, algolockSignaling: false, versionRolled: false, taprootSignaling: true },
+        { minerAddress: 'DAddr3', poolIdentifier: 'Pool C', height: 6, version: 0x20000002, digidollarSignaling: false, algolockSignaling: false, versionRolled: false, taprootSignaling: true },
+      ];
+      ws.receiveMessage({ type: 'recentBlocks', data: blocks });
+
+      await waitFor(() => {
+        expect(screen.getByText('v9.26.x')).toBeInTheDocument();
+      });
+      expect(screen.getByText('Rolling')).toBeInTheDocument();
+      expect(screen.getByText('No signal')).toBeInTheDocument();
+    });
+
     it('should display miner statistics correctly', async () => {
       renderWithProviders(<PoolsPage />);
       

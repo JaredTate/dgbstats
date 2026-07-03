@@ -91,6 +91,15 @@ export const handlers = [
     return HttpResponse.json({ blockReward: { blockreward: 625 } });
   }),
 
+  // BIP9 deployment info (PoolUpgradeTrackerPage / DDActivationPage poll this)
+  http.get('http://localhost:5001/api/getdeploymentinfo', () => {
+    return HttpResponse.json(mockApiResponses.deploymentInfo);
+  }),
+
+  http.get('http://localhost:5001/api/testnet/getdeploymentinfo', () => {
+    return HttpResponse.json(mockApiResponses.deploymentInfo);
+  }),
+
   http.get('http://localhost:5001/api/visitstats', () => {
     return HttpResponse.json({ visitsLast30Days: 0, totalVisits: 0, uniqueVisitors: 0 });
   }),

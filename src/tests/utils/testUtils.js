@@ -270,6 +270,16 @@ export const generateMockBlock = (overrides = {}) => ({
   miner: 'DigiHash Pool',
   algorithm: 'sha256d',
   difficulty: 12345678.90,
+  // Per-block BIP9 signal fields (shipped by dgbstats-server on every block).
+  // Default is a clean non-signaling block (version 0x20000002); override with
+  // e.g. { version: 0x20800602, digidollarSignaling: true } for a clean signal
+  // or { version: 0x20810202, digidollarSignaling: true, versionRolled: true }
+  // for an ASIC version-rolled SHA256D block carrying bit 23.
+  version: 0x20000002,
+  digidollarSignaling: false,
+  algolockSignaling: false,
+  versionRolled: false,
+  taprootSignaling: true,
   ...overrides
 });
 

@@ -91,6 +91,13 @@ describe('HomePage', () => {
       expect(screen.getAllByText('v9.26.0-RC44').length).toBeGreaterThan(0);
     });
 
+    it('should show v9.26.4 as the latest mainnet release', () => {
+      renderHomePage();
+
+      expect(screen.getByText('Latest Version')).toBeInTheDocument();
+      expect(screen.getAllByText('v9.26.4').length).toBeGreaterThan(0);
+    });
+
     it('should render algorithm difficulties card', async () => {
       // SKIPPED: HomePage has a bug where it doesn't check blockchainInfo.softforks before calling Object.entries()
       renderHomePage();

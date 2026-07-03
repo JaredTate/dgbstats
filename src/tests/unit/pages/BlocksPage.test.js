@@ -203,6 +203,63 @@ describe('BlocksPage', () => {
       });
     });
 
+    it('should display DD Signal states based on per-block signal fields', async () => {
+      renderWithProviders(<BlocksPage />);
+
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      // Fixture mapping (see mockData.js): skein = clean bit-23 signal,
+      // sha256d = version-rolled with bit 23, others = non-signaling.
+      // First page shows 20 blocks: 4 sha256d, 4 skein, 12 others.
+      ws.receiveMessage({
+        type: 'recentBlocks',
+        data: mockApiResponses.blocksData.blocks
+      });
+
+      await waitFor(() => {
+        expect(screen.getAllByText('DD Signal').length).toBe(20);
+      });
+      // Clean bit-23 signal (digidollarSignaling && !versionRolled) -> green chip
+      expect(screen.getAllByText('DigiDollar').length).toBe(4);
+      // Bit 23 present on a rolled block (digidollarSignaling && versionRolled)
+      expect(screen.getAllByText('Bit 23 (rolled)').length).toBe(4);
+      // No signal, not rolled -> plain 'None'
+      expect(screen.getAllByText('None').length).toBe(12);
+    });
+
+    it('should show a Rolling chip for version-rolled blocks without bit 23', async () => {
+      renderWithProviders(<BlocksPage />);
+
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      ws.receiveMessage({
+        type: 'recentBlocks',
+        data: [{
+          height: 17456789,
+          hash: '0000000000000000001234567890abcdef',
+          time: Date.now(),
+          size: 1234,
+          txCount: 10,
+          poolIdentifier: 'ViaBTC',
+          algo: 'sha256d',
+          difficulty: 12345678.90,
+          version: 0x20010202,
+          digidollarSignaling: false,
+          algolockSignaling: false,
+          versionRolled: true,
+          taprootSignaling: true
+        }]
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Rolling')).toBeInTheDocument();
+      });
+      expect(screen.queryByText('DigiDollar')).not.toBeInTheDocument();
+      expect(screen.queryByText('None')).not.toBeInTheDocument();
+    });
+
     it('should display transaction counts correctly', async () => {
       renderWithProviders(<BlocksPage />);
       

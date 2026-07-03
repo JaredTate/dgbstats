@@ -19,31 +19,60 @@ import config from '../config';
 // version into the low byte; BIP9 deployment signals occupy the remaining bits.
 // We track two deployments in the rolling window:
 //   * DigiDollar (bit 23) — the node is running v9.26.x. LIVE now.
-//   * Algolock   (bit 0)  — the node is running v9.26.2 and will reject the retired
-//     Groestl algorithm. Only appears once the algolock BIP9 window is `started`.
-// SHA256D ASIC miners version-roll bits 13-28 (BIP320 / ASICBoost) — which INCLUDES
-// bit 23 — so bit 23 is trusted only when the rest of the version word is clean.
-// Bit 0 sits outside the roll mask, so it is always reliable.
-const TOP_MASK = 0xe0000000;
+//   * Algolock   (bit 0)  — the node is running v9.26.2+ and will reject the
+//     retired Groestl algorithm. Appears once the algolock BIP9 window starts.
+// Bit 23 sits INSIDE the BIP310/BIP320 ASIC version-rolling window (bits 13-28,
+// mask 0x1fffe000), so on version-rolled SHA256D blocks it is a coin flip:
+//   * ddRaw   — the raw bit, exactly what BIP9 consensus counts for activation
+//               (versionbits Condition() ignores rolling), so a rolled block
+//               that carries bit 23 IS counted by the network and counted here.
+//   * ddClean — bit 23 on a non-rolled version: hard proof the pool's node is
+//               v9.26.x. Absence of ddClean on a rolling pool proves nothing.
+// Bit 0 sits OUTSIDE the roll window, so once its window opens it is the
+// definitive upgrade indicator for every pool, including SHA256D.
+// DigiByte's consensus top-mask is 0xF0000000 (versionbits.h) — stricter than
+// Bitcoin's 0xE0000000: a block with rolled bit 28 set signals NOTHING.
+const TOP_MASK = 0xf0000000;
 const TOP_BITS = 0x20000000;
 const STRUCTURAL_MASK = TOP_BITS | 0x00000f00 | 0x000000ff; // top marker + algo nibble + base-version byte
 const BIT_ALGOLOCK = 1 << 0;     // 0x00000001
 const BIT_DIGIDOLLAR = 1 << 23;  // 0x00800000
-const KNOWN_SIGNAL_BITS = BIT_ALGOLOCK | BIT_DIGIDOLLAR;
 
 function classifyVersion(version) {
-  const none = { top: false, digidollar: false, algolock: false, rolled: false };
+  const none = { top: false, ddRaw: false, ddClean: false, algolock: false, rolled: false };
   if (typeof version !== 'number' || !Number.isFinite(version)) return none;
   const top = (version & TOP_MASK) === TOP_BITS;
-  if (!top) return none;
-  const residual = version & ~STRUCTURAL_MASK;          // signalling bits only (algo/base stripped)
-  const rolled = (residual & ~KNOWN_SIGNAL_BITS) !== 0; // any bit beyond bit0/bit23 => version rolling
+  // Rolled detection uses the looser 001x shape: a rolled block whose bit 28
+  // landed on 1 fails the consensus top-mask (signals nothing) but is still a
+  // version-rolled block and must show up as one.
+  const bip9Era = (version & 0xe0000000) === TOP_BITS;
+  if (!bip9Era) return none;
+  const rolled = (version & ~STRUCTURAL_MASK & ~BIT_DIGIDOLLAR) !== 0;
+  const ddRaw = top && (version & BIT_DIGIDOLLAR) !== 0;
   return {
-    top: true,
-    digidollar: (version & BIT_DIGIDOLLAR) !== 0 && !rolled, // trust bit 23 only on a clean version
-    algolock: (version & BIT_ALGOLOCK) !== 0,                // bit 0 is outside the roll mask
+    top,
+    ddRaw,
+    ddClean: ddRaw && !rolled,
+    algolock: top && (version & BIT_ALGOLOCK) !== 0,
     rolled,
   };
+}
+
+// Prefer the server-computed flags (dgbstats-server ships digidollarSignaling /
+// algolockSignaling / versionRolled on every block, like taprootSignaling);
+// fall back to classifying the raw version locally for older servers.
+function classifyBlock(b) {
+  if (b && typeof b.digidollarSignaling === 'boolean') {
+    const rolled = !!b.versionRolled;
+    return {
+      top: true,
+      ddRaw: b.digidollarSignaling,
+      ddClean: b.digidollarSignaling && !rolled,
+      algolock: !!b.algolockSignaling,
+      rolled,
+    };
+  }
+  return classifyVersion(b && b.version);
 }
 
 // Per-network BIP9 window (fallback if live deployment stats are unavailable).
@@ -149,77 +178,109 @@ const PoolUpgradeTrackerPage = () => {
   }, [fetchOfficial]);
 
   // Aggregate both signals per pool (with a per-algorithm drill-down) over the window.
-  const { pools, totalBlocks, ddCount, alCount, ddPct, alPct, rolledCount } = useMemo(() => {
+  const {
+    pools, totalBlocks, ddRawCount, ddCleanCount, alCount, ddRawPct, alPct, rolledCount,
+  } = useMemo(() => {
     const map = new Map();
-    let total = 0, dd = 0, al = 0, rolled = 0;
+    let total = 0, ddRaw = 0, ddClean = 0, al = 0, rolled = 0;
     for (const b of blocks) {
       total += 1;
-      const c = classifyVersion(b.version);
-      if (c.digidollar) dd += 1;
+      const c = classifyBlock(b);
+      if (c.ddRaw) ddRaw += 1;
+      if (c.ddClean) ddClean += 1;
       if (c.algolock) al += 1;
       if (c.rolled) rolled += 1;
       const key = poolKey(b);
       if (!map.has(key)) {
-        map.set(key, { key, name: key, total: 0, dd: 0, al: 0, latestHeight: -1, latest: null, latestAlgo: '', algos: new Map() });
+        map.set(key, {
+          key, name: key, total: 0, ddRaw: 0, ddClean: 0, al: 0, rolled: 0,
+          latestHeight: -1, latest: null, latestAlgo: '',
+          latestCleanHeight: -1, latestClean: null, algos: new Map(),
+        });
       }
       const p = map.get(key);
       p.total += 1;
-      if (c.digidollar) p.dd += 1;
+      if (c.ddRaw) p.ddRaw += 1;
+      if (c.ddClean) p.ddClean += 1;
       if (c.algolock) p.al += 1;
+      if (c.rolled) p.rolled += 1;
       // per-algorithm breakdown (the drill-down)
       const algo = b.algo || 'unknown';
       if (!p.algos.has(algo)) {
-        p.algos.set(algo, { algo, n: 0, dd: 0, al: 0, rolled: 0, sampleVersion: b.version, sampleHeight: b.height || 0 });
+        p.algos.set(algo, { algo, n: 0, ddRaw: 0, ddClean: 0, al: 0, rolled: 0, sampleVersion: b.version, sampleHeight: b.height || 0 });
       }
       const a = p.algos.get(algo);
       a.n += 1;
-      if (c.digidollar) a.dd += 1;
+      if (c.ddRaw) a.ddRaw += 1;
+      if (c.ddClean) a.ddClean += 1;
       if (c.algolock) a.al += 1;
       if (c.rolled) a.rolled += 1;
       if ((b.height || 0) > a.sampleHeight) { a.sampleHeight = b.height || 0; a.sampleVersion = b.version; }
       if ((b.height || 0) > p.latestHeight) { p.latestHeight = b.height || 0; p.latest = c; p.latestAlgo = algo; }
+      if (!c.rolled && (b.height || 0) > p.latestCleanHeight) { p.latestCleanHeight = b.height || 0; p.latestClean = c; }
     }
-    const list = Array.from(map.values()).map((p) => ({
-      ...p,
-      ddPct: p.total ? Math.round((p.dd / p.total) * 100) : 0,
-      alPct: p.total ? Math.round((p.al / p.total) * 100) : 0,
-      ddState: p.latest?.digidollar ? 'upgraded' : (p.dd > 0 ? 'partial' : 'none'),
-      alState: p.latest?.algolock ? 'ready' : (p.al > 0 ? 'partial' : 'none'),
-      algoBreakdown: Array.from(p.algos.values()).sort((x, y) => y.n - x.n),
-      algoList: Array.from(p.algos.keys()),
-    }));
+    const list = Array.from(map.values()).map((p) => {
+      // Upgrade inference:
+      //  * any bit-0 signal, or bit 23 on the pool's most recent clean block => upgraded
+      //  * clean signals exist but the newest clean block lacks one => partial (mixed backend)
+      //  * clean blocks exist and NONE signal => not upgraded (clean absence is real evidence)
+      //  * only version-rolled blocks => coin-flip territory, EXCEPT a consistent run:
+      //    >=4 rolled blocks all carrying bit 23 means the pool's stack preserves the bit
+      //    through rolling (2^-n odds of chance) => upgraded; all missing it => not upgraded.
+      let ddState;
+      if (p.al > 0 || p.latestClean?.ddClean) ddState = 'upgraded';
+      else if (p.ddClean > 0) ddState = 'partial';
+      else if (p.latestClean) ddState = 'none';
+      else if (p.rolled > 0 && p.total >= 4 && p.ddRaw === p.total) ddState = 'upgraded';
+      else if (p.rolled > 0 && p.total >= 4 && p.ddRaw === 0) ddState = 'none';
+      else ddState = p.rolled > 0 ? 'rolling' : 'none';
+      return {
+        ...p,
+        ddPct: p.total ? Math.round((p.ddRaw / p.total) * 100) : 0,
+        alPct: p.total ? Math.round((p.al / p.total) * 100) : 0,
+        ddState,
+        alState: p.latest?.algolock ? 'ready' : (p.al > 0 ? 'partial' : 'none'),
+        algoBreakdown: Array.from(p.algos.values()).sort((x, y) => y.n - x.n),
+        algoList: Array.from(p.algos.keys()),
+      };
+    });
     list.sort((a, b) => b.total - a.total);
     return {
       pools: list,
       totalBlocks: total,
-      ddCount: dd,
+      ddRawCount: ddRaw,
+      ddCleanCount: ddClean,
       alCount: al,
       rolledCount: rolled,
-      ddPct: total ? Math.round((dd / total) * 100) : 0,
+      ddRawPct: total ? Math.round((ddRaw / total) * 100) : 0,
       alPct: total ? Math.round((al / total) * 100) : 0,
     };
   }, [blocks]);
 
-  // --- Algolock signalling window (bit 0 only appears once the BIP9 window starts) ---
+  // --- BIP9 window boundaries (shared by the DigiDollar reset and algolock opening) ---
   const period = ddDeployment?.bip9?.statistics?.period || DEFAULT_PERIOD[networkName] || 40320;
+  const nextWindowStart = currentHeight ? (Math.floor(currentHeight / period) + 1) * period : null;
+  const nextWindowBlocks = nextWindowStart ? Math.max(0, nextWindowStart - currentHeight) : null;
+
+  // --- Algolock signalling window (bit 0 only appears once the BIP9 window starts) ---
   const algolockStatus = algolockDeployment?.bip9?.status;
   const algolockLive = ['started', 'locked_in', 'active'].includes(algolockStatus);
-  const nextAlgolockWindow = (!algolockLive && currentHeight)
-    ? (Math.floor(currentHeight / period) + 1) * period : null;
-  const algolockWindowBlocks = nextAlgolockWindow ? Math.max(0, nextAlgolockWindow - currentHeight) : null;
+  const nextAlgolockWindow = !algolockLive ? nextWindowStart : null;
+  const algolockWindowBlocks = nextAlgolockWindow ? nextWindowBlocks : null;
 
   // --- Groestl enforcement backstop (unconditional rejection height) ---
   const backstopBlocks = activationHeight && currentHeight ? Math.max(0, activationHeight - currentHeight) : null;
 
   // --- Official BIP9 window context ---
   const ddStats = ddDeployment?.bip9?.statistics;
-  const ddOfficialPct = ddStats && ddStats.period ? Math.round((ddStats.count / ddStats.period) * 100) : null;
+  const ddThreshold = ddStats?.threshold || (ddStats?.period ? Math.round(ddStats.period * 0.7) : null);
   const alStats = algolockDeployment?.bip9?.statistics;
   const alOfficialPct = alStats && alStats.period ? Math.round((alStats.count / alStats.period) * 100) : null;
 
   const ddChip = (state) => {
     if (state === 'upgraded') return <Chip icon={<CheckCircleIcon />} label="v9.26.x" sx={{ backgroundColor: '#4caf50', color: 'white', fontWeight: 'bold' }} size="small" />;
     if (state === 'partial') return <Chip label="Partial" sx={{ backgroundColor: '#ff9800', color: 'white', fontWeight: 'bold' }} size="small" />;
+    if (state === 'rolling') return <Chip label="Rolling — bit 23 n/a" sx={{ backgroundColor: '#607d8b', color: 'white', fontWeight: 'bold' }} size="small" />;
     return <Chip icon={<HourglassTopIcon />} label="No" sx={{ backgroundColor: '#9e9e9e', color: 'white', fontWeight: 'bold' }} size="small" />;
   };
   const alChip = (state) => {
@@ -258,8 +319,9 @@ const PoolUpgradeTrackerPage = () => {
             <Typography variant="subtitle1" sx={{ maxWidth: 820, mx: 'auto' }}>
               Live pool readiness across the last <strong>{totalBlocks || 240}</strong> blocks, tracking two
               BIP9 signals: <strong>DigiDollar</strong> (bit&nbsp;23 — a node running <strong>v9.26.x</strong>,
-              live now) and <strong>Algolock</strong> (bit&nbsp;0 — <strong>v9.26.2</strong>, which rejects the
-              retired Groestl algorithm). Click any pool to drill into its per-algorithm breakdown.
+              live now) and <strong>Algolock</strong> (bit&nbsp;0 — <strong>v9.26.2+</strong>, which rejects the
+              retired Groestl algorithm). Bit&nbsp;23 lies inside the SHA256D ASIC version-rolling window, so
+              rolled blocks are called out separately. Click any pool for its per-algorithm breakdown.
             </Typography>
           </CardContent>
         </Card>
@@ -273,33 +335,51 @@ const PoolUpgradeTrackerPage = () => {
               <Grid item xs={12} md={6}>
                 <Card elevation={3} sx={{ p: 3, borderRadius: '12px', height: '100%' }}>
                   <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5, color: primaryColor }}>
-                    DigiDollar — running v9.26.x
+                    DigiDollar — BIP9 signalling (bit&nbsp;23)
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 2, color: '#555' }}>
-                    {ddCount} of {totalBlocks} recent blocks signal DigiDollar (bit&nbsp;23)
-                    {ddOfficialPct != null ? ` · official window ${ddOfficialPct}% (${ddDeployment?.bip9?.status})` : ''}
+                    {ddRawCount} of {totalBlocks} recent blocks carry bit&nbsp;23 — the raw count BIP9
+                    consensus uses. {ddCleanCount} are clean (non-rolled) proof of v9.26.x;{' '}
+                    {rolledCount} are version-rolled SHA256D blocks where bit&nbsp;23 is a coin flip.
                   </Typography>
-                  <ReadinessBar pct={ddPct} />
-                  <Typography variant="h6" fontWeight="bold" color={ddPct >= 70 ? '#2e7d32' : '#e65100'}>
-                    {ddPct}% of recent hashpower on v9.26.x
+                  <ReadinessBar pct={ddRawPct} />
+                  <Typography variant="h6" fontWeight="bold" color={ddRawPct >= 70 ? '#2e7d32' : '#e65100'}>
+                    {ddRawPct}% of recent blocks signalling (70% needed)
                   </Typography>
+                  {ddStats && (
+                    <Alert severity={ddStats.possible === false ? 'warning' : 'info'} sx={{ mt: 2 }}>
+                      Official window: <strong>{(ddStats.count ?? 0).toLocaleString()}</strong> of{' '}
+                      <strong>{(ddStats.elapsed ?? 0).toLocaleString()}</strong> elapsed blocks signalled —
+                      lock-in needs <strong>{(ddThreshold ?? 0).toLocaleString()}</strong> of{' '}
+                      {(ddStats.period ?? 0).toLocaleString()} ({ddDeployment?.bip9?.status}).
+                      {ddStats.possible === false && nextWindowStart ? (
+                        <>
+                          {' '}Lock-in is <strong>no longer possible in this window</strong> — the count
+                          resets at block <strong>{nextWindowStart.toLocaleString()}</strong>{' '}
+                          ({fmtEta(nextWindowBlocks)}).
+                        </>
+                      ) : null}
+                    </Alert>
+                  )}
                 </Card>
               </Grid>
 
               <Grid item xs={12} md={6}>
                 <Card elevation={3} sx={{ p: 3, borderRadius: '12px', height: '100%' }}>
                   <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5, color: primaryColor }}>
-                    Algolock — v9.26.2 (rejects Groestl)
+                    Algolock — v9.26.2+ (rejects Groestl)
                   </Typography>
                   {algolockLive ? (
                     <>
                       <Typography variant="body2" sx={{ mb: 2, color: '#555' }}>
                         {alCount} of {totalBlocks} recent blocks signal algolock (bit&nbsp;0)
-                        {alOfficialPct != null ? ` · official window ${alOfficialPct}% (${algolockStatus})` : ''}
+                        {alOfficialPct != null ? ` · official window ${alOfficialPct}% (${algolockStatus})` : ''}.
+                        Bit&nbsp;0 sits outside the ASIC version-rolling window, so it is reliable for
+                        every pool — including version-rolling SHA256D pools where bit&nbsp;23 is noise.
                       </Typography>
                       <ReadinessBar pct={alPct} />
                       <Typography variant="h6" fontWeight="bold" color={alPct >= 70 ? '#2e7d32' : '#e65100'}>
-                        {alPct}% of recent hashpower on v9.26.2
+                        {alPct}% of recent hashpower on v9.26.2+
                       </Typography>
                     </>
                   ) : (
@@ -311,7 +391,9 @@ const PoolUpgradeTrackerPage = () => {
                         <> at block <strong>{nextAlgolockWindow.toLocaleString()}</strong>{' '}
                           (~{algolockWindowBlocks?.toLocaleString()} blocks, {fmtEta(algolockWindowBlocks)})</>
                       ) : null}
-                      . Until then, DigiDollar (bit&nbsp;23) is the live "running v9.26.x" signal.
+                      . Once it opens, bit&nbsp;0 becomes the definitive "running v9.26.x" indicator:
+                      unlike bit&nbsp;23 it sits <strong>outside</strong> the ASIC version-rolling window
+                      (BIP320 bits 13–28), so SHA256D pools signal it deterministically.
                     </Alert>
                   )}
                 </Card>
@@ -365,7 +447,7 @@ const PoolUpgradeTrackerPage = () => {
                         <TableCell sx={{ width: 40 }} />
                         <TableCell><strong>Pool / Miner</strong></TableCell>
                         <TableCell align="center"><strong>DigiDollar (v9.26.x)</strong></TableCell>
-                        <TableCell align="center"><strong>Algolock (v9.26.2)</strong></TableCell>
+                        <TableCell align="center"><strong>Algolock (v9.26.2+)</strong></TableCell>
                         <TableCell align="right"><strong>Blocks</strong></TableCell>
                         <TableCell align="right"><strong>Last block</strong></TableCell>
                       </TableRow>
@@ -387,9 +469,9 @@ const PoolUpgradeTrackerPage = () => {
                               <span title={p.algoList.length ? `${p.name} — ${p.algoList.join(', ')}` : p.name}>{p.name}</span>
                             </TableCell>
                             <TableCell align="center">
-                              <span title={`${p.dd}/${p.total} blocks on v9.26.x · latest block: ${p.latestAlgo || '—'}`}>
+                              <span title={`${p.ddRaw}/${p.total} blocks carry bit 23 (${p.ddClean} clean, ${p.rolled} version-rolled) · latest block: ${p.latestAlgo || '—'}`}>
                                 {ddChip(p.ddState)}{' '}
-                                <Typography component="span" variant="caption" color="#666">{p.dd}/{p.total} ({p.ddPct}%)</Typography>
+                                <Typography component="span" variant="caption" color="#666">{p.ddRaw}/{p.total} ({p.ddPct}%)</Typography>
                               </span>
                             </TableCell>
                             <TableCell align="center">
@@ -411,8 +493,9 @@ const PoolUpgradeTrackerPage = () => {
                                       <TableRow>
                                         <TableCell><strong>Algorithm</strong></TableCell>
                                         <TableCell align="right"><strong>Blocks</strong></TableCell>
-                                        <TableCell align="right"><strong>DigiDollar (v9.26.x)</strong></TableCell>
-                                        <TableCell align="right"><strong>Algolock (v9.26.2)</strong></TableCell>
+                                        <TableCell align="right"><strong>Bit 23 (raw)</strong></TableCell>
+                                        <TableCell align="right"><strong>Bit 23 (clean)</strong></TableCell>
+                                        <TableCell align="right"><strong>Algolock (bit 0)</strong></TableCell>
                                         <TableCell align="right"><strong>Version-rolled</strong></TableCell>
                                         <TableCell><strong>Latest version</strong></TableCell>
                                       </TableRow>
@@ -428,8 +511,11 @@ const PoolUpgradeTrackerPage = () => {
                                             )}
                                           </TableCell>
                                           <TableCell align="right">{a.n}</TableCell>
-                                          <TableCell align="right" sx={{ color: a.dd ? '#2e7d32' : '#999', fontWeight: a.dd ? 'bold' : 'normal' }}>
-                                            {a.dd}/{a.n}
+                                          <TableCell align="right" sx={{ color: a.ddRaw ? '#2e7d32' : '#999', fontWeight: a.ddRaw ? 'bold' : 'normal' }}>
+                                            {a.ddRaw}/{a.n}
+                                          </TableCell>
+                                          <TableCell align="right" sx={{ color: a.ddClean ? '#2e7d32' : '#999', fontWeight: a.ddClean ? 'bold' : 'normal' }}>
+                                            {a.ddClean}/{a.n}
                                           </TableCell>
                                           <TableCell align="right" sx={{ color: a.al ? '#2e7d32' : '#999', fontWeight: a.al ? 'bold' : 'normal' }}>
                                             {a.al}/{a.n}
@@ -441,10 +527,11 @@ const PoolUpgradeTrackerPage = () => {
                                     </TableBody>
                                   </Table>
                                   <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#888' }}>
-                                    "DigiDollar" counts clean bit-23 blocks (version rolling excluded). A pool
-                                    showing v9.26.x on some algos but not others is running a mixed backend —
-                                    upgrade the nodes mining the non-signalling algorithms (especially Groestl,
-                                    which is rejected at the backstop height).
+                                    "Raw" is what BIP9 consensus counts; "clean" excludes version-rolled SHA256D
+                                    blocks, where bit&nbsp;23 is a coin flip and proves nothing about the pool's
+                                    node. A pool signalling on some algorithms but not others runs a mixed
+                                    backend — upgrade the nodes behind the non-signalling algorithms (especially
+                                    Groestl, which is rejected outright at the backstop height).
                                   </Typography>
                                 </Box>
                               </Collapse>
@@ -459,11 +546,14 @@ const PoolUpgradeTrackerPage = () => {
                   </Table>
                 </TableContainer>
                 <Typography variant="caption" sx={{ display: 'block', mt: 2, color: '#888' }}>
-                  Status reflects each pool's most recent block; "Partial" means some but not the latest block
-                  signalled (typical of a multi-node / multi-algo pool mid-rollout — click to see which algos).
-                  DigiDollar (bit&nbsp;23) is only counted on a clean version — {rolledCount} of the last{' '}
-                  {totalBlocks} blocks are version-rolled (SHA256D ASICBoost) and excluded to avoid false
-                  positives. Pools are identified by coinbase tag or payout address.
+                  Counts show the raw bit&nbsp;23 — exactly what BIP9 consensus counts toward activation.
+                  Upgrade status is inferred from clean (non-rolled) blocks and bit&nbsp;0: "Partial" means
+                  some but not the newest clean block signalled (a multi-node pool mid-rollout — click to see
+                  which algos); "Rolling — bit&nbsp;23 n/a" means every block from this pool is version-rolled
+                  SHA256D (ASICBoost, {rolledCount} of the last {totalBlocks} blocks network-wide), where
+                  bit&nbsp;23 is a coin flip that can neither prove nor disprove an upgrade — bit&nbsp;0
+                  resolves these pools once algolock signalling opens. Pools are identified by coinbase tag or
+                  payout address.
                 </Typography>
               </CardContent>
             </Card>
