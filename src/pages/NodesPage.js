@@ -104,10 +104,10 @@ const formatPercent = (value) => `${value.toFixed(1)}%`;
 
 /**
  * StatTile - Small label/value tile for the 24h section
- * Renders 2-up on phones (xs=6) and 4-up on desktop (md=3)
+ * Always 2-up (xs=6): the section lives in a half-width column on desktop
  */
 const StatTile = ({ label, value, caption }) => (
-  <Grid item xs={6} md={3}>
+  <Grid item xs={6}>
     <Paper
       elevation={2}
       sx={{
@@ -201,7 +201,10 @@ const NodesLast24HoursSection = memo(({ versionData, accentColor }) => {
       elevation={3}
       data-testid="nodes-24h-section"
       sx={{
-        mb: 4,
+        height: '100%',
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
         borderRadius: '12px',
         transition: 'transform 0.3s, box-shadow 0.3s',
         '&:hover': {
@@ -212,7 +215,7 @@ const NodesLast24HoursSection = memo(({ versionData, accentColor }) => {
         overflow: 'hidden'
       }}
     >
-      <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+      <CardContent sx={{ p: { xs: 2, md: 3 }, display: 'flex', flexDirection: 'column', flexGrow: 1, minHeight: 0 }}>
         {/* Section header */}
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 0.5 }}>
           <UpdateIcon sx={{ fontSize: '1.8rem', color: accentColor, mr: 1 }} />
@@ -221,7 +224,7 @@ const NodesLast24HoursSection = memo(({ versionData, accentColor }) => {
             fontWeight="bold"
             sx={{ color: '#002352', letterSpacing: '0.5px', textAlign: 'center' }}
           >
-            Nodes Seen in Last 24 Hours
+            Crawler Method
           </Typography>
         </Box>
 
@@ -232,15 +235,15 @@ const NodesLast24HoursSection = memo(({ versionData, accentColor }) => {
           sx={{ textAlign: 'center', color: '#777', mb: 2 }}
         >
           {stats
-            ? `Rolling ${stats.windowHours}h window${stats.updatedAgo ? ` · updated ${stats.updatedAgo}` : ''}`
-            : 'Rolling 24h window'}
+            ? `Nodes seen in last ${stats.windowHours} hours${stats.updatedAgo ? ` · updated ${stats.updatedAgo}` : ''}`
+            : 'Nodes seen in last 24 hours'}
         </Typography>
 
         <Divider sx={{ maxWidth: '120px', mx: 'auto', mb: 3, borderColor: accentColor, borderWidth: 1 }} />
 
         {!stats ? (
           // Awaiting state — intentionally no spinner so it doesn't compete
-          // with the page-level loading indicator in StatsSection
+          // with the page-level loading indicator in the peers.dat panel
           <Typography variant="body2" sx={{ textAlign: 'center', color: '#777', py: 2 }}>
             Collecting node data… version statistics will appear once the server reports them.
           </Typography>
@@ -248,7 +251,11 @@ const NodesLast24HoursSection = memo(({ versionData, accentColor }) => {
           <>
             {/* Stat tiles */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
-              <StatTile label="Unique Nodes (24h)" value={stats.total.toLocaleString()} />
+              <StatTile
+                label="Reachable Nodes (24h)"
+                value={stats.total.toLocaleString()}
+                caption="handshake-verified"
+              />
               <StatTile
                 label="On Latest"
                 value={stats.latestCount.toLocaleString()}
@@ -312,13 +319,22 @@ const NodesLast24HoursSection = memo(({ versionData, accentColor }) => {
               </Typography>
             </Box>
 
-            {/* Per-version rows, sorted desc by count */}
+            {/* Per-version rows, sorted desc by count. Capped height keeps the
+                panel vertically balanced with the peers.dat panel; overflow
+                scrolls (long tails of one-off user agents). */}
             {stats.rows.length === 0 ? (
               <Typography variant="body2" sx={{ textAlign: 'center', color: '#777', py: 1 }}>
                 No version data reported yet.
               </Typography>
             ) : (
-              <Box>
+              <Box
+                sx={{
+                  maxHeight: { xs: 320, md: 400 },
+                  overflowY: 'auto',
+                  pr: 0.5,
+                  '&::-webkit-scrollbar': { width: '6px' },
+                  '&::-webkit-scrollbar-thumb': { backgroundColor: '#c5d5ea', borderRadius: '3px' }
+                }}>
                 {stats.rows.map((row) => (
                   <Box
                     key={row.userAgent}
@@ -415,6 +431,175 @@ const NodesLast24HoursSection = memo(({ versionData, accentColor }) => {
 });
 
 NodesLast24HoursSection.displayName = 'NodesLast24HoursSection';
+
+/**
+ * MethodologyNote - "Counting nodes is hard" banner
+ *
+ * Sits above the two method panels and explains why they disagree: peers.dat
+ * is passive gossip (overcounts), the crawler is active handshakes
+ * (undercounts non-listening wallets).
+ */
+const MethodologyNote = memo(() => (
+  <Paper
+    elevation={0}
+    data-testid="methodology-note"
+    sx={{
+      mb: 3,
+      p: { xs: 2, md: 2.5 },
+      borderRadius: '12px',
+      border: '1px solid #d0e0f5',
+      backgroundColor: '#f3f8ff',
+      display: 'flex',
+      gap: 1.5,
+      alignItems: 'flex-start'
+    }}
+  >
+    <PublicIcon sx={{ color: '#0066cc', mt: 0.25, flexShrink: 0 }} />
+    <Typography variant="body2" sx={{ color: '#33475b', lineHeight: 1.65 }}>
+      <strong>Counting nodes is hard.</strong> A public blockchain has no registry of nodes, so
+      no single number is “right” — this page triangulates with two methodologies.{' '}
+      <strong>Peers.dat Method</strong> is passive: every unique address our node has learned
+      through network gossip, which includes nodes that are offline, unreachable, or the same
+      machine behind changing IPs. <strong>Crawler Method</strong> is active: only nodes that
+      answered a real P2P handshake within the last 24 hours — verified reachable, but blind to
+      non-listening wallets behind firewalls. The true network size lies between the two.
+    </Typography>
+  </Paper>
+));
+
+MethodologyNote.displayName = 'MethodologyNote';
+
+/**
+ * PeersDatTile - Icon stat tile for the peers.dat panel (2x2 grid)
+ */
+const PeersDatTile = ({ label, value, caption, icon, color }) => (
+  <Grid item xs={6} sx={{ display: 'flex' }}>
+    <Paper
+      elevation={2}
+      sx={{
+        p: 2,
+        width: '100%',
+        textAlign: 'center',
+        borderRadius: '12px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
+          transform: 'translateY(-3px)'
+        }
+      }}
+    >
+      <Avatar sx={{ bgcolor: color, mx: 'auto', mb: 1, boxShadow: `0 4px 8px ${color}50` }}>
+        {icon}
+      </Avatar>
+      <Typography variant="body2" color="text.secondary">
+        {label}
+      </Typography>
+      <Typography variant="h4" fontWeight="bold" sx={{ color: '#002352', my: 0.5 }}>
+        {value}
+      </Typography>
+      {caption && (
+        <Typography variant="caption" sx={{ color: '#777' }}>
+          {caption}
+        </Typography>
+      )}
+    </Paper>
+  </Grid>
+);
+
+/**
+ * PeersDatPanel - Left column: passive peers.dat discovery statistics
+ *
+ * 2x2 tile grid; stretches to the height of the crawler panel beside it on
+ * desktop (parent grid uses alignItems="stretch").
+ */
+const PeersDatPanel = memo(({ loading, knownCount, geoCount, countryCount, ipv4Count, ipv6Count, accentColor }) => (
+  <Card
+    elevation={3}
+    data-testid="peersdat-panel"
+    sx={{
+      height: '100%',
+      width: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      borderRadius: '12px',
+      transition: 'transform 0.3s, box-shadow 0.3s',
+      '&:hover': {
+        transform: 'translateY(-5px)',
+        boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
+      },
+      borderTop: `4px solid ${accentColor}`,
+      overflow: 'hidden'
+    }}
+  >
+    <CardContent sx={{ p: { xs: 2, md: 3 }, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 0.5 }}>
+        <RouterIcon sx={{ fontSize: '1.8rem', color: accentColor, mr: 1 }} />
+        <Typography
+          variant="h5"
+          fontWeight="bold"
+          sx={{ color: '#002352', letterSpacing: '0.5px', textAlign: 'center' }}
+        >
+          Peers.dat Method
+        </Typography>
+      </Box>
+
+      <Typography
+        variant="caption"
+        component="p"
+        sx={{ textAlign: 'center', color: '#777', mb: 2 }}
+      >
+        Passive discovery · addresses learned from network gossip
+      </Typography>
+
+      <Divider sx={{ maxWidth: '120px', mx: 'auto', mb: 3, borderColor: accentColor, borderWidth: 1 }} />
+
+      {loading ? (
+        <Box sx={{ py: 3, flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
+          <CircularProgress size={40} sx={{ color: accentColor, mb: 2 }} />
+          <Typography variant="h6" sx={{ color: '#555' }}>
+            Loading node data...
+          </Typography>
+        </Box>
+      ) : (
+        <Grid container spacing={2} sx={{ flexGrow: 1, alignContent: 'stretch' }}>
+          <PeersDatTile
+            label="Known Addresses"
+            value={knownCount.toLocaleString()}
+            caption="unique IPs in peers.dat"
+            icon={<RouterIcon />}
+            color="#0066cc"
+          />
+          <PeersDatTile
+            label="Geolocated Nodes"
+            value={geoCount.toLocaleString()}
+            caption="mappable coordinates"
+            icon={<LocationOnIcon />}
+            color="#4caf50"
+          />
+          <PeersDatTile
+            label="Countries"
+            value={countryCount.toLocaleString()}
+            caption="where nodes were seen"
+            icon={<FlagIcon />}
+            color="#ff9800"
+          />
+          <PeersDatTile
+            label="IPv4 / IPv6"
+            value={`${ipv4Count.toLocaleString()} / ${ipv6Count.toLocaleString()}`}
+            caption="address families"
+            icon={<PublicIcon />}
+            color="#9c27b0"
+          />
+        </Grid>
+      )}
+    </CardContent>
+  </Card>
+));
+
+PeersDatPanel.displayName = 'PeersDatPanel';
 
 /**
  * NodesPage Component - Geographic visualization of DigiByte network nodes
@@ -785,6 +970,21 @@ const NodesPage = () => {
     }, {});
   }, [nodesData]);
 
+  // Address-family split for the peers.dat panel
+  const ipCounts = useMemo(() => {
+    const counts = { v4: 0, v6: 0 };
+    for (const node of nodesData) {
+      if ((node.ip || '').includes(':')) counts.v6 += 1;
+      else counts.v4 += 1;
+    }
+    return counts;
+  }, [nodesData]);
+
+  const countryCount = useMemo(
+    () => Object.keys(nodesByCountry).filter(country => country !== 'Unknown').length,
+    [nodesByCountry]
+  );
+
   // Calculate responsive container dimensions for the map
   const containerWidth = Math.min(useWidth(), 1200);
   const containerHeight = containerWidth * 0.55;
@@ -984,123 +1184,6 @@ const NodesPage = () => {
         >
           A blockchain node is a computer running the DGB core wallet. Not all nodes shown should be considered active as they could be shut down now, or might be the same node behind a changing VPN or dynamic IP. Mapping decentralization through node count is challenging, and this represents one perspective.
         </Typography>
-      </CardContent>
-    </Card>
-  );
-
-  /**
-   * StatsCard - Individual statistic display component
-   * Reusable component for showing key metrics with icons and descriptions
-   */
-  const StatsCard = ({ title, value, description, icon, color, gradient }) => (
-    <Grid item xs={12} sm={6} md={4}>
-      <Paper elevation={2} sx={{ 
-        p: 2, 
-        borderRadius: '8px', 
-        height: '100%',
-        transition: 'all 0.3s ease',
-        '&:hover': {
-          boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
-          transform: 'translateY(-3px)'
-        },
-        backgroundImage: gradient
-      }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-          <Avatar sx={{ 
-            bgcolor: color, 
-            mr: 2,
-            boxShadow: `0 4px 8px ${color}50`
-          }}>
-            {icon}
-          </Avatar>
-          <Typography variant="h6" fontWeight="bold" sx={{ color: '#002352' }}>
-            {title}
-          </Typography>
-        </Box>
-        <Typography variant="h3" fontWeight="bold" sx={{ 
-          color: '#002352', 
-          textAlign: 'center', 
-          my: 2,
-          textShadow: '1px 1px 2px rgba(0,0,0,0.1)'
-        }}>
-          {value}
-        </Typography>
-        <Typography variant="body2" sx={{ color: '#666', textAlign: 'center' }}>
-          {description}
-        </Typography>
-      </Paper>
-    </Grid>
-  );
-
-  /**
-   * StatsSection - Summary statistics about the node network
-   * Displays total nodes, mapped locations, and country count
-   */
-  const StatsSection = () => (
-    <Card 
-      elevation={3} 
-      sx={{
-        mb: 4,
-        borderRadius: '12px',
-        transition: 'transform 0.3s, box-shadow 0.3s',
-        '&:hover': {
-          transform: 'translateY(-5px)',
-          boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
-        },
-        borderTop: '4px solid #0066cc',
-        overflow: 'hidden'
-      }}
-    >
-      <CardContent sx={{ p: { xs: 2, md: 3 }, textAlign: 'center' }}>
-        <Typography variant="h5" fontWeight="bold" sx={{ mb: 2, color: '#002352' }}>
-          Node Statistics
-        </Typography>
-        
-        <Divider sx={{ maxWidth: '80px', mx: 'auto', mb: 3, borderColor: '#0066cc', borderWidth: 1 }} />
-        
-        {loading ? (
-          <Box sx={{ py: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
-            <CircularProgress size={40} sx={{ 
-              color: '#0066cc', 
-              mb: 2,
-              animation: 'spin 1.5s linear infinite',
-              '@keyframes spin': {
-                '0%': { transform: 'rotate(0deg)' },
-                '100%': { transform: 'rotate(360deg)' }
-              }
-            }} />
-            <Typography variant="h6" sx={{ color: '#555' }}>
-              Loading node data...
-            </Typography>
-          </Box>
-        ) : (
-          <Grid container spacing={3} justifyContent="center">
-            <StatsCard 
-              title="Total Nodes Seen"
-              value={nodesData.length}
-              description="Unique node IPs identified"
-              icon={<RouterIcon />}
-              color="#0066cc"
-              gradient="linear-gradient(135deg, #ffffff 0%, #f5f9ff 100%)"
-            />
-            <StatsCard 
-              title="Geolocated Nodes"
-              value={validNodes.length}
-              description="Node IPs with mappable coordinates"
-              icon={<LocationOnIcon />}
-              color="#4caf50"
-              gradient="linear-gradient(135deg, #ffffff 0%, #f1f9f2 100%)"
-            />
-            <StatsCard 
-              title="Total Countries"
-              value={Object.keys(nodesByCountry).filter(country => country !== 'Unknown').length}
-              description="Nations where DigiByte nodes have been seen"
-              icon={<FlagIcon />}
-              color="#ff9800"
-              gradient="linear-gradient(135deg, #ffffff 0%, #fff9f0 100%)"
-            />
-          </Grid>
-        )}
       </CardContent>
     </Card>
   );
@@ -1969,12 +2052,27 @@ const NodesPage = () => {
         {/* Page header with title and description */}
         <HeroSection />
 
-        {/* Statistics summary cards */}
-        <StatsSection />
+        {/* Why the two panels disagree */}
+        <MethodologyNote />
 
-        {/* Version breakdown of nodes seen in the last 24 hours
-            (rendered unconditionally — it owns its own awaiting state) */}
-        <NodesLast24HoursSection versionData={versionData} accentColor={versionAccentColor} />
+        {/* Two-methodology dashboard: passive peers.dat stats on the left,
+            active crawler 24h breakdown on the right; stacks on mobile */}
+        <Grid container spacing={3} alignItems="stretch" sx={{ mb: 4 }}>
+          <Grid item xs={12} md={6} sx={{ display: 'flex' }}>
+            <PeersDatPanel
+              loading={loading}
+              knownCount={nodesData.length}
+              geoCount={validNodes.length}
+              countryCount={countryCount}
+              ipv4Count={ipCounts.v4}
+              ipv6Count={ipCounts.v6}
+              accentColor={versionAccentColor}
+            />
+          </Grid>
+          <Grid item xs={12} md={6} sx={{ display: 'flex' }}>
+            <NodesLast24HoursSection versionData={versionData} accentColor={versionAccentColor} />
+          </Grid>
+        </Grid>
 
         {/* Interactive world map (only shown when data is loaded) */}
         {!loading && <WorldMapSection />}

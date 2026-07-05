@@ -120,7 +120,7 @@ describe('NodesPage', () => {
       renderWithProviders(<NodesPage />);
       
       // Map container is rendered dynamically by D3.js, check for section instead
-      expect(screen.getByText('Node Statistics')).toBeInTheDocument();
+      expect(screen.getAllByText('Peers.dat Method').length).toBeGreaterThan(0);
     });
 
     it('should render educational content about nodes', () => {
@@ -136,7 +136,7 @@ describe('NodesPage', () => {
       
       // Component shows continent data when nodes are loaded
       // For now, just check that we have some structure
-      expect(screen.getByText('Node Statistics')).toBeInTheDocument();
+      expect(screen.getAllByText('Peers.dat Method').length).toBeGreaterThan(0);
       // Continents might not be shown in loading state
       // Just verify the statistics section is rendered
       expect(screen.getByText('About DigiByte Blockchain Network Nodes')).toBeInTheDocument();
@@ -203,7 +203,7 @@ describe('NodesPage', () => {
       await waitFor(() => {
         // The component shows countries, not continent node counts directly
         // Component likely doesn't show this text when data loads
-        expect(screen.getByText('Node Statistics')).toBeInTheDocument();
+        expect(screen.getAllByText('Peers.dat Method').length).toBeGreaterThan(0);
       });
     });
   });
@@ -311,14 +311,14 @@ describe('NodesPage', () => {
         // Check that the component has rendered and is displaying content
         expect(screen.getByText('DigiByte Blockchain Nodes')).toBeInTheDocument();
         // Nodes component shows statistics when data is received
-        expect(screen.getByText('Node Statistics')).toBeInTheDocument();
+        expect(screen.getAllByText('Peers.dat Method').length).toBeGreaterThan(0);
       });
       
       // Close connection
       ws.close();
       
       // Data should still be displayed after disconnect
-      expect(screen.getByText('Node Statistics')).toBeInTheDocument();
+      expect(screen.getAllByText('Peers.dat Method').length).toBeGreaterThan(0);
     });
   });
 
@@ -332,7 +332,7 @@ describe('NodesPage', () => {
       
       // Check that key sections are rendered
       expect(screen.getByText('DigiByte Blockchain Nodes')).toBeInTheDocument();
-      expect(screen.getByText('Node Statistics')).toBeInTheDocument();
+      expect(screen.getAllByText('Peers.dat Method').length).toBeGreaterThan(0);
       
       // Stats should be visible
       expect(screen.getByText('Loading node data...')).toBeInTheDocument();
@@ -362,7 +362,7 @@ describe('NodesPage', () => {
       await waitFor(() => {
         // Component displays raw numbers without formatting
         // Use getAllByText since there might be multiple elements with '1000'
-        const thousandElements = screen.getAllByText('1000');
+        const thousandElements = screen.getAllByText('1,000');
         expect(thousandElements.length).toBeGreaterThan(0);
       });
     });
@@ -373,7 +373,7 @@ describe('NodesPage', () => {
       renderWithProviders(<NodesPage />);
 
       // Check for map section accessibility instead of specific testid
-      expect(screen.getByText('Node Statistics')).toBeInTheDocument();
+      expect(screen.getAllByText('Peers.dat Method').length).toBeGreaterThan(0);
       expect(screen.getByText('About DigiByte Blockchain Network Nodes')).toBeInTheDocument();
     });
 
@@ -383,8 +383,8 @@ describe('NodesPage', () => {
       const h1 = screen.getByRole('heading', { level: 1 });
       expect(h1).toHaveTextContent('DigiByte Blockchain Nodes');
 
-      // Check for Node Statistics heading (h5)
-      expect(screen.getByText('Node Statistics')).toBeInTheDocument();
+      // Check for Peers.dat Method heading (h5)
+      expect(screen.getAllByText('Peers.dat Method').length).toBeGreaterThan(0);
       // Check for About section heading (h5)
       expect(screen.getByText('About DigiByte Blockchain Network Nodes')).toBeInTheDocument();
     });
@@ -462,7 +462,7 @@ describe('NodesPage', () => {
       renderWithProviders(<NodesPage />);
 
       // Section renders unconditionally with its own empty state (no spinner)
-      expect(screen.getByText('Nodes Seen in Last 24 Hours')).toBeInTheDocument();
+      expect(screen.getAllByText('Crawler Method').length).toBeGreaterThan(0);
       expect(screen.getByText(/Collecting node data/i)).toBeInTheDocument();
       expect(screen.queryAllByTestId('version-row')).toHaveLength(0);
 
@@ -495,11 +495,11 @@ describe('NodesPage', () => {
 
       const section = screen.getByTestId('nodes-24h-section');
       await waitFor(() => {
-        // Unique Nodes (24h) tile
+        // Reachable Nodes (24h) tile
         expect(within(section).getByText('614')).toBeInTheDocument();
       });
 
-      expect(within(section).getByText('Unique Nodes (24h)')).toBeInTheDocument();
+      expect(within(section).getByText('Reachable Nodes (24h)')).toBeInTheDocument();
 
       // On Latest tile — count of nodes on the latest version
       // ('119' also appears in the version-row chip, so scope to the tile)
@@ -518,7 +518,7 @@ describe('NodesPage', () => {
       expect(within(section).getByText('2')).toBeInTheDocument();
 
       // Caption: window hours + relative updatedAt
-      expect(within(section).getByText(/Rolling 24h window/i)).toBeInTheDocument();
+      expect(within(section).getByText(/Nodes seen in last 24 hours/i)).toBeInTheDocument();
       expect(within(section).getByText(/updated .+ ago|updated just now/i)).toBeInTheDocument();
 
       // Awaiting state is gone
@@ -633,7 +633,7 @@ describe('NodesPage', () => {
 
       // Malformed: versions is not an array — no crash, no rows
       ws.receiveMessage({ type: 'nodeVersions24h', data: { versions: 'garbage' } });
-      expect(screen.getByText('Nodes Seen in Last 24 Hours')).toBeInTheDocument();
+      expect(screen.getAllByText('Crawler Method').length).toBeGreaterThan(0);
       expect(screen.queryAllByTestId('version-row')).toHaveLength(0);
 
       // Empty versions with zero totals renders gracefully
@@ -694,10 +694,63 @@ describe('NodesPage', () => {
       await waitFor(() => {
         expect(screen.getAllByTestId('version-row')).toHaveLength(2);
       });
-      expect(screen.getByText('Nodes Seen in Last 24 Hours')).toBeInTheDocument();
+      expect(screen.getAllByText('Crawler Method').length).toBeGreaterThan(0);
 
       const section = screen.getByTestId('nodes-24h-section');
       expect(within(section).getByText('614')).toBeInTheDocument();
+    });
+  });
+
+  describe('Two-methodology layout', () => {
+    it('should show the counting-nodes-is-hard methodology note', () => {
+      renderWithProviders(<NodesPage />);
+
+      expect(screen.getByText(/counting nodes is hard/i)).toBeInTheDocument();
+      // The note names both methodologies
+      const note = screen.getByTestId('methodology-note');
+      expect(within(note).getAllByText(/peers\.dat/i).length).toBeGreaterThan(0);
+      expect(within(note).getAllByText(/crawler/i).length).toBeGreaterThan(0);
+    });
+
+    it('should title the two panels Peers.dat Method and Crawler Method', () => {
+      renderWithProviders(<NodesPage />);
+
+      expect(screen.getAllByText('Peers.dat Method').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Crawler Method').length).toBeGreaterThan(0);
+    });
+
+    it('should render the four peers.dat tiles once geoData arrives', async () => {
+      renderWithProviders(<NodesPage />);
+
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+      ws.receiveMessage({ type: 'geoData', data: mockApiResponses.nodesData.nodes });
+
+      const panel = await screen.findByTestId('peersdat-panel');
+      await waitFor(() => {
+        expect(within(panel).getByText('Known Addresses')).toBeInTheDocument();
+      });
+      expect(within(panel).getByText('Geolocated Nodes')).toBeInTheDocument();
+      expect(within(panel).getByText('Countries')).toBeInTheDocument();
+      expect(within(panel).getByText('IPv4 / IPv6')).toBeInTheDocument();
+      // 5 mock nodes, all IPv4
+      const knownTile = within(panel).getByText('Known Addresses').closest('.MuiPaper-root');
+      expect(within(knownTile).getByText('5')).toBeInTheDocument();
+      expect(within(panel).getByText('5 / 0')).toBeInTheDocument();
+    });
+
+    it('should render the crawler panel first tile as Reachable Nodes (24h)', async () => {
+      renderWithProviders(<NodesPage />);
+
+      await waitForAsync();
+      webSocketInstances[0].receiveMessage({ type: 'nodeVersions24h', data: makeVersionData() });
+
+      const section = screen.getByTestId('nodes-24h-section');
+      await waitFor(() => {
+        expect(within(section).getByText('Reachable Nodes (24h)')).toBeInTheDocument();
+      });
+      const tile = within(section).getByText('Reachable Nodes (24h)').closest('.MuiPaper-root');
+      expect(within(tile).getByText('614')).toBeInTheDocument();
     });
   });
 });
