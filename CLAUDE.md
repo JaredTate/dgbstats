@@ -23,7 +23,7 @@ DigiByte Stats is a comprehensive React-based web application that provides real
 
 ## Application Pages
 
-The application has **15 pages** total: 13 available on mainnet and 12 on testnet (with 2 testnet-exclusive pages).
+The application has **16 pages** total: 13 available on mainnet and 13 on testnet (with 3 testnet-exclusive pages).
 
 ### Mainnet Pages
 
@@ -138,6 +138,15 @@ DigiDollar network statistics dashboard:
 - Oracle price information
 - ERR tier status
 - Active positions count
+
+### 16. **WalletConvertPage** (`/testnet/convert`) - Testnet Only
+Client-side Oracle wallet migration tool:
+- Patches SQLite application_id bytes (offset 68–71) to migrate wallet.dat between testnet versions
+- 100% browser-side processing — no server upload, safe for wallets with private keys
+- Drag & drop file selection with automatic network detection
+- Supports mainnet (0xFAC3B6DA), testnet19/20 (0xFCD1B8E2), testnet21 (0xFDD2B9E3), regtest (0xFABFB5DA)
+- Download converted wallet.dat and backup (.bak)
+- Includes step-by-step migration instructions and walletcrosschain=1 reminder
 
 ## Design System
 
@@ -317,7 +326,7 @@ npm run build         # Production build
 ## Important Notes
 
 - **Network Support**: Application supports both mainnet (`/`) and testnet (`/testnet/*`) with separate WebSocket connections and theming
-- **Testnet-Only Features**: OraclesPage and DDStatsPage are exclusive to testnet for DigiDollar development
+- **Testnet-Only Features**: OraclesPage, DDStatsPage, and WalletConvertPage are exclusive to testnet for DigiDollar development
 - **Mainnet-Only Features**: PoolsPage, DownloadsPage, and RoadmapPage are not available on testnet
 - **TAP Route Status**: TAP route soft fork has been successfully activated and buried. References to TAP route signaling have been removed from the UI.
 - **Mobile First**: Always test on mobile viewports first
