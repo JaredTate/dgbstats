@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, memo } from 'react';
 import {
   Typography, Container, Box, Card, CardContent,
   Divider, Grid, Paper,
-  CircularProgress, Chip, Avatar
+  CircularProgress, Chip, Avatar, LinearProgress
 } from '@mui/material';
 import { Graticule } from '@visx/geo';
 import './NodesPage.css';
@@ -22,16 +22,24 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import UpdateIcon from '@mui/icons-material/Update';
 
 /**
  * Custom hook for fetching node geolocation data via WebSocket
  * Manages real-time connection to retrieve DigiByte network node information
  *
+ * Handles two message types:
+ * - `geoData`: array of node objects for the map/statistics (drives `loading`)
+ * - `nodeVersions24h`: pre-aggregated version breakdown of nodes seen in the
+ *   last 24 hours (does NOT drive `loading` — the section owns its empty state
+ *   so the page degrades gracefully against servers that never send it)
+ *
  * @param {string} wsBaseUrl - WebSocket base URL from network context
- * @returns {Object} - Contains nodesData array and loading state
+ * @returns {Object} - Contains nodesData array, versionData object and loading state
  */
 const useFetchData = (wsBaseUrl) => {
   const [nodesData, setNodesData] = useState([]);
+  const [versionData, setVersionData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -47,6 +55,9 @@ const useFetchData = (wsBaseUrl) => {
         if (message.type === 'geoData') {
           setNodesData(message.data || []);
           setLoading(false);
+        } else if (message.type === 'nodeVersions24h') {
+          // Version breakdown of nodes seen in the last 24 hours
+          setVersionData(message.data || null);
         }
       } catch (error) {
         console.error('WebSocket message error:', error);
@@ -62,8 +73,348 @@ const useFetchData = (wsBaseUrl) => {
     return () => socket.readyState === WebSocket.OPEN && socket.close();
   }, [wsBaseUrl]);
 
-  return { nodesData, loading };
+  return { nodesData, versionData, loading };
 };
+
+/**
+ * Format a millisecond timestamp as a short relative time string
+ * (e.g. "just now", "5m ago", "3h ago", "2d ago")
+ *
+ * @param {number} timestamp - Milliseconds since epoch
+ * @returns {string|null} - Relative time string, or null when invalid
+ */
+const formatRelativeTime = (timestamp) => {
+  if (!Number.isFinite(timestamp)) return null;
+  const diffMs = Date.now() - timestamp;
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+};
+
+/**
+ * Format a numeric percentage with one decimal place (e.g. 87.9 -> "87.9%")
+ *
+ * @param {number} value - Percentage value
+ * @returns {string} - Formatted percentage string
+ */
+const formatPercent = (value) => `${value.toFixed(1)}%`;
+
+/**
+ * StatTile - Small label/value tile for the 24h section
+ * Renders 2-up on phones (xs=6) and 4-up on desktop (md=3)
+ */
+const StatTile = ({ label, value, caption }) => (
+  <Grid item xs={6} md={3}>
+    <Paper
+      elevation={2}
+      sx={{
+        p: 2,
+        textAlign: 'center',
+        borderRadius: '12px',
+        height: '100%',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
+          transform: 'translateY(-3px)'
+        }
+      }}
+    >
+      <Typography variant="body2" color="text.secondary">
+        {label}
+      </Typography>
+      <Typography variant="h5" fontWeight="bold" sx={{ color: '#002352' }}>
+        {value}
+      </Typography>
+      {caption && (
+        <Typography variant="caption" sx={{ color: '#777' }}>
+          {caption}
+        </Typography>
+      )}
+    </Paper>
+  </Grid>
+);
+
+/**
+ * NodesLast24HoursSection - Version breakdown of nodes seen in the last 24 hours
+ *
+ * Fed by the `nodeVersions24h` WebSocket message. Defined at module scope and
+ * memoized so it does not remount on every NodesPage render (unlike the page's
+ * legacy inline sections). Owns its awaiting state (`versionData === null`) so
+ * the page degrades gracefully against servers that never send the message.
+ *
+ * Percentages and row ordering are recomputed defensively client-side: server
+ * values are used when present/finite, otherwise derived from the raw counts.
+ *
+ * @param {Object|null} versionData - `data` field of the nodeVersions24h message
+ * @param {string} accentColor - Section accent (testnet-aware, from networkTheme)
+ */
+const NodesLast24HoursSection = memo(({ versionData, accentColor }) => {
+  // Defensive client-side derivation: sort desc by count, recompute missing percents
+  const stats = useMemo(() => {
+    if (!versionData || typeof versionData !== 'object') return null;
+
+    const rawVersions = Array.isArray(versionData.versions) ? versionData.versions : [];
+    const countedTotal = rawVersions.reduce(
+      (acc, v) => acc + (Number.isFinite(v?.count) ? v.count : 0),
+      0
+    );
+    const total = Number.isFinite(versionData.totalUniqueNodes)
+      ? versionData.totalUniqueNodes
+      : countedTotal;
+
+    const rows = rawVersions
+      .filter((v) => v && typeof v.userAgent === 'string')
+      .map((v) => {
+        const count = Number.isFinite(v.count) ? v.count : 0;
+        const percent = Number.isFinite(v.percent)
+          ? v.percent
+          : total > 0 ? Math.round((count / total) * 1000) / 10 : 0;
+        return { userAgent: v.userAgent, count, percent, isLatest: !!v.isLatest };
+      })
+      .sort((a, b) => b.count - a.count);
+
+    const latestCount = rows.reduce((acc, r) => acc + (r.isLatest ? r.count : 0), 0);
+    const upgradedCount = Number.isFinite(versionData.upgradedCount)
+      ? versionData.upgradedCount
+      : latestCount;
+    const upgradedPercent = Number.isFinite(versionData.upgradedPercent)
+      ? versionData.upgradedPercent
+      : total > 0 ? Math.round((upgradedCount / total) * 1000) / 10 : 0;
+
+    return {
+      total,
+      rows,
+      latestCount,
+      upgradedPercent,
+      latestVersion: versionData.latestVersion || null,
+      targetSeries: versionData.targetSeries || null,
+      windowHours: Number.isFinite(versionData.windowHours) ? versionData.windowHours : 24,
+      updatedAgo: formatRelativeTime(versionData.updatedAt)
+    };
+  }, [versionData]);
+
+  return (
+    <Card
+      elevation={3}
+      data-testid="nodes-24h-section"
+      sx={{
+        mb: 4,
+        borderRadius: '12px',
+        transition: 'transform 0.3s, box-shadow 0.3s',
+        '&:hover': {
+          transform: 'translateY(-5px)',
+          boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
+        },
+        borderTop: `4px solid ${accentColor}`,
+        overflow: 'hidden'
+      }}
+    >
+      <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+        {/* Section header */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 0.5 }}>
+          <UpdateIcon sx={{ fontSize: '1.8rem', color: accentColor, mr: 1 }} />
+          <Typography
+            variant="h5"
+            fontWeight="bold"
+            sx={{ color: '#002352', letterSpacing: '0.5px', textAlign: 'center' }}
+          >
+            Nodes Seen in Last 24 Hours
+          </Typography>
+        </Box>
+
+        {/* Window + freshness caption */}
+        <Typography
+          variant="caption"
+          component="p"
+          sx={{ textAlign: 'center', color: '#777', mb: 2 }}
+        >
+          {stats
+            ? `Rolling ${stats.windowHours}h window${stats.updatedAgo ? ` · updated ${stats.updatedAgo}` : ''}`
+            : 'Rolling 24h window'}
+        </Typography>
+
+        <Divider sx={{ maxWidth: '120px', mx: 'auto', mb: 3, borderColor: accentColor, borderWidth: 1 }} />
+
+        {!stats ? (
+          // Awaiting state — intentionally no spinner so it doesn't compete
+          // with the page-level loading indicator in StatsSection
+          <Typography variant="body2" sx={{ textAlign: 'center', color: '#777', py: 2 }}>
+            Collecting node data… version statistics will appear once the server reports them.
+          </Typography>
+        ) : (
+          <>
+            {/* Stat tiles */}
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <StatTile label="Unique Nodes (24h)" value={stats.total.toLocaleString()} />
+              <StatTile
+                label="On Latest"
+                value={stats.latestCount.toLocaleString()}
+                caption={stats.latestVersion ? `v${stats.latestVersion}` : null}
+              />
+              <StatTile
+                label="Upgraded"
+                value={formatPercent(stats.upgradedPercent)}
+                caption={stats.targetSeries ? `v${stats.targetSeries}+ DigiDollar` : null}
+              />
+              <StatTile label="Versions" value={stats.rows.length.toLocaleString()} />
+            </Grid>
+
+            {/* Upgrade progress bar with the 70% DigiDollar-threshold marker */}
+            <Box sx={{ mb: 3 }}>
+              <Box sx={{ position: 'relative' }}>
+                <LinearProgress
+                  variant="determinate"
+                  value={Math.max(0, Math.min(stats.upgradedPercent, 100))}
+                  sx={{
+                    height: 24,
+                    borderRadius: '12px',
+                    backgroundColor: '#e0e0e0',
+                    '& .MuiLinearProgress-bar': {
+                      backgroundColor: stats.upgradedPercent >= 70 ? '#4caf50' : '#0066cc',
+                      borderRadius: '12px'
+                    }
+                  }}
+                />
+                <Box
+                  title="70% — DigiDollar activation threshold"
+                  sx={{
+                    position: 'absolute',
+                    left: '70%',
+                    top: -3,
+                    bottom: -3,
+                    borderLeft: '2px dashed #002352',
+                    opacity: 0.55
+                  }}
+                />
+              </Box>
+              <Typography
+                variant="subtitle1"
+                fontWeight="bold"
+                sx={{
+                  mt: 1,
+                  textAlign: 'center',
+                  color: stats.upgradedPercent >= 70 ? '#2e7d32' : '#002352'
+                }}
+              >
+                {`${formatPercent(stats.upgradedPercent)} of nodes upgraded to ${
+                  stats.targetSeries ? `v${stats.targetSeries}` : 'the current release'
+                } DigiDollar or higher`}
+              </Typography>
+              <Typography
+                variant="caption"
+                component="p"
+                sx={{ textAlign: 'center', color: '#777' }}
+              >
+                Rolling last 24 hours · dashed line marks the 70% DigiDollar activation threshold
+              </Typography>
+            </Box>
+
+            {/* Per-version rows, sorted desc by count */}
+            {stats.rows.length === 0 ? (
+              <Typography variant="body2" sx={{ textAlign: 'center', color: '#777', py: 1 }}>
+                No version data reported yet.
+              </Typography>
+            ) : (
+              <Box>
+                {stats.rows.map((row) => (
+                  <Box
+                    key={row.userAgent}
+                    data-testid="version-row"
+                    sx={{
+                      mb: 1.5,
+                      px: 1,
+                      py: 0.5,
+                      borderRadius: '4px',
+                      '&:hover': { backgroundColor: `${accentColor}10` }
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: 1,
+                        mb: 0.5
+                      }}
+                    >
+                      <Typography
+                        variant="body2"
+                        title={row.userAgent}
+                        sx={{
+                          fontFamily: 'monospace',
+                          fontWeight: 500,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          minWidth: 0,
+                          flex: 1
+                        }}
+                      >
+                        {row.userAgent}
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                        {row.isLatest && (
+                          <Chip
+                            label="latest"
+                            size="small"
+                            sx={{
+                              mr: 1,
+                              height: 18,
+                              fontSize: '0.65rem',
+                              bgcolor: '#4caf50',
+                              color: 'white',
+                              fontWeight: 'bold'
+                            }}
+                          />
+                        )}
+                        <Chip
+                          label={row.count.toLocaleString()}
+                          size="small"
+                          sx={{
+                            fontWeight: 'bold',
+                            bgcolor: `${accentColor}20`,
+                            color: accentColor,
+                            minWidth: '36px'
+                          }}
+                        />
+                        <Typography
+                          component="span"
+                          variant="caption"
+                          sx={{ ml: 1, color: '#666', minWidth: '44px', textAlign: 'right' }}
+                        >
+                          {formatPercent(row.percent)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    {/* Thin per-row share bar */}
+                    <LinearProgress
+                      variant="determinate"
+                      value={Math.max(0, Math.min(row.percent, 100))}
+                      sx={{
+                        height: 6,
+                        borderRadius: '3px',
+                        backgroundColor: '#eceff1',
+                        '& .MuiLinearProgress-bar': {
+                          backgroundColor: row.isLatest ? '#4caf50' : accentColor,
+                          borderRadius: '3px'
+                        }
+                      }}
+                    />
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+});
+
+NodesLast24HoursSection.displayName = 'NodesLast24HoursSection';
 
 /**
  * NodesPage Component - Geographic visualization of DigiByte network nodes
@@ -77,7 +428,10 @@ const useFetchData = (wsBaseUrl) => {
  */
 const NodesPage = () => {
   const { wsBaseUrl, getApiUrl, isTestnet, theme: networkTheme } = useNetwork();
-  const { nodesData, loading } = useFetchData(wsBaseUrl);
+  const { nodesData, versionData, loading } = useFetchData(wsBaseUrl);
+
+  // Accent for the 24h version section — network-aware like HeroSection
+  const versionAccentColor = isTestnet ? (networkTheme?.primary || '#0066cc') : '#0066cc';
 
   // Convert TopoJSON world data to GeoJSON for D3 rendering
   const worldData = useMemo(() => feature(world, world.objects.countries), []);
@@ -1617,6 +1971,10 @@ const NodesPage = () => {
 
         {/* Statistics summary cards */}
         <StatsSection />
+
+        {/* Version breakdown of nodes seen in the last 24 hours
+            (rendered unconditionally — it owns its own awaiting state) */}
+        <NodesLast24HoursSection versionData={versionData} accentColor={versionAccentColor} />
 
         {/* Interactive world map (only shown when data is loaded) */}
         {!loading && <WorldMapSection />}

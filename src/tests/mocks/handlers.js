@@ -14,6 +14,12 @@ export const handlers = [
     return HttpResponse.json(mockApiResponses.nodesData);
   }),
 
+  // Version breakdown of nodes seen in the last 24 hours
+  // (REST twin of the `nodeVersions24h` WebSocket message)
+  http.get(`${API_BASE_URL}/api/nodes/versions24h`, () => {
+    return HttpResponse.json(mockApiResponses.nodeVersions24hData);
+  }),
+
   // Pools API endpoints
   http.get(`${API_BASE_URL}/api/pools`, () => {
     return HttpResponse.json(mockApiResponses.poolsData);

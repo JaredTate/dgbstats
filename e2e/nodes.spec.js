@@ -237,6 +237,56 @@ test.describe('Nodes Page', () => {
     }
   });
 
+  test('should display the Nodes Seen in Last 24 Hours section', async ({ page }) => {
+    await page.waitForLoadState('networkidle');
+
+    // Section title is always visible — it renders unconditionally and owns
+    // its own awaiting state ("Collecting node data…") until the server sends
+    // the nodeVersions24h WebSocket message
+    await expect(page.locator('text=Nodes Seen in Last 24 Hours')).toBeVisible();
+
+    const section = page.locator('[data-testid="nodes-24h-section"]');
+    await expect(section).toBeVisible();
+
+    // Either version data has arrived (rows / stat tiles) or the awaiting
+    // state is shown — both are valid depending on server state
+    const rowCount = await page.locator('[data-testid="version-row"]').count();
+    if (rowCount > 0) {
+      await expect(page.locator('text=Unique Nodes (24h)')).toBeVisible();
+    } else {
+      await expect(section.locator('text=Collecting node data')).toBeVisible();
+    }
+  });
+
+  test('should keep 24h version rows inside the viewport on mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.waitForLoadState('networkidle');
+
+    const section = page.locator('[data-testid="nodes-24h-section"]');
+    await expect(section).toBeVisible();
+
+    const rows = page.locator('[data-testid="version-row"]');
+    const rowCount = await rows.count();
+
+    if (rowCount > 0) {
+      // Rows must stack vertically without horizontal overflow at 375px
+      for (let i = 0; i < Math.min(rowCount, 5); i++) {
+        const box = await rows.nth(i).boundingBox();
+        if (box) {
+          expect(box.x).toBeGreaterThanOrEqual(0);
+          expect(box.x + box.width).toBeLessThanOrEqual(376); // 375px + 1px tolerance
+        }
+      }
+
+      // No horizontal page scroll introduced by the section
+      const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+      expect(scrollWidth).toBeLessThanOrEqual(376);
+    } else {
+      // No version data from the server is valid — awaiting state must show instead
+      await expect(section.locator('text=Collecting node data')).toBeVisible();
+    }
+  });
+
   test('should handle no data gracefully', async ({ page, context, browserName }) => {
     // Block WebSocket connections comprehensively
     await context.route(/ws:\/\/.*/, route => route.abort());

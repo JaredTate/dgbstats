@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor, within } from '@testing-library/react';
 import NodesPage from '../../../pages/NodesPage';
 import { renderWithProviders, createWebSocketMock, waitForAsync } from '../../utils/testUtils';
 import { mockApiResponses, generateWebSocketMessage } from '../../mocks/mockData';
@@ -62,6 +62,25 @@ vi.mock('@visx/geo', () => ({
 vi.mock('../../../utils', () => ({
   useWidth: () => 800 // Return a fixed width for tests
 }));
+
+/**
+ * Factory for the `nodeVersions24h` WebSocket payload's `data` field.
+ * Mirrors the server contract for the "Nodes Seen in Last 24 Hours" section.
+ */
+const makeVersionData = (overrides = {}) => ({
+  windowHours: 24,
+  totalUniqueNodes: 614,
+  updatedAt: 1751700000000,
+  latestVersion: '9.26.4',
+  targetSeries: '9.26',
+  upgradedCount: 119,
+  upgradedPercent: 19.4,
+  versions: [
+    { userAgent: '/DigiByte:8.26.2/', count: 327, percent: 53.3, isLatest: false },
+    { userAgent: '/DigiByte:9.26.4/', count: 119, percent: 19.4, isLatest: true }
+  ],
+  ...overrides
+});
 
 describe('NodesPage', () => {
   let wsSetup;
@@ -435,6 +454,250 @@ describe('NodesPage', () => {
 
       // Should not crash and still display the page
       expect(screen.getByText('DigiByte Blockchain Nodes')).toBeInTheDocument();
+    });
+  });
+
+  describe('Nodes Seen in Last 24 Hours', () => {
+    it('should render the section title and awaiting state before any nodeVersions24h message', async () => {
+      renderWithProviders(<NodesPage />);
+
+      // Section renders unconditionally with its own empty state (no spinner)
+      expect(screen.getByText('Nodes Seen in Last 24 Hours')).toBeInTheDocument();
+      expect(screen.getByText(/Collecting node data/i)).toBeInTheDocument();
+      expect(screen.queryAllByTestId('version-row')).toHaveLength(0);
+
+      // Regression guard: geoData alone must not populate the version section,
+      // and the new branch must not break the existing geoData flow
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+      ws.receiveMessage({
+        type: 'geoData',
+        data: mockApiResponses.nodesData.nodes
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Global Node Distribution')).toBeInTheDocument();
+      });
+      expect(screen.getByText(/Collecting node data/i)).toBeInTheDocument();
+      expect(screen.queryAllByTestId('version-row')).toHaveLength(0);
+    });
+
+    it('should populate stat tiles and caption when nodeVersions24h arrives', async () => {
+      renderWithProviders(<NodesPage />);
+
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      ws.receiveMessage({
+        type: 'nodeVersions24h',
+        data: makeVersionData()
+      });
+
+      const section = screen.getByTestId('nodes-24h-section');
+      await waitFor(() => {
+        // Unique Nodes (24h) tile
+        expect(within(section).getByText('614')).toBeInTheDocument();
+      });
+
+      expect(within(section).getByText('Unique Nodes (24h)')).toBeInTheDocument();
+
+      // On Latest tile — count of nodes on the latest version
+      // ('119' also appears in the version-row chip, so scope to the tile)
+      const onLatestTile = within(section).getByText('On Latest').closest('.MuiPaper-root');
+      expect(within(onLatestTile).getByText('119')).toBeInTheDocument();
+      expect(within(section).getByText('v9.26.4')).toBeInTheDocument();
+
+      // Upgraded tile — percent on the DigiDollar target series or newer
+      // ('19.4%' also appears in the 9.26.4 version row, so scope to the tile)
+      const upgradedTile = within(section).getByText('Upgraded').closest('.MuiPaper-root');
+      expect(within(upgradedTile).getByText('19.4%')).toBeInTheDocument();
+      expect(within(section).getByText('v9.26+ DigiDollar')).toBeInTheDocument();
+
+      // Versions tile — count of distinct user agents
+      expect(within(section).getByText('Versions')).toBeInTheDocument();
+      expect(within(section).getByText('2')).toBeInTheDocument();
+
+      // Caption: window hours + relative updatedAt
+      expect(within(section).getByText(/Rolling 24h window/i)).toBeInTheDocument();
+      expect(within(section).getByText(/updated .+ ago|updated just now/i)).toBeInTheDocument();
+
+      // Awaiting state is gone
+      expect(screen.queryByText(/Collecting node data/i)).not.toBeInTheDocument();
+    });
+
+    it('should render version rows sorted descending by count with percent and verbatim user agents', async () => {
+      renderWithProviders(<NodesPage />);
+
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      // Deliberately unsorted — the client must sort desc by count defensively
+      ws.receiveMessage({
+        type: 'nodeVersions24h',
+        data: makeVersionData({
+          versions: [
+            { userAgent: '/DigiByte:7.17.3/', count: 12, percent: 2.0, isLatest: false },
+            { userAgent: '/DigiByte:9.26.4/', count: 119, percent: 19.4, isLatest: true },
+            { userAgent: '/DigiByte:8.26.2/', count: 327, percent: 53.3, isLatest: false }
+          ]
+        })
+      });
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId('version-row')).toHaveLength(3);
+      });
+
+      const rows = screen.getAllByTestId('version-row');
+      // DOM order is descending by count
+      expect(rows[0]).toHaveTextContent('/DigiByte:8.26.2/');
+      expect(rows[0]).toHaveTextContent('327');
+      expect(rows[0]).toHaveTextContent('53.3%');
+      expect(rows[1]).toHaveTextContent('/DigiByte:9.26.4/');
+      expect(rows[1]).toHaveTextContent('119');
+      expect(rows[1]).toHaveTextContent('19.4%');
+      expect(rows[2]).toHaveTextContent('/DigiByte:7.17.3/');
+      expect(rows[2]).toHaveTextContent('12');
+      expect(rows[2]).toHaveTextContent('2.0%');
+    });
+
+    it('should render the upgrade progress bar with aria-valuenow and target copy', async () => {
+      renderWithProviders(<NodesPage />);
+
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      // Integer percent so MUI's Math.round(aria-valuenow) is exact
+      ws.receiveMessage({
+        type: 'nodeVersions24h',
+        data: makeVersionData({ upgradedPercent: 76 })
+      });
+
+      const section = screen.getByTestId('nodes-24h-section');
+      await waitFor(() => {
+        const bars = within(section).getAllByRole('progressbar');
+        const mainBar = bars.find(bar => bar.getAttribute('aria-valuenow') === '76');
+        expect(mainBar).toBeTruthy();
+      });
+
+      expect(
+        within(section).getByText(/76\.0% of nodes upgraded to v9\.26 DigiDollar or higher/)
+      ).toBeInTheDocument();
+      expect(
+        within(section).getByText(/rolling last 24 hours/i)
+      ).toBeInTheDocument();
+    });
+
+    it('should render both geo statistics and the 24h version section regardless of message order', async () => {
+      // Order A: geoData first, then nodeVersions24h (unknown types ignored)
+      const first = renderWithProviders(<NodesPage />);
+
+      await waitForAsync();
+      let ws = webSocketInstances[0];
+      ws.receiveMessage({ type: 'geoData', data: mockApiResponses.nodesData.nodes });
+      ws.receiveMessage({ type: 'someUnknownType', data: { bogus: true } });
+      ws.receiveMessage({ type: 'nodeVersions24h', data: makeVersionData() });
+
+      await waitFor(() => {
+        expect(screen.getByText('Global Node Distribution')).toBeInTheDocument();
+        expect(screen.getAllByTestId('version-row')).toHaveLength(2);
+      });
+      expect(screen.getByText('United States')).toBeInTheDocument();
+
+      first.unmount();
+      wsSetup.clearInstances();
+
+      // Order B: nodeVersions24h first, then geoData
+      renderWithProviders(<NodesPage />);
+
+      await waitForAsync();
+      ws = webSocketInstances[0];
+      ws.receiveMessage({ type: 'nodeVersions24h', data: makeVersionData() });
+      ws.receiveMessage({ type: 'geoData', data: mockApiResponses.nodesData.nodes });
+
+      await waitFor(() => {
+        expect(screen.getByText('Global Node Distribution')).toBeInTheDocument();
+        expect(screen.getAllByTestId('version-row')).toHaveLength(2);
+      });
+    });
+
+    it('should handle empty versions, malformed data, and recompute missing percents client-side', async () => {
+      renderWithProviders(<NodesPage />);
+
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      // Malformed: no data field — no crash, awaiting state remains
+      ws.receiveMessage({ type: 'nodeVersions24h' });
+      expect(screen.getByText('DigiByte Blockchain Nodes')).toBeInTheDocument();
+      expect(screen.getByText(/Collecting node data/i)).toBeInTheDocument();
+
+      // Malformed: versions is not an array — no crash, no rows
+      ws.receiveMessage({ type: 'nodeVersions24h', data: { versions: 'garbage' } });
+      expect(screen.getByText('Nodes Seen in Last 24 Hours')).toBeInTheDocument();
+      expect(screen.queryAllByTestId('version-row')).toHaveLength(0);
+
+      // Empty versions with zero totals renders gracefully
+      ws.receiveMessage({
+        type: 'nodeVersions24h',
+        data: makeVersionData({
+          versions: [],
+          totalUniqueNodes: 0,
+          upgradedCount: 0,
+          upgradedPercent: 0
+        })
+      });
+      await waitFor(() => {
+        expect(screen.getByText(/No version data reported yet/i)).toBeInTheDocument();
+      });
+      expect(screen.queryAllByTestId('version-row')).toHaveLength(0);
+
+      // Missing percent fields — client recomputes from counts (30/40 and 10/40)
+      ws.receiveMessage({
+        type: 'nodeVersions24h',
+        data: makeVersionData({
+          totalUniqueNodes: 40,
+          upgradedCount: 30,
+          upgradedPercent: undefined,
+          versions: [
+            { userAgent: '/DigiByte:9.26.4/', count: 30, isLatest: true },
+            { userAgent: '/DigiByte:7.17.3/', count: 10, isLatest: false }
+          ]
+        })
+      });
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId('version-row')).toHaveLength(2);
+      });
+      const rows = screen.getAllByTestId('version-row');
+      expect(rows[0]).toHaveTextContent('/DigiByte:9.26.4/');
+      expect(rows[0]).toHaveTextContent('75.0%');
+      expect(rows[1]).toHaveTextContent('/DigiByte:7.17.3/');
+      expect(rows[1]).toHaveTextContent('25.0%');
+
+      const section = screen.getByTestId('nodes-24h-section');
+      expect(
+        within(section).getByText(/75\.0% of nodes upgraded to v9\.26 DigiDollar or higher/)
+      ).toBeInTheDocument();
+    });
+
+    it('should render the 24h section with data on testnet', async () => {
+      renderWithProviders(<NodesPage />, { network: 'testnet' });
+
+      await waitForAsync();
+
+      // Testnet uses ws://localhost:5003 (from NetworkContext)
+      expect(mockWebSocket).toHaveBeenCalledWith('ws://localhost:5003');
+
+      const ws = webSocketInstances[0];
+      ws.receiveMessage({ type: 'nodeVersions24h', data: makeVersionData() });
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId('version-row')).toHaveLength(2);
+      });
+      expect(screen.getByText('Nodes Seen in Last 24 Hours')).toBeInTheDocument();
+
+      const section = screen.getByTestId('nodes-24h-section');
+      expect(within(section).getByText('614')).toBeInTheDocument();
     });
   });
 });

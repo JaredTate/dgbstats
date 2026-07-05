@@ -64,6 +64,22 @@ export const mockApiResponses = {
     }
   },
 
+  // Version breakdown of nodes seen in the last 24 hours
+  // (REST twin of the `nodeVersions24h` WebSocket message used by NodesPage)
+  nodeVersions24hData: {
+    windowHours: 24,
+    totalUniqueNodes: 614,
+    updatedAt: 1751700000000,
+    latestVersion: '9.26.4',
+    targetSeries: '9.26',
+    upgradedCount: 119,
+    upgradedPercent: 19.4,
+    versions: [
+      { userAgent: '/DigiByte:8.26.2/', count: 327, percent: 53.3, isLatest: false },
+      { userAgent: '/DigiByte:9.26.4/', count: 119, percent: 19.4, isLatest: true }
+    ]
+  },
+
   // Pools data
   poolsData: {
     miners: [
