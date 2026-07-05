@@ -23,6 +23,7 @@ import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import UpdateIcon from '@mui/icons-material/Update';
+import StorageIcon from '@mui/icons-material/Storage';
 
 /**
  * Custom hook for fetching node geolocation data via WebSocket
@@ -40,6 +41,7 @@ import UpdateIcon from '@mui/icons-material/Update';
 const useFetchData = (wsBaseUrl) => {
   const [nodesData, setNodesData] = useState([]);
   const [versionData, setVersionData] = useState(null);
+  const [addrmanInfo, setAddrmanInfo] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -54,6 +56,8 @@ const useFetchData = (wsBaseUrl) => {
         // Handle geographic data messages from server
         if (message.type === 'geoData') {
           setNodesData(message.data || []);
+          // addrman summary rides along on the geoData message (may be absent)
+          setAddrmanInfo(message.addrman || null);
           setLoading(false);
         } else if (message.type === 'nodeVersions24h') {
           // Version breakdown of nodes seen in the last 24 hours
@@ -73,7 +77,7 @@ const useFetchData = (wsBaseUrl) => {
     return () => socket.readyState === WebSocket.OPEN && socket.close();
   }, [wsBaseUrl]);
 
-  return { nodesData, versionData, loading };
+  return { nodesData, versionData, addrmanInfo, loading };
 };
 
 /**
@@ -515,7 +519,7 @@ const PeersDatTile = ({ label, value, caption, icon, color }) => (
  * 2x2 tile grid; stretches to the height of the crawler panel beside it on
  * desktop (parent grid uses alignItems="stretch").
  */
-const PeersDatPanel = memo(({ loading, knownCount, geoCount, countryCount, ipv4Count, ipv6Count, accentColor }) => (
+const PeersDatPanel = memo(({ loading, knownCount, geoCount, countryCount, ipv4Count, ipv6Count, addrman, accentColor }) => (
   <Card
     elevation={3}
     data-testid="peersdat-panel"
@@ -593,6 +597,15 @@ const PeersDatPanel = memo(({ loading, knownCount, geoCount, countryCount, ipv4C
             icon={<PublicIcon />}
             color="#9c27b0"
           />
+          {addrman && (
+            <PeersDatTile
+              label="Address Manager"
+              value={addrman.total.toLocaleString()}
+              caption={`${addrman.new.toLocaleString()} new · ${addrman.tried.toLocaleString()} tried`}
+              icon={<StorageIcon />}
+              color="#8e24aa"
+            />
+          )}
         </Grid>
       )}
     </CardContent>
@@ -613,7 +626,7 @@ PeersDatPanel.displayName = 'PeersDatPanel';
  */
 const NodesPage = () => {
   const { wsBaseUrl, getApiUrl, isTestnet, theme: networkTheme } = useNetwork();
-  const { nodesData, versionData, loading } = useFetchData(wsBaseUrl);
+  const { nodesData, versionData, addrmanInfo, loading } = useFetchData(wsBaseUrl);
 
   // Accent for the 24h version section — network-aware like HeroSection
   const versionAccentColor = isTestnet ? (networkTheme?.primary || '#0066cc') : '#0066cc';
@@ -2066,6 +2079,7 @@ const NodesPage = () => {
               countryCount={countryCount}
               ipv4Count={ipCounts.v4}
               ipv6Count={ipCounts.v6}
+              addrman={addrmanInfo}
               accentColor={versionAccentColor}
             />
           </Grid>
