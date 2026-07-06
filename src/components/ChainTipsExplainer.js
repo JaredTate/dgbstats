@@ -183,7 +183,7 @@ const ChainTipsExplainer = ({ accentColor = '#0066cc' }) => {
           </Typography>
           <Box component="ul" sx={{ pl: 3, m: 0, mb: 1.5, color: '#444' }}>
             <Typography component="li" variant="body2" sx={{ mb: 0.75, lineHeight: 1.6 }}>
-              is <strong>2 or more blocks deep</strong>, not just a single lone stale;
+              is <strong>4 or more blocks deep</strong>, not just a single lone stale;
             </Typography>
             <Typography component="li" variant="body2" sx={{ mb: 0.75, lineHeight: 1.6 }}>
               <strong>keeps growing across time</strong> — a sign it is being actively mined, not abandoned;
