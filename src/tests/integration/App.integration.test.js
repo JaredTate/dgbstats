@@ -124,23 +124,26 @@ describe('App Integration Tests', () => {
       renderApp();
       
       await waitForAsync();
-      
-      // Should have one WebSocket for home page
-      expect(webSocketInstances.length).toBe(1);
-      const firstWs = webSocketInstances[0];
-      
+
+      // Two WebSockets: one for the home page and one for the site-wide
+      // fork-alert banner mounted in the layout.
+      expect(webSocketInstances.length).toBe(2);
+      // The page's socket is the last one created at initial render.
+      const pageWs = webSocketInstances[webSocketInstances.length - 1];
+
       // Navigate to another page
       const nodesLink = screen.getByRole('link', { name: /nodes/i });
       fireEvent.click(nodesLink);
-      
+
       await waitForAsync();
-      
-      // First WebSocket should be closed
-      expect(firstWs.readyState).toBe(WebSocket.CLOSED);
-      
-      // New WebSocket should be created
-      expect(webSocketInstances.length).toBe(2);
-      expect(webSocketInstances[1].readyState).toBe(WebSocket.OPEN);
+
+      // The page WebSocket should be closed after navigating away (the banner
+      // socket persists with the layout).
+      expect(pageWs.readyState).toBe(WebSocket.CLOSED);
+
+      // A new page WebSocket should be created and open.
+      const newPageWs = webSocketInstances[webSocketInstances.length - 1];
+      expect(newPageWs.readyState).toBe(WebSocket.OPEN);
     });
   });
 
@@ -189,8 +192,9 @@ describe('App Integration Tests', () => {
       renderApp();
       
       await waitForAsync();
-      const ws = webSocketInstances[0];
-      
+      // The page's socket is the last one created (the banner socket mounts first).
+      const ws = webSocketInstances[webSocketInstances.length - 1];
+
       // Send homepage data
       ws.receiveMessage(generateWebSocketMessage('initialData'));
       
@@ -372,21 +376,24 @@ describe('App Integration Tests', () => {
       // Navigate to a page with charts
       const supplyLink = screen.getByRole('link', { name: /supply/i });
       fireEvent.click(supplyLink);
-      
+
       await waitFor(() => {
         expect(screen.getByText('DigiByte Supply Statistics')).toBeInTheDocument();
       });
-      
+
+      // Capture the supply page's socket (the last created after that navigation).
+      const supplyWs = webSocketInstances[webSocketInstances.length - 1];
+
       // Navigate away
       const homeLink = screen.getByRole('link', { name: /home/i });
       fireEvent.click(homeLink);
-      
+
       await waitFor(() => {
         expect(screen.getByText('DigiByte Blockchain Statistics')).toBeInTheDocument();
       });
-      
-      // Previous WebSocket should be closed
-      expect(webSocketInstances[0].readyState).toBe(WebSocket.CLOSED);
+
+      // The previous page's WebSocket should be closed.
+      expect(supplyWs.readyState).toBe(WebSocket.CLOSED);
     });
   });
 
@@ -415,8 +422,9 @@ describe('App Integration Tests', () => {
       renderApp();
       
       await waitForAsync();
-      const ws = webSocketInstances[0];
-      
+      // The page's socket is the last one created (the banner socket mounts first).
+      const ws = webSocketInstances[webSocketInstances.length - 1];
+
       // Send homepage data with large numbers
       ws.receiveMessage({
         type: 'initialData',

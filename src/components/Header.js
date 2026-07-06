@@ -36,6 +36,7 @@ const Header = () => {
   ] : isTestnet ? [
     { text: 'Home', path: withBase('/') },
     { text: 'Blocks', path: withBase('/blocks') },
+    { text: 'Chain Tips', path: withBase('/tips') },
     { text: 'Txs', path: withBase('/txs') },
     { text: 'Supply', path: withBase('/supply') },
     { text: 'Algos', path: withBase('/algos') },
@@ -50,6 +51,7 @@ const Header = () => {
   ] : [
     { text: 'Home', path: '/' },
     { text: 'Blocks', path: '/blocks' },
+    { text: 'Chain Tips', path: '/tips' },
     { text: 'Txs', path: '/txs' },
     { text: 'Supply', path: '/supply' },
     { text: 'Algos', path: '/algos' },

@@ -67,6 +67,13 @@ describe('Header', () => {
       expect(screen.getByRole('link', { name: 'Pool Upgrades' }))
         .toHaveAttribute('href', '/pool-upgrades');
     });
+
+    it('should have the Chain Tips nav item linking to /tips', () => {
+      renderWithProviders(<Header />, { network: 'mainnet' });
+
+      expect(screen.getByRole('link', { name: 'Chain Tips' }))
+        .toHaveAttribute('href', '/tips');
+    });
   });
 
   describe('Testnet Mode', () => {
@@ -131,6 +138,13 @@ describe('Header', () => {
 
       expect(screen.getByRole('link', { name: 'Pool Upgrades' }))
         .toHaveAttribute('href', '/testnet/pool-upgrades');
+    });
+
+    it('should have the Chain Tips nav item linking to /testnet/tips', () => {
+      renderWithProviders(<Header />, { network: 'testnet' });
+
+      expect(screen.getByRole('link', { name: 'Chain Tips' }))
+        .toHaveAttribute('href', '/testnet/tips');
     });
 
     it('should use testnet gradient color for app bar', () => {

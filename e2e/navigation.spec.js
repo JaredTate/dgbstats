@@ -63,6 +63,11 @@ test.describe('Navigation', () => {
     await navigateToPage(page, 'Blocks');
     await expect(page.locator('h1')).toContainText('Realtime DigiByte Blocks');
     await expect(page.url()).toContain('/blocks');
+
+    // Navigate to Chain Tips page
+    await navigateToPage(page, 'Chain Tips');
+    await expect(page.locator('h1')).toContainText('Chain Tips & Orphans');
+    await expect(page.url()).toContain('/tips');
     
     // Navigate to Algos page
     await navigateToPage(page, 'Algos');
@@ -85,7 +90,8 @@ test.describe('Navigation', () => {
       { path: '/downloads', title: 'DigiByte Core Wallet Downloads', selector: 'h1' },
       { path: '/difficulties', title: 'Realtime DGB Algo Difficulty', selector: 'h1' },
       { path: '/blocks', title: 'Realtime DigiByte Blocks', selector: 'h1' },
-      { path: '/algos', title: 'Realtime DigiByte Blocks By Algo', selector: 'h1' }
+      { path: '/algos', title: 'Realtime DigiByte Blocks By Algo', selector: 'h1' },
+      { path: '/tips', title: 'Chain Tips & Orphans', selector: 'h1' }
     ];
     
     for (const pageInfo of pages) {

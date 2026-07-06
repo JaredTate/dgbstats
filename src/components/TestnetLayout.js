@@ -4,6 +4,7 @@ import { ThemeProvider, createTheme } from '@mui/material';
 import { NetworkProvider } from '../context/NetworkContext';
 import Header from './Header';
 import Footer from './Footer';
+import ForkAlertBanner from './ForkAlertBanner';
 
 const testnetTheme = createTheme({
   palette: {
@@ -56,6 +57,7 @@ const TestnetLayout = () => {
       <ThemeProvider theme={testnetTheme}>
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
           <Header />
+          <ForkAlertBanner />
           <div style={{ flex: 1 }}>
             <Outlet />
           </div>

@@ -345,14 +345,13 @@ describe('Page Integration Tests', () => {
           formattedValue: '12,456',
           verifyContent: async () => {
             await waitFor(() => {
-              // Check that the stats section loaded
-              expect(screen.getByText('Node Statistics')).toBeInTheDocument();
+              // Check that the stats section loaded (peers.dat methodology panel)
+              expect(screen.getAllByText('Peers.dat Method').length).toBeGreaterThan(0);
             });
-            // NodesPage displays the node count in stats cards
-            // The exact number might be displayed multiple times or differently formatted
-            // Just verify that the component has rendered with content
+            // NodesPage displays the node count in the peers.dat tiles,
+            // locale-formatted with a thousands separator (12,456).
             const allText = document.body.textContent;
-            expect(allText).toContain('12456');
+            expect(allText).toContain('12,456');
           }
         },
         { 

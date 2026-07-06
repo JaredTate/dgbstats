@@ -4,6 +4,7 @@ import { ThemeProvider, createTheme } from '@mui/material';
 import { NetworkProvider, getNetworkConfig } from '../context/NetworkContext';
 import Header from './Header';
 import Footer from './Footer';
+import ForkAlertBanner from './ForkAlertBanner';
 
 const preConfig = getNetworkConfig('mainnet-pre');
 
@@ -58,6 +59,7 @@ const MainnetPreLayout = () => {
       <ThemeProvider theme={mainnetPreTheme}>
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
           <Header />
+          <ForkAlertBanner />
           <div style={{ flex: 1 }}>
             <Outlet />
           </div>

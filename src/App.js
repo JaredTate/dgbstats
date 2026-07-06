@@ -24,6 +24,7 @@ import DDStatsPage from './pages/DDStatsPage';
 import DDActivationPage from './pages/DDActivationPage';
 import WalletConvertPage from './pages/WalletConvertPage';
 import PoolUpgradeTrackerPage from './pages/PoolUpgradeTrackerPage';
+import ChainTipsPage from './pages/ChainTipsPage';
 
 export const parseBlockRewardResponse = (data) => {
   const rewardValue = data?.blockReward?.blockreward ?? data?.blockreward ?? data?.blockReward;
@@ -158,6 +159,7 @@ const App = () => {
                 }
               />
               <Route path="/blocks" element={<BlocksPage />} />
+              <Route path="/tips" element={<ChainTipsPage />} />
               <Route path="/txs" element={<TxsPage />} />
               <Route path="/downloads" element={<DownloadsPage />} />
               <Route path="/roadmap" element={<RoadmapPage />} />
@@ -187,6 +189,7 @@ const App = () => {
                 }
               />
               <Route path="blocks" element={<BlocksPage />} />
+              <Route path="tips" element={<ChainTipsPage />} />
               <Route path="txs" element={<TxsPage />} />
               <Route path="supply" element={<SupplyPage worldPopulation={worldPopulation} />} />
               <Route path="algos" element={<AlgosPage />} />
