@@ -76,10 +76,10 @@ function classifyBlock(b) {
 }
 
 // Per-network BIP9 window (fallback if live deployment stats are unavailable).
-const DEFAULT_PERIOD = { mainnet: 40320, testnet: 200, 'mainnet-pre': 40320 };
+const DEFAULT_PERIOD = { mainnet: 40320, testnet: 200 };
 
 // Groestl unconditional-rejection backstop height (enforcement floor, independent of signalling).
-const ACTIVATION_HEIGHT = { mainnet: 23808000, testnet: null, 'mainnet-pre': null };
+const ACTIVATION_HEIGHT = { mainnet: 23808000, testnet: null };
 
 function poolKey(block) {
   const id = (block.poolIdentifier || '').trim();

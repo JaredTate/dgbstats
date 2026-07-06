@@ -37,7 +37,7 @@ describe('RoadmapPage', () => {
 
       await waitFor(() => {
         expect(screen.getByText('DigiByte Core Development Roadmap')).toBeInTheDocument();
-        expect(screen.getByText('Next Three Years: 2025 - 2028')).toBeInTheDocument();
+        expect(screen.getByText('Development Roadmap: 2025 - 2029')).toBeInTheDocument();
       });
     });
 

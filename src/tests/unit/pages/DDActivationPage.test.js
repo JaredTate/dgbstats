@@ -96,8 +96,7 @@ describe('DDActivationPage', () => {
     const notFound = () => HttpResponse.json({ error: 'Not found' }, { status: 404 });
     server.use(
       http.get('http://localhost:5001/api/getdeploymentinfo', notFound),
-      http.get('http://localhost:5001/api/testnet/getdeploymentinfo', notFound),
-      http.get('http://localhost:5001/api/mainnet-pre/getdeploymentinfo', notFound)
+      http.get('http://localhost:5001/api/testnet/getdeploymentinfo', notFound)
     );
   });
 
@@ -171,7 +170,7 @@ describe('DDActivationPage', () => {
     });
 
     it('should show default network activation state when WebSocket closes before deployment data', async () => {
-      renderWithProviders(<DDActivationPage />, { network: 'mainnet-pre' });
+      renderWithProviders(<DDActivationPage />, { network: 'mainnet' });
       await waitForAsync();
       const ws = webSocketInstances[0];
 
@@ -182,8 +181,8 @@ describe('DDActivationPage', () => {
       await waitFor(() => {
         expect(screen.queryByText('Loading activation data...')).not.toBeInTheDocument();
         expect(screen.getByText('Is DigiDollar Active?')).toBeInTheDocument();
-        expect(screen.getByText('Mainnet-PRE Activation Parameters')).toBeInTheDocument();
-        expect(screen.getByText('70 blocks (70%)')).toBeInTheDocument();
+        expect(screen.getByText('Mainnet Activation Parameters')).toBeInTheDocument();
+        expect(screen.getByText('28,224 blocks (70%)')).toBeInTheDocument();
       });
     });
 
@@ -1148,27 +1147,6 @@ describe('DDActivationPage', () => {
         expect(screen.getByText('40,320 blocks')).toBeInTheDocument();
         expect(screen.getByText('28,224 blocks (70%)')).toBeInTheDocument();
         expect(screen.getByText('23,627,520')).toBeInTheDocument();
-      });
-    });
-
-    it('should use mainnet-pre parameters and WebSocket when rendered on mainnet-pre', async () => {
-      renderWithProviders(<DDActivationPage />, { network: 'mainnet-pre' });
-      await waitForAsync();
-      const ws = webSocketInstances[0];
-
-      sendDeploymentData(ws, {
-        ...mockDeploymentStarted,
-        threshold: 70,
-        period_blocks: 100
-      });
-
-      await waitFor(() => {
-        expect(mockWebSocket).toHaveBeenCalledWith('ws://localhost:5004');
-        expect(screen.getByText('DigiDollar Mainnet-PRE Activation')).toBeInTheDocument();
-        expect(screen.getByText('Mainnet-PRE Activation Parameters')).toBeInTheDocument();
-        expect(screen.getByText('100 blocks')).toBeInTheDocument();
-        expect(screen.getByText('70 blocks (70%)')).toBeInTheDocument();
-        expect(screen.getByText(/digibyte-cli -datadir=<mainnet-pre-datadir> getdigidollardeploymentinfo/)).toBeInTheDocument();
       });
     });
 

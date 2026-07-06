@@ -100,16 +100,6 @@ describe('DDStatsPage', () => {
       expect(screen.getByText(/v9\.26\.4 on testnet26: block 600 activation, P2P port 12033, 7 of 35 oracle consensus\./)).toBeInTheDocument();
     });
 
-    it('should render mainnet-pre release details and use PRE WebSocket', async () => {
-      renderWithProviders(<DDStatsPage />, { network: 'mainnet-pre' });
-
-      expect(screen.getByText('DigiDollar Mainnet-PRE Stats')).toBeInTheDocument();
-      expect(screen.getByText(/v9\.26\.1-pre on mainnet-pre: block 600 isolated rehearsal, P2P port 12046, 7 of 35 oracle consensus\./)).toBeInTheDocument();
-
-      await waitForAsync();
-      expect(mockWebSocket).toHaveBeenCalledWith('ws://localhost:5004');
-    });
-
     it('should render the network status card header', async () => {
       renderWithProviders(<DDStatsPage />, { network: 'testnet' });
 

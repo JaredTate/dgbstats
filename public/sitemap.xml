@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Main Pages -->
+  <!-- Mainnet Pages -->
   <url>
     <loc>https://digibyte.io/</loc>
     <changefreq>hourly</changefreq>
@@ -10,6 +10,11 @@
     <loc>https://digibyte.io/blocks</loc>
     <changefreq>always</changefreq>
     <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://digibyte.io/tips</loc>
+    <changefreq>always</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://digibyte.io/txs</loc>
@@ -38,6 +43,11 @@
   </url>
   <url>
     <loc>https://digibyte.io/pools</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://digibyte.io/pool-upgrades</loc>
     <changefreq>hourly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -76,6 +86,11 @@
     <changefreq>hourly</changefreq>
     <priority>0.7</priority>
   </url>
+  <url>
+    <loc>https://digibyte.io/taproot</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
 
   <!-- Testnet Pages -->
   <url>
@@ -85,6 +100,11 @@
   </url>
   <url>
     <loc>https://digibyte.io/testnet/blocks</loc>
+    <changefreq>always</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://digibyte.io/testnet/tips</loc>
     <changefreq>always</changefreq>
     <priority>0.5</priority>
   </url>
@@ -119,6 +139,11 @@
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://digibyte.io/testnet/pool-upgrades</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
     <loc>https://digibyte.io/testnet/digidollar</loc>
     <changefreq>daily</changefreq>
     <priority>0.5</priority>
@@ -138,21 +163,14 @@
     <changefreq>hourly</changefreq>
     <priority>0.5</priority>
   </url>
-
-  <!-- Modified Mainnet / PRE Pages -->
   <url>
-    <loc>https://digibyte.io/mainnet-pre/activation</loc>
-    <changefreq>hourly</changefreq>
+    <loc>https://digibyte.io/testnet/convert</loc>
+    <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://digibyte.io/mainnet-pre/oracles</loc>
-    <changefreq>hourly</changefreq>
-    <priority>0.4</priority>
-  </url>
-  <url>
-    <loc>https://digibyte.io/mainnet-pre/ddstats</loc>
-    <changefreq>hourly</changefreq>
+    <loc>https://digibyte.io/testnet/taproot</loc>
+    <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
 </urlset>

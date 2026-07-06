@@ -156,18 +156,6 @@ describe('Header', () => {
     });
   });
 
-  describe('Mainnet-PRE Mode', () => {
-    it('should show MAINNET-PRE chip and only the PRE DigiDollar status pages', () => {
-      renderWithProviders(<Header />, { network: 'mainnet-pre' });
-
-      expect(screen.getAllByText('MAINNET-PRE').length).toBeGreaterThan(0);
-      expect(screen.getByRole('link', { name: 'Activation' })).toHaveAttribute('href', '/mainnet-pre/activation');
-      expect(screen.getByRole('link', { name: 'Oracles' })).toHaveAttribute('href', '/mainnet-pre/oracles');
-      expect(screen.getByRole('link', { name: 'DD Stats' })).toHaveAttribute('href', '/mainnet-pre/ddstats');
-      expect(screen.queryByRole('link', { name: 'DigiDollar' })).not.toBeInTheDocument();
-    });
-  });
-
   describe('Mobile Drawer', () => {
     it('should open mobile drawer when menu button is clicked', () => {
       renderWithProviders(<Header />, { network: 'mainnet' });

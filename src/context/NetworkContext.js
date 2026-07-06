@@ -104,59 +104,6 @@ const NETWORK_CONFIG = {
       phaseSummary: '7 of 35 signatures required | 35-slot reserved roster | 35 testnet roster oracles | MuSig2 aggregate signing (v0x03)'
     },
     cliDeploymentCommand: 'digibyte-cli -testnet getdigidollardeploymentinfo'
-  },
-  // Retired: bespoke isolated rehearsal chain used ahead of the v9.26.2 mainnet
-  // release. Its parameters (v9.26.1-pre, port 12046, 100-block/70-threshold
-  // window) describe that one-off deployment and are not part of DigiByte Core.
-  'mainnet-pre': {
-    name: 'mainnet-pre',
-    displayName: 'Mainnet-PRE',
-    digiDollarLabel: 'Mainnet-PRE',
-    apiBaseUrl: API_BASE_URL,
-    wsBaseUrl: process.env.REACT_APP_MAINNET_PRE_WS_BASE_URL || 'ws://localhost:5004',
-    basePath: '/mainnet-pre',
-    apiPrefix: '/mainnet-pre',
-    theme: {
-      primary: '#005f73',
-      secondary: '#0a9396',
-      gradient: 'linear-gradient(135deg, #005f73 0%, #0a9396 100%)'
-    },
-    activation: {
-      activationThreshold: 70,
-      activationWindow: 100,
-      thresholdBlocks: 70,
-      minActivationHeight: 600,
-      minActivationLabel: 'PRE Activation Height',
-      bit: 23,
-      stages: {
-        defined: '0-99',
-        started: '100-199',
-        locked_in: '200-599',
-        active: '600+',
-        failed: 'Timeout'
-      },
-      description: 'This isolated mainnet PRE rehearsal used accelerated BIP9 windows for oracle testing ahead of the v9.26.2 mainnet release.',
-      explainer: 'Mainnet-PRE kept mainnet oracle keys and economics but compressed the BIP9 signaling window so activation could be rehearsed by block 600 on an isolated chain. The rehearsal completed before DigiDollar shipped on mainnet.'
-    },
-    digiDollarRelease: {
-      version: 'v9.26.1-pre',
-      network: 'mainnet-pre',
-      p2pPort: '12046',
-      activationSummary: 'block 600 isolated rehearsal',
-      oracleTotalSlots: 35,
-      activeOracleSlots: 35,
-      oracleThreshold: 7
-    },
-    oracle: {
-      totalSlots: 35,
-      activeSlots: 35,
-      threshold: 7,
-      releaseLabel: 'v9.26.1-pre',
-      rosterLabel: 'mainnet-PRE roster',
-      operatorSlotLabel: 'assigned mainnet-PRE oracle slot',
-      phaseSummary: '7 of 35 signatures required | 35-slot mainnet oracle roster | isolated P2P port 12046 | MuSig2 aggregate signing (v0x03)'
-    },
-    cliDeploymentCommand: 'digibyte-cli -datadir=<mainnet-pre-datadir> getdigidollardeploymentinfo'
   }
 };
 
@@ -177,7 +124,6 @@ export const NetworkProvider = ({ children, network = 'mainnet' }) => {
     ...config,
     isTestnet: config.name === 'testnet',
     isMainnet: config.name === 'mainnet',
-    isMainnetPre: config.name === 'mainnet-pre',
     getApiUrl: (endpoint) => {
       const prefix = config.apiPrefix || '';
       return `${config.apiBaseUrl}/api${prefix}${endpoint}`;

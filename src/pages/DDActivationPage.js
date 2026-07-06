@@ -37,7 +37,7 @@ const STATE_ICONS = {
 
 // Groestl unconditional-rejection backstop (nGroestlDeactivationHeight): from this
 // height, retired-algorithm blocks are rejected regardless of BIP9 signalling.
-const GROESTL_BACKSTOP = { mainnet: 23808000, testnet: null, 'mainnet-pre': null };
+const GROESTL_BACKSTOP = { mainnet: 23808000, testnet: null };
 
 /** Rough ETA from block count at DigiByte's 15s spacing. */
 function fmtEta(blocks) {

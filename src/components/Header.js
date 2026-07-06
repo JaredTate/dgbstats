@@ -13,10 +13,9 @@ const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const network = useNetwork();
   const isTestnet = network?.isTestnet || false;
-  const isMainnetPre = network?.isMainnetPre || false;
   const networkTheme = network?.theme || { gradient: 'linear-gradient(135deg, #002352 0%, #0066cc 100%)' };
   const basePath = network?.basePath || '';
-  const networkBadge = isTestnet ? 'TESTNET' : isMainnetPre ? 'MAINNET-PRE' : null;
+  const networkBadge = isTestnet ? 'TESTNET' : null;
   const networkHomePath = basePath || '/';
 
   const withBase = (path) => {
@@ -29,11 +28,7 @@ const Header = () => {
   };
 
   // Primary navigation items (internal site links)
-  const primaryMenuItems = isMainnetPre ? [
-    { text: 'Activation', path: withBase('/activation') },
-    { text: 'Oracles', path: withBase('/oracles') },
-    { text: 'DD Stats', path: withBase('/ddstats') },
-  ] : isTestnet ? [
+  const primaryMenuItems = isTestnet ? [
     { text: 'Home', path: withBase('/') },
     { text: 'Blocks', path: withBase('/blocks') },
     { text: 'Tips', path: withBase('/tips') },
@@ -194,7 +189,7 @@ const Header = () => {
       <AppBar
         position="sticky"
         sx={{
-          background: isTestnet || isMainnetPre ? networkTheme.gradient : '#0066cc',
+          background: isTestnet ? networkTheme.gradient : '#0066cc',
           boxShadow: 'none'
         }}
       >

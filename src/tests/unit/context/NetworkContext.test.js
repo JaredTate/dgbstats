@@ -15,7 +15,6 @@ const TestComponent = () => {
       <span data-testid="apiPrefix">{network.apiPrefix}</span>
       <span data-testid="isTestnet">{network.isTestnet ? 'true' : 'false'}</span>
       <span data-testid="isMainnet">{network.isMainnet ? 'true' : 'false'}</span>
-      <span data-testid="isMainnetPre">{network.isMainnetPre ? 'true' : 'false'}</span>
       <span data-testid="primaryColor">{network.theme.primary}</span>
       <span data-testid="getApiUrl">{network.getApiUrl('/test')}</span>
       <span data-testid="getNetworkPath">{network.getNetworkPath('/activation')}</span>
@@ -42,9 +41,7 @@ describe('NetworkContext', () => {
       expect(screen.getByTestId('basePath')).toHaveTextContent('');
       expect(screen.getByTestId('apiPrefix')).toHaveTextContent('');
       expect(screen.getByTestId('isTestnet')).toHaveTextContent('false');
-      expect(screen.getByTestId('isMainnet')).toHaveTextContent('true');
-      expect(screen.getByTestId('isMainnetPre')).toHaveTextContent('false');
-    });
+      expect(screen.getByTestId('isMainnet')).toHaveTextContent('true');    });
 
     it('should use mainnet theme colors', () => {
       render(
@@ -65,9 +62,7 @@ describe('NetworkContext', () => {
 
       expect(screen.getByTestId('name')).toHaveTextContent('mainnet');
       expect(screen.getByTestId('isMainnet')).toHaveTextContent('true');
-      expect(screen.getByTestId('isTestnet')).toHaveTextContent('false');
-      expect(screen.getByTestId('isMainnetPre')).toHaveTextContent('false');
-    });
+      expect(screen.getByTestId('isTestnet')).toHaveTextContent('false');    });
   });
 
   describe('Testnet Configuration', () => {
@@ -85,9 +80,7 @@ describe('NetworkContext', () => {
       expect(screen.getByTestId('basePath')).toHaveTextContent('/testnet');
       expect(screen.getByTestId('apiPrefix')).toHaveTextContent('/testnet');
       expect(screen.getByTestId('isTestnet')).toHaveTextContent('true');
-      expect(screen.getByTestId('isMainnet')).toHaveTextContent('false');
-      expect(screen.getByTestId('isMainnetPre')).toHaveTextContent('false');
-    });
+      expect(screen.getByTestId('isMainnet')).toHaveTextContent('false');    });
 
     it('should use testnet theme colors', () => {
       render(
@@ -97,29 +90,6 @@ describe('NetworkContext', () => {
       );
 
       expect(screen.getByTestId('primaryColor')).toHaveTextContent('#2e7d32');
-    });
-  });
-
-  describe('Modified Mainnet PRE Configuration', () => {
-    it('should provide correct mainnet-pre configuration values', () => {
-      render(
-        <NetworkProvider network="mainnet-pre">
-          <TestComponent />
-        </NetworkProvider>
-      );
-
-      expect(screen.getByTestId('name')).toHaveTextContent('mainnet-pre');
-      expect(screen.getByTestId('displayName')).toHaveTextContent('Mainnet-PRE');
-      expect(screen.getByTestId('apiBaseUrl')).toHaveTextContent('http://localhost:5001');
-      expect(screen.getByTestId('wsBaseUrl')).toHaveTextContent('ws://localhost:5004');
-      expect(screen.getByTestId('basePath')).toHaveTextContent('/mainnet-pre');
-      expect(screen.getByTestId('apiPrefix')).toHaveTextContent('/mainnet-pre');
-      expect(screen.getByTestId('isTestnet')).toHaveTextContent('false');
-      expect(screen.getByTestId('isMainnet')).toHaveTextContent('false');
-      expect(screen.getByTestId('isMainnetPre')).toHaveTextContent('true');
-      expect(screen.getByTestId('activationWindow')).toHaveTextContent('100');
-      expect(screen.getByTestId('thresholdBlocks')).toHaveTextContent('70');
-      expect(screen.getByTestId('releaseVersion')).toHaveTextContent('v9.26.1-pre');
     });
   });
 
@@ -144,17 +114,6 @@ describe('NetworkContext', () => {
 
       // Testnet: http://localhost:5001/api/testnet/test (with /testnet prefix)
       expect(screen.getByTestId('getApiUrl')).toHaveTextContent('http://localhost:5001/api/testnet/test');
-    });
-
-    it('should return correct API URL and route path for mainnet-pre', () => {
-      render(
-        <NetworkProvider network="mainnet-pre">
-          <TestComponent />
-        </NetworkProvider>
-      );
-
-      expect(screen.getByTestId('getApiUrl')).toHaveTextContent('http://localhost:5001/api/mainnet-pre/test');
-      expect(screen.getByTestId('getNetworkPath')).toHaveTextContent('/mainnet-pre/activation');
     });
   });
 
