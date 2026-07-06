@@ -2135,11 +2135,11 @@ const NodesPage = () => {
         {/* Interactive world map (only shown when data is loaded) */}
         {!loading && <WorldMapSection />}
 
+        {/* Country leaderboard (only shown when data is loaded) */}
+        {!loading && <CountriesListSection />}
+
         {/* Educational information about nodes */}
         <NetworkInfoSection />
-        
-        {/* Country listings by continent (only shown when data is loaded) */}
-        {!loading && <CountriesListSection />}
       </Container>
     </Box>
   );
