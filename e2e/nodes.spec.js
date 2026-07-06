@@ -37,18 +37,17 @@ test.describe('Nodes Page', () => {
   });
 
   test('should display node statistics', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
-    
-    // Check for the Node Statistics section
-    await expect(page.locator('text=Node Statistics')).toBeVisible();
-    
-    // Wait for stats data to be visible
-    await page.waitForSelector('.MuiPaper-root:has-text("Total Nodes Seen")', { timeout: 5000 }).catch(() => {});
-    
-    // Check for the stats cards
-    await expect(page.locator('text=Total Nodes Seen')).toBeVisible();
-    await expect(page.locator('text=Geolocated Nodes')).toBeVisible();
-    await expect(page.locator('text=Total Countries')).toBeVisible();
+    await page.waitForLoadState('domcontentloaded');
+
+    // Scope to the peers.dat panel — "Peers.dat Method" also appears in the
+    // methodology note above, so an unscoped text match is ambiguous
+    const panel = page.locator('[data-testid="peersdat-panel"]');
+    await expect(panel).toBeVisible({ timeout: 15000 });
+
+    // Check for the stats cards within the panel
+    await expect(panel.locator('text=Known Addresses')).toBeVisible();
+    await expect(panel.locator('text=Geolocated Nodes')).toBeVisible();
+    await expect(panel.locator('text=Countries')).toBeVisible();
     
     // Check values are not loading
     const loadingIndicator = page.locator('text=Loading node data...');
@@ -84,8 +83,8 @@ test.describe('Nodes Page', () => {
     const isLoading = await loadingText.isVisible();
     
     if (!isLoading) {
-      // If data has loaded (or failed to load), check for the geographic region section
-      const geographicSection = page.locator('text=Nodes by Geographic Region');
+      // If data has loaded (or failed to load), check for the country section
+      const geographicSection = page.locator('text=Nodes by Country');
       const sectionExists = await geographicSection.isVisible();
       
       if (sectionExists) {
@@ -157,7 +156,7 @@ test.describe('Nodes Page', () => {
     // Test real-time updates for node statistics
     const updateResult = await waitForRealTimeUpdate(
       page, 
-      '.MuiPaper-root:has-text("Total Nodes Seen")',
+      '.MuiPaper-root:has-text("Known Addresses")',
       { 
         timeout: 12000, 
         browserName: browserName || 'chromium',
@@ -166,9 +165,9 @@ test.describe('Nodes Page', () => {
     );
     
     // Verify stats cards are showing values
-    await expect(page.locator('text=Total Nodes Seen')).toBeVisible();
+    await expect(page.locator('text=Known Addresses')).toBeVisible();
     await expect(page.locator('text=Geolocated Nodes')).toBeVisible();
-    await expect(page.locator('text=Total Countries')).toBeVisible();
+    await expect(page.locator('text=Countries')).toBeVisible();
     
     // Either data updated or is stable (both valid)
     expect(updateResult.initialValue || updateResult.timeout).toBeTruthy();
@@ -189,7 +188,7 @@ test.describe('Nodes Page', () => {
     await expect(mapContainer).toBeVisible();
     
     // Stats should stack vertically - use stable selectors
-    const cards = page.locator('.MuiPaper-root, [data-testid="stats-card"], .stats-card').filter({ hasText: /Total Nodes|Mapped Active|Total Countries/ });
+    const cards = page.locator('.MuiPaper-root, [data-testid="stats-card"], .stats-card').filter({ hasText: /Known Addresses|Geolocated Nodes|Countries/ });
     const cardCount = await cards.count();
     
     if (cardCount > 1) {
@@ -237,22 +236,21 @@ test.describe('Nodes Page', () => {
     }
   });
 
-  test('should display the Nodes Seen in Last 24 Hours section', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+  test('should display the Crawler Method section', async ({ page }) => {
+    await page.waitForLoadState('domcontentloaded');
 
-    // Section title is always visible — it renders unconditionally and owns
-    // its own awaiting state ("Collecting node data…") until the server sends
-    // the nodeVersions24h WebSocket message
-    await expect(page.locator('text=Nodes Seen in Last 24 Hours')).toBeVisible();
-
+    // Crawler Method panel renders unconditionally and owns its own awaiting
+    // state ("Collecting node data…") until the server sends the
+    // nodeVersions24h WebSocket message
     const section = page.locator('[data-testid="nodes-24h-section"]');
-    await expect(section).toBeVisible();
+    await expect(section).toBeVisible({ timeout: 15000 });
+    await expect(section.locator('text=Crawler Method')).toBeVisible();
 
     // Either version data has arrived (rows / stat tiles) or the awaiting
     // state is shown — both are valid depending on server state
     const rowCount = await page.locator('[data-testid="version-row"]').count();
     if (rowCount > 0) {
-      await expect(page.locator('text=Unique Nodes (24h)')).toBeVisible();
+      await expect(page.locator('text=Reachable Nodes (24h)')).toBeVisible();
     } else {
       await expect(section.locator('text=Collecting node data')).toBeVisible();
     }
@@ -260,10 +258,10 @@ test.describe('Nodes Page', () => {
 
   test('should keep 24h version rows inside the viewport on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const section = page.locator('[data-testid="nodes-24h-section"]');
-    await expect(section).toBeVisible();
+    await expect(section).toBeVisible({ timeout: 15000 });
 
     const rows = page.locator('[data-testid="version-row"]');
     const rowCount = await rows.count();
@@ -305,7 +303,7 @@ test.describe('Nodes Page', () => {
     expect(wsState.connected).toBe(false);
     
     // UI should still show structure
-    const hasZeroValues = await page.locator('text=Total Nodes Seen').isVisible();
+    const hasZeroValues = await page.locator('text=Known Addresses').isVisible();
     expect(hasZeroValues).toBeTruthy();
   });
 });

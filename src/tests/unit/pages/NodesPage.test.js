@@ -271,6 +271,34 @@ describe('NodesPage', () => {
         expect(screen.getByText('Japan')).toBeInTheDocument();
       });
     });
+
+    it('should cap the country leaderboard at the top 30', async () => {
+      renderWithProviders(<NodesPage />);
+      await waitForAsync();
+
+      // 40 distinct countries, descending node counts
+      const nodes = Array.from({ length: 40 }, (_, i) => ({
+        ip: `10.0.${i}.1`,
+        lat: 10 + i,
+        lon: 10 + i,
+        country: `Country ${String(i).padStart(2, '0')}`
+      }));
+      // Give earlier countries more nodes so ranking is deterministic
+      const weighted = nodes.flatMap((n, i) =>
+        Array.from({ length: 40 - i }, (_, k) => ({ ...n, ip: `10.0.${i}.${k + 1}` }))
+      );
+
+      webSocketInstances[0].receiveMessage({ type: 'geoData', data: weighted });
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId('country-row').length).toBe(30);
+      });
+      // Heading + "top 30 of 40" caption
+      expect(screen.getByText('Nodes by Country')).toBeInTheDocument();
+      expect(screen.getByText(/Top 30 of 40 countries/i)).toBeInTheDocument();
+      // The lowest-ranked countries are excluded
+      expect(screen.queryByText('Country 39')).not.toBeInTheDocument();
+    });
   });
 
   describe('Error Handling', () => {

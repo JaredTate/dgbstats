@@ -107,6 +107,65 @@ const formatRelativeTime = (timestamp) => {
 const formatPercent = (value) => `${value.toFixed(1)}%`;
 
 /**
+ * Continent color coding and country->continent mapping (module scope so both
+ * the continent summary and the top-countries list share one source of truth).
+ */
+const CONTINENT_COLORS = {
+  'North America': '#4caf50',
+  'Europe': '#2196f3',
+  'Asia': '#ff9800',
+  'Oceania': '#9c27b0',
+  'South America': '#f44336',
+  'Africa': '#795548',
+  'Other': '#607d8b'
+};
+
+/**
+ * ISO 3166-1 alpha-2 country codes grouped by continent. The backend geolocates
+ * peers with geoip-lite, which reports these two-letter codes (e.g. "US"), so
+ * the mapping is keyed by code, not by full country name.
+ */
+const CONTINENT_CODES = {
+  'North America': 'US CA MX GT BZ SV HN NI CR PA CU DO HT JM PR BS BB TT AG DM GD KN LC VC AI AW BM VG KY CW GL GP MQ MS BL MF PM SX TC VI'.split(' '),
+  'Europe': 'GB DE FR NL CH RU IT ES SE PL BE AT NO DK FI IE PT GR CZ RO HU UA BG RS HR SK LT LV EE SI LU MT IS CY AL AD BA BY FO GG GI IM JE LI MC MD ME MK SM VA XK'.split(' '),
+  'Asia': 'CN JP IN KR TW HK SG MY TH ID PH VN IL TR AE SA QA KW KZ PK BD LK NP MM KH LA MN GE AM AZ UZ IR IQ JO LB OM BH YE SY AF BT BN MO MV KG TJ TM TL KP PS'.split(' '),
+  'Oceania': 'AU NZ PG FJ NC PF WS TO VU SB GU KI MH FM NR NU NF MP PW PN TK TV WF CK AS'.split(' '),
+  'South America': 'BR AR CO CL PE VE EC UY PY BO GY SR FK GF'.split(' '),
+  'Africa': 'ZA EG NG MA KE GH TZ TN ET UG DZ AO CM CI SN ZW ZM MU RW MZ BW NA LY SD SO MG MW ML BF BJ NE TD GA CG CD MR GN GM SL LR TG CF GQ DJ ER SZ LS BI KM CV ST SC SH RE YT EH SS'.split(' ')
+};
+
+// Flat code -> continent lookup, built once at module load.
+const ISO_TO_CONTINENT = Object.entries(CONTINENT_CODES).reduce((acc, [continent, codes]) => {
+  codes.forEach((code) => { acc[code] = continent; });
+  return acc;
+}, {});
+
+const getContinentForCountry = (country) => ISO_TO_CONTINENT[country] || 'Other';
+
+const getContinentColor = (continent) => CONTINENT_COLORS[continent] || CONTINENT_COLORS['Other'];
+
+// ISO code -> full English country name (e.g. "US" -> "United States"). Uses the
+// built-in Intl.DisplayNames; falls back to the raw value for non-code inputs.
+let _regionNames = null;
+try {
+  _regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
+} catch (e) {
+  _regionNames = null;
+}
+const getCountryName = (country) => {
+  if (!country || typeof country !== 'string') return country;
+  if (!/^[A-Za-z]{2}$/.test(country)) return country; // already a full name
+  try {
+    const name = _regionNames && _regionNames.of(country.toUpperCase());
+    return name && name !== country.toUpperCase() ? name : country;
+  } catch (e) {
+    return country;
+  }
+};
+
+const TOP_COUNTRIES_LIMIT = 30;
+
+/**
  * StatTile - Small label/value tile for the 24h section
  * Always 2-up (xs=6): the section lives in a half-width column on desktop
  */
@@ -333,7 +392,8 @@ const NodesLast24HoursSection = memo(({ versionData, accentColor }) => {
             ) : (
               <Box
                 sx={{
-                  maxHeight: { xs: 320, md: 400 },
+                  flexGrow: 1,
+                  maxHeight: { xs: 300, md: 340 },
                   overflowY: 'auto',
                   pr: 0.5,
                   '&::-webkit-scrollbar': { width: '6px' },
@@ -483,6 +543,7 @@ const PeersDatTile = ({ label, value, caption, icon, color }) => (
       sx={{
         p: 2,
         width: '100%',
+        minHeight: { xs: 150, md: 168 },
         textAlign: 'center',
         borderRadius: '12px',
         display: 'flex',
@@ -568,7 +629,7 @@ const PeersDatPanel = memo(({ loading, knownCount, geoCount, countryCount, ipv4C
           </Typography>
         </Box>
       ) : (
-        <Grid container spacing={2} sx={{ flexGrow: 1, alignContent: 'stretch' }}>
+        <Grid container spacing={2} sx={{ flexGrow: 1, alignContent: 'center' }}>
           <PeersDatTile
             label="Known Addresses"
             value={knownCount.toLocaleString()}
@@ -1053,57 +1114,47 @@ const NodesPage = () => {
    * Group countries by continent for organized display
    * Uses predefined continent mappings for better user experience
    */
-  const groupedCountries = useMemo(() => {
-    const entries = Object.entries(nodesByCountry)
+  // Total node count across all known countries (excludes ungeolocated)
+  const totalCountryNodes = useMemo(
+    () => Object.entries(nodesByCountry)
       .filter(([country]) => country !== 'Unknown')
-      .sort(([, a], [, b]) => b - a);
+      .reduce((acc, [, count]) => acc + count, 0),
+    [nodesByCountry]
+  );
 
-    /**
-     * Determine continent for a given country
-     * Note: This is a simplified mapping and may not be 100% geographically accurate
-     * but provides good organization for the user interface
-     */
-    const getContinent = (country) => {
-      const continentMappings = {
-        'North America': ['United States', 'Canada', 'Mexico', 'Panama', 'Costa Rica', 'Cuba', 'Dominican Republic', 'Guatemala', 'Haiti', 'Honduras', 'Jamaica', 'Nicaragua', 'Puerto Rico', 'Trinidad and Tobago'],
-        'Europe': ['Germany', 'United Kingdom', 'France', 'Netherlands', 'Switzerland', 'Russia', 'Italy', 'Spain', 'Sweden', 'Poland', 'Belgium', 'Austria', 'Norway', 'Denmark', 'Finland', 'Ireland', 'Portugal', 'Greece', 'Czech Republic', 'Romania', 'Hungary', 'Ukraine', 'Bulgaria', 'Serbia', 'Croatia', 'Slovakia', 'Lithuania', 'Latvia', 'Estonia', 'Slovenia', 'Luxembourg', 'Malta', 'Iceland', 'Cyprus'],
-        'Asia': ['China', 'Japan', 'India', 'South Korea', 'Taiwan', 'Hong Kong', 'Singapore', 'Malaysia', 'Thailand', 'Indonesia', 'Philippines', 'Vietnam', 'Israel', 'Turkey', 'United Arab Emirates', 'Saudi Arabia', 'Qatar', 'Kuwait', 'Kazakhstan'],
-        'Oceania': ['Australia', 'New Zealand', 'Papua New Guinea', 'Fiji'],
-        'South America': ['Brazil', 'Argentina', 'Colombia', 'Chile', 'Peru', 'Venezuela', 'Ecuador', 'Uruguay', 'Paraguay', 'Bolivia'],
-        'Africa': ['South Africa', 'Egypt', 'Nigeria', 'Morocco', 'Kenya', 'Ghana', 'Tanzania', 'Tunisia', 'Ethiopia', 'Uganda', 'Algeria']
-      };
-      
-      for (const [continent, countries] of Object.entries(continentMappings)) {
-        if (countries.includes(country)) return continent;
-      }
-      return 'Other';
-    };
+  const totalCountries = useMemo(
+    () => Object.keys(nodesByCountry).filter((country) => country !== 'Unknown').length,
+    [nodesByCountry]
+  );
 
-    // Group countries by their respective continents
-    return entries.reduce((acc, [country, count]) => {
-      const continent = getContinent(country);
-      if (!acc[continent]) acc[continent] = [];
-      acc[continent].push({ country, count });
-      return acc;
-    }, {});
+  // Top N countries by node count, tagged with continent + share of total
+  const topCountries = useMemo(() => {
+    const ranked = Object.entries(nodesByCountry)
+      .filter(([country]) => country !== 'Unknown')
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, TOP_COUNTRIES_LIMIT);
+    const maxCount = ranked.length ? ranked[0][1] : 0;
+    return ranked.map(([country, count]) => ({
+      country,
+      count,
+      continent: getContinentForCountry(country),
+      percent: totalCountryNodes > 0 ? (count / totalCountryNodes) * 100 : 0,
+      barPct: maxCount > 0 ? (count / maxCount) * 100 : 0
+    }));
+  }, [nodesByCountry, totalCountryNodes]);
+
+  // Continent totals for the summary strip (sorted desc)
+  const continentSummary = useMemo(() => {
+    const sums = {};
+    for (const [country, count] of Object.entries(nodesByCountry)) {
+      if (country === 'Unknown') continue;
+      const continent = getContinentForCountry(country);
+      sums[continent] = (sums[continent] || 0) + count;
+    }
+    return Object.entries(sums)
+      .sort(([, a], [, b]) => b - a)
+      .map(([continent, count]) => ({ continent, count }));
   }, [nodesByCountry]);
-
-  /**
-   * Get color coding for different continents
-   * Provides visual distinction in the UI for better user experience
-   */
-  const getContinentColor = (continent) => {
-    const colorMap = {
-      'North America': '#4caf50', // Green
-      'Europe': '#2196f3',        // Blue
-      'Asia': '#ff9800',          // Orange
-      'Oceania': '#9c27b0',       // Purple
-      'South America': '#f44336', // Red
-      'Africa': '#795548',        // Brown
-      'Other': '#607d8b'          // Blue Grey
-    };
-    return colorMap[continent] || colorMap['Other'];
-  };
 
   /**
    * HeroSection - Page header with title and description
@@ -1947,104 +1998,97 @@ const NodesPage = () => {
     >
       <CardContent sx={{ p: { xs: 2, md: 3 } }}>
         {/* Section header */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 0.5 }}>
           <FlagIcon sx={{ fontSize: '1.8rem', color: '#0066cc', mr: 1 }} />
-          <Typography 
-            variant="h5" 
-            fontWeight="bold" 
-            sx={{ color: '#002352', letterSpacing: '0.5px' }}
+          <Typography
+            variant="h5"
+            fontWeight="bold"
+            sx={{ color: '#002352', letterSpacing: '0.5px', textAlign: 'center' }}
           >
-            Nodes by Geographic Region
+            Nodes by Country
           </Typography>
         </Box>
-        
+
+        <Typography
+          variant="caption"
+          component="p"
+          sx={{ textAlign: 'center', color: '#777', mb: 2 }}
+        >
+          {totalCountries > TOP_COUNTRIES_LIMIT
+            ? `Top ${TOP_COUNTRIES_LIMIT} of ${totalCountries} countries with geolocated nodes`
+            : `${totalCountries} countries with geolocated nodes`}
+        </Typography>
+
         <Divider sx={{ maxWidth: '120px', mx: 'auto', mb: 3, borderColor: '#0066cc', borderWidth: 1 }} />
-        
-        {/* Continent-based country groupings */}
-        <Grid container spacing={3}>
-          {Object.keys(groupedCountries).sort().map((continent, index) => (
-            <Grid item xs={12} sm={6} md={4} key={continent}>
-              <Paper 
-                elevation={2} 
-                sx={{ 
-                  p: 2, 
-                  height: '100%',
-                  borderTop: `4px solid ${getContinentColor(continent)}`,
-                  borderRadius: '8px',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    transform: 'translateY(-5px)',
-                    boxShadow: '0 8px 15px rgba(0,0,0,0.1)'
-                  },
-                  animation: 'fadeIn 0.5s ease-in-out',
-                  animationDelay: `${index * 0.1}s`,
-                  '@keyframes fadeIn': {
-                    '0%': { opacity: 0, transform: 'translateY(10px)' },
-                    '100%': { opacity: 1, transform: 'translateY(0)' }
-                  }
-                }}
+
+        {/* Continent summary strip */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center', mb: 3 }}>
+          {continentSummary.map(({ continent, count }) => (
+            <Chip
+              key={continent}
+              label={`${continent} · ${count.toLocaleString()}`}
+              sx={{
+                fontWeight: 600,
+                color: getContinentColor(continent),
+                bgcolor: `${getContinentColor(continent)}15`,
+                border: `1px solid ${getContinentColor(continent)}40`
+              }}
+            />
+          ))}
+        </Box>
+
+        {/* Top countries leaderboard — two balanced columns on desktop */}
+        <Grid container spacing={{ xs: 1, md: 3 }} columnSpacing={{ md: 4 }}>
+          {topCountries.map(({ country, count, continent, percent, barPct }, index) => (
+            <Grid item xs={12} md={6} key={country}>
+              <Box
+                data-testid="country-row"
+                sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.75 }}
               >
-                {/* Continent header with total count */}
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  mb: 2, 
-                  pb: 1, 
-                  borderBottom: `1px solid ${getContinentColor(continent)}40`
-                }}>
-                  <Avatar 
-                    sx={{ 
-                      backgroundColor: `${getContinentColor(continent)}30`, 
-                      color: getContinentColor(continent),
-                      width: 32,
-                      height: 32,
-                      fontSize: '0.9rem',
-                      mr: 1
-                    }}
-                  >
-                    {groupedCountries[continent].reduce((acc, { count }) => acc + count, 0)}
-                  </Avatar>
-                  <Typography variant="h6" fontWeight="bold" sx={{ 
-                    color: getContinentColor(continent),
-                    textShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                  }}>
-                    {continent}
-                  </Typography>
-                </Box>
-                
-                {/* Individual country listings */}
-                {groupedCountries[continent].map(({ country, count }) => (
-                  <Box 
-                    key={country} 
-                    sx={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'center', 
-                      mb: 1,
-                      py: 0.5,
-                      px: 1,
-                      borderRadius: '4px',
-                      '&:hover': {
-                        backgroundColor: `${getContinentColor(continent)}10`
+                <Typography
+                  variant="body2"
+                  sx={{ color: '#9aa5b1', fontWeight: 700, width: 26, textAlign: 'right', flexShrink: 0 }}
+                >
+                  {index + 1}
+                </Typography>
+                <Box
+                  sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: getContinentColor(continent), flexShrink: 0 }}
+                  title={continent}
+                />
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 1 }}>
+                    <Typography
+                      variant="body2"
+                      title={getCountryName(country)}
+                      sx={{ fontWeight: 600, color: '#002352', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    >
+                      {getCountryName(country)}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexShrink: 0 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: '#002352' }}>
+                        {count.toLocaleString()}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#888', minWidth: 42, textAlign: 'right' }}>
+                        {formatPercent(percent)}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={Math.max(2, Math.min(barPct, 100))}
+                    sx={{
+                      mt: 0.5,
+                      height: 5,
+                      borderRadius: '3px',
+                      backgroundColor: '#eef1f5',
+                      '& .MuiLinearProgress-bar': {
+                        backgroundColor: getContinentColor(continent),
+                        borderRadius: '3px'
                       }
                     }}
-                  >
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                      {country}
-                    </Typography>
-                    <Chip 
-                      label={count} 
-                      size="small" 
-                      sx={{ 
-                        fontWeight: 'bold',
-                        bgcolor: `${getContinentColor(continent)}20`,
-                        color: getContinentColor(continent),
-                        minWidth: '36px'
-                      }} 
-                    />
-                  </Box>
-                ))}
-              </Paper>
+                  />
+                </Box>
+              </Box>
             </Grid>
           ))}
         </Grid>
