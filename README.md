@@ -12,23 +12,32 @@ A comprehensive real-time blockchain statistics dashboard for the DigiByte netwo
 
 ### 📈 Analytics Pages
 
-**15 pages total** (13 mainnet, 12 testnet, 2 testnet-exclusive)
+**19 page components** — 18 mainnet routes, 16 testnet routes. 15 pages render on both networks, 3 are mainnet-only, and 1 is testnet-only.
 
+*On both networks:*
 1. **Home** - Main dashboard with key metrics and softfork status
 2. **Blocks** - Real-time block explorer with mining details
-3. **Mining Pools** - Pool distribution analysis with interactive charts (mainnet only)
-4. **Algorithms** - Multi-algorithm mining statistics (SHA256, Scrypt, Skein, Qubit, Odocrypt)
-5. **Hashrate** - Network hashrate trends and analysis
-6. **Difficulties** - Mining difficulty tracking per algorithm
-7. **Nodes** - Geographic visualization of network nodes worldwide
-8. **Supply** - Supply economics, emission rate, and distribution metrics
-9. **Transactions** - Transaction volume and fee analytics
-10. **Taproot** - Network upgrade activation monitoring
-11. **Downloads** - DigiByte Core wallet download statistics (mainnet only)
-12. **Roadmap** - Development priorities and upcoming features (mainnet only)
-13. **DigiDollar** - Decentralized stablecoin concept and collateral system
-14. **Oracles** - DigiDollar oracle network status and price feeds (testnet only)
-15. **DD Stats** - DigiDollar network-wide statistics dashboard (testnet only)
+3. **Chain Tips** - Chain tips & orphans: live fork-tree map, orphan tracking, 30-day chart
+4. **Transactions** - Mempool + confirmed transaction volume and fee analytics
+5. **Algorithms** - Multi-algorithm mining statistics (SHA256D, Scrypt, Skein, Qubit, Odocrypt)
+6. **Hashrate** - Network hashrate trends and analysis
+7. **Difficulties** - Mining difficulty tracking per algorithm
+8. **Pool Upgrades** - Per-pool BIP9 upgrade-signal tracker (DigiDollar bit 23, Algolock bit 0)
+9. **Nodes** - Geographic visualization of network nodes (crawled from DigiHash `peers.dat`)
+10. **Supply** - Supply economics, emission rate, and distribution metrics
+11. **Taproot** - BIP9 Taproot activation status (route only, no nav link)
+12. **DigiDollar** - Decentralized stablecoin concept and collateral system
+13. **DD Activation** - BIP9 activation tracker for DigiDollar and Algolock
+14. **Oracles** - DigiDollar oracle network status and DGB/USD price feeds
+15. **DD Stats** - DigiDollar network-wide health & statistics dashboard
+
+*Mainnet only:*
+16. **Mining Pools** - Pool distribution analysis with an interactive D3.js donut chart
+17. **Downloads** - DigiByte Core wallet download statistics (from GitHub releases)
+18. **Roadmap** - Development priorities and upcoming features (2025–2029)
+
+*Testnet only:*
+19. **Wallet Convert** - Client-side Oracle `wallet.dat` migration tool (`/testnet/convert`)
 
 ### 🌐 Network Support
 
@@ -48,7 +57,7 @@ A comprehensive real-time blockchain statistics dashboard for the DigiByte netwo
 - Comprehensive Open Graph meta tags for social previews
 - Twitter Card integration with large image previews
 - JSON-LD structured data for search engines
-- XML sitemap with all pages (mainnet and testnet)
+- XML sitemap covering all current mainnet and testnet pages
 - robots.txt optimized for search engines and AI crawlers
 
 ## Prerequisites
@@ -175,8 +184,8 @@ npm start
 ```
 dgbstats/
 ├── src/
-│   ├── pages/          # Page components (15 pages)
-│   ├── components/     # Reusable components (Header, Footer, Layouts)
+│   ├── pages/          # Page components (19 pages)
+│   ├── components/     # Reusable components (9: Header, Footer, Layouts, Fork*, IntegrationGuides)
 │   ├── context/        # React Context providers (NetworkContext)
 │   ├── hooks/          # Custom hooks (5 hooks in useNetworkData.js)
 │   ├── tests/          # Test suites (unit, integration, mocks)
@@ -208,11 +217,11 @@ npm run test:all       # Run all test suites
 
 ### Comprehensive Test Coverage
 
-The project maintains **95%+ code coverage** with:
+The project targets a **95% coverage threshold** with:
 
-- **214 Unit Tests** - Component and function testing
-- **1,112 E2E Tests** - Cross-browser integration testing
-- **7 Browser Engines** - Chrome, Firefox, Safari, Edge, Mobile Chrome, Mobile Safari
+- **~637 Unit/Integration Tests** across 29 files - Component and function testing (Vitest)
+- **~229 E2E Tests** across 21 specs - Cross-browser integration testing (Playwright)
+- **8 Browser Projects** - Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari, Mobile Safari Legacy, Microsoft Edge, Google Chrome
 
 ### Test Features
 
@@ -286,14 +295,15 @@ npm run test:all:clean   # Tests + cleanup
 
 ## Recent Updates
 
-- **Full Testnet Support**: Complete testnet implementation with dedicated WebSocket, routing, and peer tracking
-- **Deployment Info**: Updated to use `getdeploymentinfo` RPC for softfork status (replaces deprecated `softforks` field)
-- **SEO Enhancements**: Added Open Graph images, sitemap, and AI crawler support
-- **DigiDollar Page**: New page explaining the decentralized stablecoin concept
-- **TAP Route Activation**: Successfully activated and buried - UI elements removed
-- **Enhanced Testing**: Comprehensive test suite with 95%+ coverage
-- **Performance Improvements**: Optimized chart rendering and WebSocket handling
-- **Mobile Optimization**: Improved responsive design for all screen sizes
+- **Chain Tips & Orphans Page**: New `/tips` page with a live fork-tree map, orphan tracking, a 30-day orphan chart, and a site-wide fork-risk banner (`ForkAlertBanner`)
+- **Pool Upgrade Tracker**: New `/pool-upgrades` page tracking per-pool BIP9 signals (DigiDollar bit 23, Algolock bit 0) with SHA256D version-rolling detection
+- **DigiDollar Suite on Both Networks**: Oracles, DD Stats, and the new DD Activation tracker now run on both mainnet and testnet (DigiDollar shipped in DigiByte Core v9.26.x)
+- **Wallet Convert Tool**: Client-side `/testnet/convert` page for migrating Oracle `wallet.dat` files between networks (default target testnet26)
+- **Nodes Page Overhaul**: Peers crawled from the DigiHash pool wallet's `peers.dat`, "Nodes Seen (24h)", country leaderboard, and addrman tile
+- **Deployment Info**: Uses `getdeploymentinfo` RPC for softfork status (replaces the deprecated `softforks` field)
+- **Full Testnet Support**: Dedicated WebSocket, routing, theming, and peer tracking
+- **TAP Route / Taproot**: Successfully activated and buried - signaling UI removed
+- **Enhanced Testing**: 29 unit/integration files + 21 E2E specs across 8 browser projects
 
 ## Documentation
 
