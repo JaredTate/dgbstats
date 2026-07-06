@@ -64,8 +64,8 @@ test.describe('Navigation', () => {
     await expect(page.locator('h1')).toContainText('Realtime DigiByte Blocks');
     await expect(page.url()).toContain('/blocks');
 
-    // Navigate to Chain Tips page
-    await navigateToPage(page, 'Chain Tips');
+    // Navigate to Tips page
+    await navigateToPage(page, 'Tips');
     await expect(page.locator('h1')).toContainText('Chain Tips & Orphans');
     await expect(page.url()).toContain('/tips');
     

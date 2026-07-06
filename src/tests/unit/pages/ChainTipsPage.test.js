@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, waitFor, within, act } from '@testing-library/react';
-import ChainTipsPage, { buildOrphanBuckets } from '../../../pages/ChainTipsPage';
+import ChainTipsPage, { buildOrphanBuckets, buildDailySeries } from '../../../pages/ChainTipsPage';
 import { renderWithProviders, createWebSocketMock, waitForAsync } from '../../utils/testUtils';
 
 vi.mock('../../../config', () => ({
@@ -45,6 +45,11 @@ const chainTipsData = {
       firstSeen: Date.now() - 3 * 3600 * 1000,
     },
   ],
+  dailyOrphans: [
+    { day: '2026-06-20', count: 4, maxBranchlen: 1 },
+    { day: '2026-06-22', count: 7, maxBranchlen: 2 },
+  ],
+  avgPerDay: 3.4,
 };
 
 describe('ChainTipsPage', () => {
@@ -141,7 +146,8 @@ describe('ChainTipsPage', () => {
       type: 'forkAlert',
       data: { network: 'mainnet', level: 'critical', reason: 'deep reorg', height: TOP, branchlen: 5 },
     });
-    await waitFor(() => expect(screen.getByText(/FORK RISK/i)).toBeInTheDocument());
+    // Exact match scopes to the hero (the explainer has a "fork risk?" heading).
+    await waitFor(() => expect(screen.getByText('FORK RISK')).toBeInTheDocument());
   });
 
   it('renders the recent orphans feed', async () => {
@@ -297,6 +303,30 @@ describe('ChainTipsPage', () => {
     ]);
     expect(buckets.length).toBe(7);
     expect(buckets[6].count).toBe(1);
+  });
+
+  it('buildDailySeries fills gaps to N UTC days and computes a trailing average', () => {
+    const now = Date.UTC(2026, 6, 5, 12, 0, 0); // 2026-07-05
+    const series = buildDailySeries(
+      [
+        { day: '2026-07-05', count: 3 },
+        { day: '2026-07-03', count: 2 },
+      ],
+      5,
+      now
+    );
+    expect(series.days.map((d) => d.day)).toEqual([
+      '2026-07-01', '2026-07-02', '2026-07-03', '2026-07-04', '2026-07-05',
+    ]);
+    expect(series.counts).toEqual([0, 0, 2, 0, 3]); // gap on 07-04
+    expect(series.rollingAvg[4]).toBeCloseTo(1.0, 1); // (0+0+2+0+3)/5
+    expect(series.labels).toHaveLength(5);
+  });
+
+  it('buildDailySeries tolerates empty/undefined input', () => {
+    const series = buildDailySeries(undefined, 30, Date.UTC(2026, 6, 5));
+    expect(series.days).toHaveLength(30);
+    expect(series.counts.every((c) => c === 0)).toBe(true);
   });
 
   it('connects to the testnet WebSocket endpoint on testnet', async () => {

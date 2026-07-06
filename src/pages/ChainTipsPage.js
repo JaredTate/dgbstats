@@ -6,8 +6,12 @@ import {
 } from '@mui/material';
 import { Chart, registerables } from 'chart.js';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import CallSplitIcon from '@mui/icons-material/CallSplit';
+import HistoryIcon from '@mui/icons-material/History';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
 import { useNetwork } from '../context/NetworkContext';
 import ForkTreeMap from '../components/ForkTreeMap';
+import ChainTipsExplainer from '../components/ChainTipsExplainer';
 
 Chart.register(...registerables);
 
@@ -61,6 +65,31 @@ export const buildOrphanBuckets = (orphans) => {
     if (bucket) bucket.count += 1;
   }
   return days;
+};
+
+// Build a continuous N-day UTC series from the server's sparse dailyOrphans
+// ([{day:'YYYY-MM-DD', count}]), filling gaps with 0 and adding a 7-day
+// trailing rolling average — the long-term "orphans per day" history.
+export const buildDailySeries = (dailyOrphans, days = 30, now = Date.now()) => {
+  const counts = new Map((dailyOrphans || []).map((d) => [d.day, d.count]));
+  const base = new Date(now);
+  const out = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth(), base.getUTCDate() - i));
+    const day = d.toISOString().slice(0, 10);
+    out.push({ day, label: `${d.getUTCMonth() + 1}/${d.getUTCDate()}`, count: counts.get(day) || 0 });
+  }
+  const rollingAvg = out.map((_, idx) => {
+    const slice = out.slice(Math.max(0, idx - 6), idx + 1);
+    const avg = slice.reduce((s, x) => s + x.count, 0) / slice.length;
+    return Math.round(avg * 10) / 10;
+  });
+  return {
+    days: out,
+    labels: out.map((o) => o.label),
+    counts: out.map((o) => o.count),
+    rollingAvg,
+  };
 };
 
 const KpiTile = ({ label, value, color }) => (
@@ -145,9 +174,14 @@ const ChainTipsPage = () => {
   const risk = RISK_STATES[level];
   const riskReason = forkAlert?.reason || risk.defaultReason;
 
-  const orphanBuckets = useMemo(() => buildOrphanBuckets(orphans), [orphans]);
+  const avgPerDay = chainTips?.avgPerDay;
+  const dailySeries = useMemo(
+    () => buildDailySeries(chainTips?.dailyOrphans, 30),
+    [chainTips?.dailyOrphans]
+  );
 
-  // Orphans-per-day bar chart (Chart.js manual lifecycle, mirrors DifficultiesPage).
+  // Orphans-per-day chart: 30-day bars + a 7-day rolling-average line
+  // (Chart.js manual lifecycle, mirrors DifficultiesPage).
   useEffect(() => {
     if (loading) return undefined;
     const ctx = chartRef.current?.getContext('2d');
@@ -156,24 +190,38 @@ const ChainTipsPage = () => {
     chartInstance.current = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: orphanBuckets.map((b) => b.label),
+        labels: dailySeries.labels,
         datasets: [
           {
-            label: 'Orphans',
-            data: orphanBuckets.map((b) => b.count),
+            type: 'line',
+            label: '7-day average',
+            data: dailySeries.rollingAvg,
+            borderColor: '#c62828',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.35,
+            order: 0,
+          },
+          {
+            type: 'bar',
+            label: 'Orphans/day',
+            data: dailySeries.counts,
             backgroundColor: secondaryColor,
-            borderRadius: 4,
-            maxBarThickness: 48,
+            borderRadius: 3,
+            maxBarThickness: 22,
+            order: 1,
           },
         ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 12, usePointStyle: true } } },
         scales: {
           y: { beginAtZero: true, ticks: { precision: 0 } },
-          x: { grid: { display: false } },
+          x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } },
         },
       },
     });
@@ -184,7 +232,7 @@ const ChainTipsPage = () => {
         chartInstance.current = null;
       }
     };
-  }, [loading, orphanBuckets, secondaryColor]);
+  }, [loading, dailySeries, secondaryColor]);
 
   const statusChip = (status) => (
     <Chip
@@ -247,11 +295,34 @@ const ChainTipsPage = () => {
             </Grid>
 
             {/* (d) Centerpiece — live fork-tree map */}
-            <Card elevation={3} sx={{ borderRadius: '12px', mb: 4 }}>
+            <Card elevation={3} sx={{ borderRadius: '12px', mb: 4, borderTop: `4px solid ${primaryColor}` }}>
               <CardContent>
-                <Typography variant="h5" fontWeight="bold" sx={{ mb: 2, color: primaryColor }}>
-                  Live Fork-Tree Map
-                </Typography>
+                <style>{`
+                  @keyframes ct-live-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+                  @media (prefers-reduced-motion: reduce) { .ct-live-dot { animation: none !important; } }
+                `}</style>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <AccountTreeIcon sx={{ color: primaryColor }} />
+                    <Typography variant="h5" fontWeight="bold" sx={{ color: primaryColor }}>
+                      Live Fork-Tree Map
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                    <Box
+                      className="ct-live-dot"
+                      sx={{ width: 9, height: 9, borderRadius: '50%', bgcolor: '#e53935', animation: 'ct-live-pulse 1.4s ease-in-out infinite' }}
+                    />
+                    <Typography variant="caption" sx={{ fontWeight: 700, color: '#e53935', letterSpacing: '0.5px' }}>
+                      LIVE
+                    </Typography>
+                    {chainTips?.updatedAt && (
+                      <Typography variant="caption" sx={{ color: '#90a4ae' }}>
+                        · updated {relTime(chainTips.updatedAt)}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
                 <ForkTreeMap
                   blocks={blocks}
                   tips={tips}
@@ -261,12 +332,18 @@ const ChainTipsPage = () => {
               </CardContent>
             </Card>
 
-            {/* (e) Current chain tips table */}
-            <Card elevation={3} sx={{ borderRadius: '12px', mb: 4 }}>
+            {/* (e) Educational explainer — what tips/orphans are + how DGB makes them */}
+            <ChainTipsExplainer accentColor={primaryColor} />
+
+            {/* (f) Current chain tips table */}
+            <Card elevation={3} sx={{ borderRadius: '12px', mb: 4, borderTop: `4px solid ${primaryColor}` }}>
               <CardContent>
-                <Typography variant="h5" fontWeight="bold" sx={{ mb: 2, color: primaryColor }}>
-                  Current Chain Tips
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <CallSplitIcon sx={{ color: primaryColor }} />
+                  <Typography variant="h5" fontWeight="bold" sx={{ color: primaryColor }}>
+                    Current Chain Tips
+                  </Typography>
+                </Box>
                 <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e0e0e0' }}>
                   <Table size="small">
                     <TableHead sx={{ backgroundColor: `${primaryColor}12` }}>
@@ -308,12 +385,15 @@ const ChainTipsPage = () => {
               </CardContent>
             </Card>
 
-            {/* (f) Recent orphans feed */}
-            <Card elevation={3} sx={{ borderRadius: '12px', mb: 4 }}>
+            {/* (g) Recent orphans feed */}
+            <Card elevation={3} sx={{ borderRadius: '12px', mb: 4, borderTop: `4px solid ${primaryColor}` }}>
               <CardContent>
-                <Typography variant="h5" fontWeight="bold" sx={{ mb: 2, color: primaryColor }}>
-                  Recent Orphans (last 24h)
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <HistoryIcon sx={{ color: primaryColor }} />
+                  <Typography variant="h5" fontWeight="bold" sx={{ color: primaryColor }}>
+                    Recent Orphans (last 24h)
+                  </Typography>
+                </Box>
                 {orphans.length === 0 ? (
                   <Typography variant="body1" sx={{ color: '#777', textAlign: 'center', py: 3 }}>
                     No orphaned blocks in the last 24 hours.
@@ -358,13 +438,24 @@ const ChainTipsPage = () => {
               </CardContent>
             </Card>
 
-            {/* (g) Orphans-per-day chart */}
-            <Card elevation={3} sx={{ borderRadius: '12px', mb: 4 }}>
+            {/* (h) Orphans-per-day history chart (30 days + rolling average) */}
+            <Card elevation={3} sx={{ borderRadius: '12px', mb: 4, borderTop: `4px solid ${primaryColor}` }}>
               <CardContent>
-                <Typography variant="h5" fontWeight="bold" sx={{ mb: 2, color: primaryColor }}>
-                  Orphans per Day (7 days)
-                </Typography>
-                <Box sx={{ height: 240, position: 'relative' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <ShowChartIcon sx={{ color: primaryColor }} />
+                    <Typography variant="h5" fontWeight="bold" sx={{ color: primaryColor }}>
+                      Orphans per Day (30 days)
+                    </Typography>
+                  </Box>
+                  {Number.isFinite(avgPerDay) && (
+                    <Chip
+                      label={`Avg ${avgPerDay.toFixed(1)} / day`}
+                      sx={{ fontWeight: 700, color: primaryColor, bgcolor: `${primaryColor}15`, border: `1px solid ${primaryColor}40` }}
+                    />
+                  )}
+                </Box>
+                <Box sx={{ height: 260, position: 'relative' }}>
                   <canvas ref={chartRef} style={{ width: '100%', height: '100%' }} />
                 </Box>
               </CardContent>
