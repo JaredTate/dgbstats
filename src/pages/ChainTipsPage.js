@@ -24,11 +24,11 @@ const STATUS_COLORS = {
   invalid: '#f44336',
 };
 
-// Fork-risk hero states, keyed by the latest forkAlert level.
+// Fork-risk banner states, keyed by the latest forkAlert level.
 const RISK_STATES = {
-  none: { text: 'NETWORK HEALTHY', color: '#2e7d32', bg: '#e8f5e9', defaultReason: 'No competing branches near the tip.' },
-  elevated: { text: 'ELEVATED — competing branch', color: '#e65100', bg: '#fff3e0', defaultReason: 'A competing branch is being tracked near the chain tip.' },
-  critical: { text: 'FORK RISK', color: '#c62828', bg: '#ffebee', defaultReason: 'A deep competing branch has been detected.' },
+  none: { text: 'Network Healthy', color: '#2e7d32', bg: '#e8f5e9', defaultReason: 'Only routine single-block stale tips — DigiByte working as designed.' },
+  elevated: { text: 'Elevated — Competing Branch', color: '#e65100', bg: '#fff3e0', defaultReason: 'A competing branch is being tracked near the chain tip.' },
+  critical: { text: 'Fork Risk', color: '#c62828', bg: '#ffebee', defaultReason: 'A deep competing branch has been detected.' },
 };
 
 const shortHash = (hash) => {
@@ -92,16 +92,21 @@ export const buildDailySeries = (dailyOrphans, days = 30, now = Date.now()) => {
   };
 };
 
-const KpiTile = ({ label, value, color }) => (
+const KpiTile = ({ label, value, caption, color }) => (
   <Grid item xs={6} sm={3}>
     <Card elevation={2} sx={{ borderRadius: '12px', height: '100%' }}>
-      <CardContent sx={{ textAlign: 'center', py: 2 }}>
-        <Typography variant="body2" sx={{ color: '#777' }}>
+      <CardContent sx={{ textAlign: 'center', py: 1.5, '&:last-child': { pb: 1.5 } }}>
+        <Typography variant="caption" sx={{ color: '#8a94a6', fontWeight: 600, letterSpacing: '0.4px', textTransform: 'uppercase', fontSize: '0.68rem' }}>
           {label}
         </Typography>
-        <Typography variant="h6" fontWeight="bold" sx={{ color: color || 'inherit' }}>
+        <Typography variant="h5" fontWeight="800" sx={{ color: color || 'inherit', lineHeight: 1.25 }}>
           {value}
         </Typography>
+        {caption && (
+          <Typography variant="caption" sx={{ color: '#a5aebc', display: 'block', fontSize: '0.68rem' }}>
+            {caption}
+          </Typography>
+        )}
       </CardContent>
     </Card>
   </Grid>
@@ -175,6 +180,7 @@ const ChainTipsPage = () => {
   const riskReason = forkAlert?.reason || risk.defaultReason;
 
   const avgPerDay = chainTips?.avgPerDay;
+  const trackedDays = chainTips?.trackedDays;
   const dailySeries = useMemo(
     () => buildDailySeries(chainTips?.dailyOrphans, 30),
     [chainTips?.dailyOrphans]
@@ -249,21 +255,27 @@ const ChainTipsPage = () => {
   return (
     <Box sx={{ py: 4, backgroundImage: 'linear-gradient(to bottom, #f8f9fa, #ffffff)', minHeight: '100vh' }}>
       <Container maxWidth="lg">
-        {/* (a) Hero */}
-        <Card elevation={2} sx={{ backgroundColor: '#f2f4f8', borderRadius: '12px', mb: 4 }}>
-          <CardContent sx={{ py: 4, textAlign: 'center' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
-              <AccountTreeIcon sx={{ fontSize: '2.5rem', color: primaryColor, mr: 2 }} />
-              <Typography variant="h3" component="h1" fontWeight="800" color={primaryColor}>
+        {/* (a) Hero — compact */}
+        <Card elevation={2} sx={{ backgroundColor: '#f2f4f8', borderRadius: '12px', mb: 3 }}>
+          <CardContent sx={{ py: { xs: 2.5, md: 3 }, textAlign: 'center', '&:last-child': { pb: { xs: 2.5, md: 3 } } }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 1 }}>
+              <AccountTreeIcon sx={{ fontSize: { xs: '1.8rem', md: '2.2rem' }, color: primaryColor, mr: 1.5 }} />
+              <Typography
+                variant="h4"
+                component="h1"
+                fontWeight="800"
+                color={primaryColor}
+                sx={{ fontSize: { xs: '1.6rem', md: '2.1rem' } }}
+              >
                 Chain Tips & Orphans
               </Typography>
             </Box>
-            <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 3, borderColor: secondaryColor, borderWidth: 2 }} />
-            <Typography variant="subtitle1" sx={{ maxWidth: 820, mx: 'auto' }}>
-              DigiByte's <strong>15s blocks across 5 algos</strong> naturally produce frequent
-              single-block stale tips as two miners find a block at nearly the same instant. This page
-              maps those competing tips and orphaned blocks <strong>live</strong>, and flags the rare
-              case of a real, deeper fork that could put your confirmations at risk.
+            <Typography variant="subtitle1" sx={{ maxWidth: 720, mx: 'auto', color: '#33475b' }}>
+              A live window into DigiByte's chain tips, stale blocks, and fork risk.
+            </Typography>
+            <Typography variant="body2" sx={{ maxWidth: 720, mx: 'auto', mt: 0.5, color: '#78859a' }}>
+              15s blocks across 5 algos make the occasional single-block stale normal — deep or growing
+              branches are what matter.
             </Typography>
           </CardContent>
         </Card>
@@ -274,28 +286,53 @@ const ChainTipsPage = () => {
           </Box>
         ) : (
           <>
-            {/* (b) Fork-risk status strip */}
-            <Card elevation={3} sx={{ borderRadius: '12px', mb: 4, backgroundColor: risk.bg }}>
-              <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                <Typography variant="h4" fontWeight="900" sx={{ color: risk.color, letterSpacing: '0.5px' }}>
-                  {risk.text}
-                </Typography>
-                <Typography variant="body1" sx={{ mt: 1, color: '#555' }}>
-                  {riskReason}
-                </Typography>
-              </CardContent>
-            </Card>
+            {/* (b) Fork-risk status strip — slim */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexWrap: 'wrap',
+                gap: { xs: 0.5, sm: 1.5 },
+                borderRadius: '12px',
+                mb: 3,
+                px: 2,
+                py: 1.5,
+                backgroundColor: risk.bg,
+                border: `1px solid ${risk.color}30`,
+              }}
+            >
+              <Box
+                sx={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: '50%',
+                  bgcolor: risk.color,
+                  flexShrink: 0,
+                  boxShadow: `0 0 8px ${risk.color}90`,
+                }}
+              />
+              <Typography variant="h6" fontWeight="800" sx={{ color: risk.color, letterSpacing: '0.3px', lineHeight: 1.3 }}>
+                {risk.text}
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#5a6b7f', textAlign: 'center' }}>
+                {riskReason}
+              </Typography>
+            </Box>
 
             {/* (c) KPI tiles */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-              <KpiTile label="Active Height" value={activeHeight ? activeHeight.toLocaleString() : '—'} color={primaryColor} />
-              <KpiTile label="Competing Tips" value={competingTips} color="#e65100" />
-              <KpiTile label="Orphans (24h)" value={orphans24h} color="#e65100" />
-              <KpiTile label="Deepest Branch" value={deepestBranch} color={deepestBranch >= 3 ? '#c62828' : primaryColor} />
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <KpiTile label="Active Height" value={activeHeight ? activeHeight.toLocaleString() : '—'} caption="main chain tip" color={primaryColor} />
+              <KpiTile label="Competing Tips" value={competingTips} caption="near the tip" color={competingTips > 0 ? '#e65100' : primaryColor} />
+              <KpiTile label="Orphans (24h)" value={orphans24h} caption="stale blocks seen" color={orphans24h > 0 ? '#e65100' : primaryColor} />
+              <KpiTile label="Deepest Branch" value={deepestBranch} caption="blocks off-chain" color={deepestBranch >= 3 ? '#c62828' : primaryColor} />
             </Grid>
 
-            {/* (d) Centerpiece — live fork-tree map */}
-            <Card elevation={3} sx={{ borderRadius: '12px', mb: 4, borderTop: `4px solid ${primaryColor}` }}>
+            {/* (d) Main band: live fork-tree map beside the tips/orphans feeds
+                (side-by-side on desktop to cut scrolling; stacks on mobile) */}
+            <Grid container spacing={3} alignItems="stretch" sx={{ mb: 3 }}>
+              <Grid item xs={12} md={5} sx={{ display: 'flex' }}>
+            <Card elevation={3} sx={{ borderRadius: '12px', width: '100%', borderTop: `4px solid ${primaryColor}` }}>
               <CardContent>
                 <style>{`
                   @keyframes ct-live-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
@@ -331,12 +368,11 @@ const ChainTipsPage = () => {
                 />
               </CardContent>
             </Card>
+              </Grid>
 
-            {/* (e) Educational explainer — what tips/orphans are + how DGB makes them */}
-            <ChainTipsExplainer accentColor={primaryColor} />
-
-            {/* (f) Current chain tips table */}
-            <Card elevation={3} sx={{ borderRadius: '12px', mb: 4, borderTop: `4px solid ${primaryColor}` }}>
+              <Grid item xs={12} md={7} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {/* (e) Current chain tips table */}
+            <Card elevation={3} sx={{ borderRadius: '12px', borderTop: `4px solid ${primaryColor}` }}>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                   <CallSplitIcon sx={{ color: primaryColor }} />
@@ -385,8 +421,8 @@ const ChainTipsPage = () => {
               </CardContent>
             </Card>
 
-            {/* (g) Recent orphans feed */}
-            <Card elevation={3} sx={{ borderRadius: '12px', mb: 4, borderTop: `4px solid ${primaryColor}` }}>
+            {/* (f) Recent orphans feed (internal scroll keeps the column compact) */}
+            <Card elevation={3} sx={{ borderRadius: '12px', flexGrow: 1, borderTop: `4px solid ${primaryColor}` }}>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                   <HistoryIcon sx={{ color: primaryColor }} />
@@ -399,16 +435,20 @@ const ChainTipsPage = () => {
                     No orphaned blocks in the last 24 hours.
                   </Typography>
                 ) : (
-                  <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e0e0e0' }}>
-                    <Table size="small">
-                      <TableHead sx={{ backgroundColor: `${primaryColor}12` }}>
+                  <TableContainer
+                    component={Paper}
+                    elevation={0}
+                    sx={{ border: '1px solid #e0e0e0', maxHeight: { xs: 320, md: 380 } }}
+                  >
+                    <Table size="small" stickyHeader>
+                      <TableHead>
                         <TableRow>
-                          <TableCell align="right"><strong>Height</strong></TableCell>
-                          <TableCell><strong>Hash</strong></TableCell>
-                          <TableCell><strong>Algo</strong></TableCell>
-                          <TableCell><strong>Pool</strong></TableCell>
-                          <TableCell align="right"><strong>Branch</strong></TableCell>
-                          <TableCell align="right"><strong>Seen</strong></TableCell>
+                          <TableCell align="right" sx={{ backgroundColor: '#eef2f8' }}><strong>Height</strong></TableCell>
+                          <TableCell sx={{ backgroundColor: '#eef2f8' }}><strong>Hash</strong></TableCell>
+                          <TableCell sx={{ backgroundColor: '#eef2f8', display: { xs: 'none', sm: 'table-cell' } }}><strong>Algo</strong></TableCell>
+                          <TableCell sx={{ backgroundColor: '#eef2f8', display: { xs: 'none', sm: 'table-cell' } }}><strong>Pool</strong></TableCell>
+                          <TableCell align="right" sx={{ backgroundColor: '#eef2f8' }}><strong>Branch</strong></TableCell>
+                          <TableCell align="right" sx={{ backgroundColor: '#eef2f8' }}><strong>Seen</strong></TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -425,8 +465,8 @@ const ChainTipsPage = () => {
                                 {shortHash(o.hash)}
                               </Link>
                             </TableCell>
-                            <TableCell>{o.algo || '—'}</TableCell>
-                            <TableCell>{o.pool || '—'}</TableCell>
+                            <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{o.algo || '—'}</TableCell>
+                            <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{o.pool || '—'}</TableCell>
                             <TableCell align="right">{o.branchlen ?? 1}</TableCell>
                             <TableCell align="right">{relTime(o.firstSeen)}</TableCell>
                           </TableRow>
@@ -437,9 +477,11 @@ const ChainTipsPage = () => {
                 )}
               </CardContent>
             </Card>
+              </Grid>
+            </Grid>
 
-            {/* (h) Orphans-per-day history chart (30 days + rolling average) */}
-            <Card elevation={3} sx={{ borderRadius: '12px', mb: 4, borderTop: `4px solid ${primaryColor}` }}>
+            {/* (g) Orphans-per-day history chart (30 days + rolling average) */}
+            <Card elevation={3} sx={{ borderRadius: '12px', mb: 3, borderTop: `4px solid ${primaryColor}` }}>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, mb: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -450,16 +492,19 @@ const ChainTipsPage = () => {
                   </Box>
                   {Number.isFinite(avgPerDay) && (
                     <Chip
-                      label={`Avg ${avgPerDay.toFixed(1)} / day`}
+                      label={`Avg ${avgPerDay.toFixed(1)} / day${Number.isFinite(trackedDays) && trackedDays > 0 ? ` · ${trackedDays} day${trackedDays > 1 ? 's' : ''} tracked` : ''}`}
                       sx={{ fontWeight: 700, color: primaryColor, bgcolor: `${primaryColor}15`, border: `1px solid ${primaryColor}40` }}
                     />
                   )}
                 </Box>
-                <Box sx={{ height: 260, position: 'relative' }}>
+                <Box sx={{ height: 240, position: 'relative' }}>
                   <canvas ref={chartRef} style={{ width: '100%', height: '100%' }} />
                 </Box>
               </CardContent>
             </Card>
+
+            {/* (h) Educational explainer — what tips/orphans are + how DGB makes them */}
+            <ChainTipsExplainer accentColor={primaryColor} />
           </>
         )}
       </Container>

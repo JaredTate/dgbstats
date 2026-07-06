@@ -83,6 +83,18 @@ describe('ForkTreeMap', () => {
     expect(screen.getAllByTestId('branch-node').length).toBeGreaterThanOrEqual(1);
   });
 
+  it('labels the branch tip with its short hash on desktop widths', () => {
+    const tips = [
+      { hash: '12'.repeat(32), height: TOP - 2, branchlen: 2, status: 'valid-fork', forkHeight: TOP - 4 },
+    ];
+    renderWithProviders(
+      <ForkTreeMap blocks={blocks} tips={tips} activeHash={'aa'.repeat(32)} accentColor="#002352" />
+    );
+    const label = screen.getByTestId('branch-tip-label');
+    expect(label.textContent).toContain('1212');
+    expect(label.textContent).toContain('…');
+  });
+
   it('does not render a branch whose forkHeight is out of the window', () => {
     const tips = [
       {

@@ -67,7 +67,7 @@ function ForkTreeMap({ blocks = [], tips = [], activeHash = null, accentColor = 
   const [hovered, setHovered] = useState(null);
 
   const isMobile = width < 600;
-  const minN = isMobile ? 16 : 20;       // compact window when the chain is quiet
+  const minN = isMobile ? 14 : 18;       // compact window when the chain is quiet
   const maxReach = isMobile ? 44 : 72;   // how far back a fork may pull the window
   const VBW = isMobile ? 300 : 400;
   const cx = VBW / 2;
@@ -109,7 +109,7 @@ function ForkTreeMap({ blocks = [], tips = [], activeHash = null, accentColor = 
     const rows = Math.max(1, topHeight - minHeight);
     // Compress the row spacing for tall windows so the map stays a sane height,
     // and shrink the node radius in lock-step so nodes never overlap.
-    const targetHeight = isMobile ? 560 : 680;
+    const targetHeight = isMobile ? 480 : 560;
     const rowGap = clamp(Math.floor(targetHeight / rows), 8, 26);
     const nodeR = clamp(Math.round(rowGap * 0.42), 3, isMobile ? 6 : 7);
     const branchGap = isMobile ? 34 : 52;
@@ -151,12 +151,18 @@ function ForkTreeMap({ blocks = [], tips = [], activeHash = null, accentColor = 
     // spine + any branches) so a fork-free chain is a clean centred column and
     // the map only widens when branches actually appear.
     const labelW = 48;
+    const tipLabelW = isMobile ? 0 : 78; // branch tip short-hash labels (desktop only)
     let minX = cx - nodeR;
     let maxX = cx + nodeR + 3;
     if (spineNodes.some((n) => n.showLabel)) minX = Math.min(minX, cx - nodeR - 8 - labelW);
     for (const br of branches) {
-      minX = Math.min(minX, br.bx - nodeR);
-      maxX = Math.max(maxX, br.bx + nodeR);
+      if (br.bx >= cx) {
+        minX = Math.min(minX, br.bx - nodeR);
+        maxX = Math.max(maxX, br.bx + nodeR + tipLabelW);
+      } else {
+        minX = Math.min(minX, br.bx - nodeR - tipLabelW);
+        maxX = Math.max(maxX, br.bx + nodeR);
+      }
     }
     const pad = 12;
     const vbX = minX - pad;
@@ -202,6 +208,7 @@ function ForkTreeMap({ blocks = [], tips = [], activeHash = null, accentColor = 
         .ftm-active-halo { animation: ftm-pulse 1.8s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
         .ftm-node { animation: ftm-fade 0.5s ease-out both; }
         .ftm-branch { animation: ftm-fade 0.6s ease-out both; }
+        .ftm-shadow { filter: drop-shadow(0 1px 1.5px rgba(0,35,82,0.35)); }
         @media (prefers-reduced-motion: reduce) {
           .ftm-active-halo, .ftm-node, .ftm-branch { animation: none; }
         }
@@ -246,14 +253,14 @@ function ForkTreeMap({ blocks = [], tips = [], activeHash = null, accentColor = 
               {/* Fork branches (drawn under the spine nodes) */}
               {branches.map((branch, i) => (
                 <g key={`branch-${i}`} className="ftm-branch" data-testid="fork-branch" data-status={branch.status}>
-                  <line
-                    x1={branch.forkPoint.x}
-                    y1={branch.forkPoint.y}
-                    x2={branch.firstNode.x}
-                    y2={branch.firstNode.y}
+                  {/* curved connector from the spine fork point to the first branch node */}
+                  <path
+                    d={`M ${branch.forkPoint.x} ${branch.forkPoint.y} Q ${branch.bx} ${branch.forkPoint.y} ${branch.firstNode.x} ${branch.firstNode.y}`}
+                    fill="none"
                     stroke={branch.color}
                     strokeWidth={branch.strokeWidth}
                     strokeLinecap="round"
+                    opacity={0.9}
                   />
                   {branch.nodes.length > 1 && (
                     <line
@@ -264,27 +271,44 @@ function ForkTreeMap({ blocks = [], tips = [], activeHash = null, accentColor = 
                       stroke={branch.color}
                       strokeWidth={branch.strokeWidth}
                       strokeLinecap="round"
+                      opacity={0.9}
                     />
                   )}
                   {/* fork-point marker on the spine */}
-                  <circle cx={branch.forkPoint.x} cy={branch.forkPoint.y} r={3} fill={branch.color} />
+                  <circle cx={branch.forkPoint.x} cy={branch.forkPoint.y} r={3.2} fill="#ffffff" stroke={branch.color} strokeWidth={2} />
                   {branch.nodes.map((node, j) => (
                     <circle
                       key={`bn-${i}-${j}`}
                       data-testid="branch-node"
                       data-height={node.height}
+                      className="ftm-shadow"
                       cx={node.x}
                       cy={node.y}
                       r={node.isTip ? nodeR : nodeR - 2}
                       fill={branch.color}
                       stroke="#ffffff"
-                      strokeWidth={1}
+                      strokeWidth={1.5}
                       style={{ cursor: 'pointer' }}
                       onMouseOver={() => showBranchTooltip(branch, node)}
                       onMouseOut={clearTooltip}
                       onClick={() => showBranchTooltip(branch, node)}
                     />
                   ))}
+                  {/* short-hash label at the branch tip */}
+                  {!isMobile && branch.nodes.length > 0 && (
+                    <text
+                      data-testid="branch-tip-label"
+                      x={branch.bx + (branch.bx >= cx ? nodeR + 6 : -(nodeR + 6))}
+                      y={branch.nodes[branch.nodes.length - 1].y + 3}
+                      fontSize="8.5"
+                      fill={branch.color}
+                      fontFamily="monospace"
+                      fontWeight="bold"
+                      textAnchor={branch.bx >= cx ? 'start' : 'end'}
+                    >
+                      {shortHash(branch.tip.hash)}
+                    </text>
+                  )}
                 </g>
               ))}
 
@@ -305,6 +329,7 @@ function ForkTreeMap({ blocks = [], tips = [], activeHash = null, accentColor = 
                     <circle className="ftm-active-halo" cx={node.x} cy={node.y} r={nodeR + 4} fill={STATUS_COLORS.active} />
                   )}
                   <circle
+                    className="ftm-shadow"
                     cx={node.x}
                     cy={node.y}
                     r={nodeR + 1}
@@ -371,15 +396,27 @@ function ForkTreeMap({ blocks = [], tips = [], activeHash = null, accentColor = 
         </Typography>
       )}
 
-      {/* Legend */}
+      {/* Legend — translucent pill chips */}
       <Box
         data-testid="fork-legend"
-        sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, justifyContent: 'center', mt: 1, px: 1 }}
+        sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, justifyContent: 'center', mt: 1.5, px: 1 }}
       >
         {LEGEND_ITEMS.map((item) => (
-          <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: item.color }} />
-            <Typography variant="caption" sx={{ color: '#607d8b' }}>
+          <Box
+            key={item.label}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.6,
+              px: 1.1,
+              py: 0.35,
+              borderRadius: '999px',
+              bgcolor: `${item.color}14`,
+              border: `1px solid ${item.color}45`,
+            }}
+          >
+            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: item.color, flexShrink: 0 }} />
+            <Typography variant="caption" sx={{ color: '#4a5a6d', fontWeight: 600, fontSize: '0.68rem' }}>
               {item.label}
             </Typography>
           </Box>

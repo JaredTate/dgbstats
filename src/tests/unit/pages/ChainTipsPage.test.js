@@ -50,6 +50,7 @@ const chainTipsData = {
     { day: '2026-06-22', count: 7, maxBranchlen: 2 },
   ],
   avgPerDay: 3.4,
+  trackedDays: 22,
 };
 
 describe('ChainTipsPage', () => {
@@ -133,7 +134,7 @@ describe('ChainTipsPage', () => {
     const ws = webSocketInstances[0];
     ws.receiveMessage({ type: 'chainTips', data: chainTipsData });
 
-    await waitFor(() => expect(screen.getByText('NETWORK HEALTHY')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Network Healthy')).toBeInTheDocument());
 
     ws.receiveMessage({
       type: 'forkAlert',
@@ -147,7 +148,7 @@ describe('ChainTipsPage', () => {
       data: { network: 'mainnet', level: 'critical', reason: 'deep reorg', height: TOP, branchlen: 5 },
     });
     // Exact match scopes to the hero (the explainer has a "fork risk?" heading).
-    await waitFor(() => expect(screen.getByText('FORK RISK')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Fork Risk')).toBeInTheDocument());
   });
 
   it('renders the recent orphans feed', async () => {
