@@ -250,7 +250,7 @@ test.describe('Nodes Page', () => {
     // state is shown — both are valid depending on server state
     const rowCount = await page.locator('[data-testid="version-row"]').count();
     if (rowCount > 0) {
-      await expect(page.locator('text=Reachable Nodes (24h)')).toBeVisible();
+      await expect(page.locator('text=Nodes Seen (24h)')).toBeVisible();
     } else {
       await expect(section.locator('text=Collecting node data')).toBeVisible();
     }

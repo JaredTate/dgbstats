@@ -315,9 +315,9 @@ const NodesLast24HoursSection = memo(({ versionData, accentColor }) => {
             {/* Stat tiles */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
               <StatTile
-                label="Reachable Nodes (24h)"
+                label="Nodes Seen (24h)"
                 value={stats.total.toLocaleString()}
-                caption="handshake-verified"
+                caption="crawled + peers of our node"
               />
               <StatTile
                 label="On Latest"

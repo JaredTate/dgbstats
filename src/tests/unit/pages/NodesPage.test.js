@@ -523,11 +523,11 @@ describe('NodesPage', () => {
 
       const section = screen.getByTestId('nodes-24h-section');
       await waitFor(() => {
-        // Reachable Nodes (24h) tile
+        // Nodes Seen (24h) tile
         expect(within(section).getByText('614')).toBeInTheDocument();
       });
 
-      expect(within(section).getByText('Reachable Nodes (24h)')).toBeInTheDocument();
+      expect(within(section).getByText('Nodes Seen (24h)')).toBeInTheDocument();
 
       // On Latest tile — count of nodes on the latest version
       // ('119' also appears in the version-row chip, so scope to the tile)
@@ -767,7 +767,7 @@ describe('NodesPage', () => {
       expect(within(panel).getByText('5 / 0')).toBeInTheDocument();
     });
 
-    it('should render the crawler panel first tile as Reachable Nodes (24h)', async () => {
+    it('should render the crawler panel first tile as Nodes Seen (24h)', async () => {
       renderWithProviders(<NodesPage />);
 
       await waitForAsync();
@@ -775,9 +775,9 @@ describe('NodesPage', () => {
 
       const section = screen.getByTestId('nodes-24h-section');
       await waitFor(() => {
-        expect(within(section).getByText('Reachable Nodes (24h)')).toBeInTheDocument();
+        expect(within(section).getByText('Nodes Seen (24h)')).toBeInTheDocument();
       });
-      const tile = within(section).getByText('Reachable Nodes (24h)').closest('.MuiPaper-root');
+      const tile = within(section).getByText('Nodes Seen (24h)').closest('.MuiPaper-root');
       expect(within(tile).getByText('614')).toBeInTheDocument();
     });
   });
