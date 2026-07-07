@@ -268,8 +268,10 @@ const PoolUpgradeTrackerPage = () => {
   const nextAlgolockWindow = !algolockLive ? nextWindowStart : null;
   const algolockWindowBlocks = nextAlgolockWindow ? nextWindowBlocks : null;
 
-  // --- Groestl enforcement backstop (unconditional rejection height) ---
+  // --- Groestl retirement (unconditional rejection height) ---
   const backstopBlocks = activationHeight && currentHeight ? Math.max(0, activationHeight - currentHeight) : null;
+  // Pending only while we have a live height that is still below the enforcement height.
+  const backstopPending = !!(activationHeight && currentHeight > 0 && currentHeight < activationHeight);
 
   // --- Official BIP9 window context ---
   const ddStats = ddDeployment?.bip9?.statistics;
@@ -318,10 +320,16 @@ const PoolUpgradeTrackerPage = () => {
             <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 3, borderColor: secondaryColor, borderWidth: 2 }} />
             <Typography variant="subtitle1" sx={{ maxWidth: 820, mx: 'auto' }}>
               Live pool readiness across the last <strong>{totalBlocks || 240}</strong> blocks, tracking two
-              BIP9 signals: <strong>DigiDollar</strong> (bit&nbsp;23 — a node running <strong>v9.26.x</strong>;
-              signalling live now, DigiDollar itself not yet active) and <strong>Algolock</strong> (bit&nbsp;0 — <strong>v9.26.2+</strong>, which rejects the
-              retired Groestl algorithm). Bit&nbsp;23 lies inside the SHA256D ASIC version-rolling window, so
-              rolled blocks are called out separately. Click any pool for its per-algorithm breakdown.
+              BIP9 upgrade signals: <strong>DigiDollar</strong> (bit&nbsp;23) and <strong>Algolock</strong> (bit&nbsp;0).
+            </Typography>
+            <Typography variant="body2" sx={{ maxWidth: 820, mx: 'auto', mt: 1.5, color: '#555' }}>
+              The algolock height has been reached, retiring the Groestl algorithm.
+              <strong> Algolock</strong> (bit&nbsp;0) is the reliable indicator of true v9.26 adoption because it sits
+              outside the ASIC version-rolling window, so every pool — including SHA256D — signals it
+              deterministically.
+              <strong> DigiDollar</strong> (bit&nbsp;23) sits inside that window, so older v8.26 ASICBoost miners can
+              set it by chance while version-rolling and overstate real adoption. Click any pool for its
+              per-algorithm breakdown.
             </Typography>
           </CardContent>
         </Card>
@@ -362,13 +370,18 @@ const PoolUpgradeTrackerPage = () => {
                       ) : null}
                     </Alert>
                   )}
+                  <Alert severity="warning" sx={{ mt: 2 }}>
+                    Bit 23 can overstate adoption — it rides inside the ASIC version-rolling window, so a
+                    version-rolling v8.26 miner can carry it without running v9.26. Use algolock (bit 0),
+                    which sits outside that window, for the definitive count.
+                  </Alert>
                 </Card>
               </Grid>
 
               <Grid item xs={12} md={6}>
                 <Card elevation={3} sx={{ p: 3, borderRadius: '12px', height: '100%' }}>
                   <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5, color: primaryColor }}>
-                    Algolock — v9.26.2+ (rejects Groestl)
+                    Algolock — the reliable v9.26 signal (bit&nbsp;0)
                   </Typography>
                   {algolockLive ? (
                     <>
@@ -401,15 +414,21 @@ const PoolUpgradeTrackerPage = () => {
               </Grid>
             </Grid>
 
-            {/* Groestl enforcement backstop */}
+            {/* Groestl retirement (algolock enforcement height) */}
             <Card elevation={3} sx={{ p: 3, borderRadius: '12px', mb: 4 }}>
-              <Typography variant="h5" fontWeight="bold" sx={{ mb: 2, color: primaryColor }}>
-                Groestl Enforcement Backstop
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+                <Typography variant="h5" fontWeight="bold" sx={{ color: primaryColor }}>
+                  Groestl Retirement
+                </Typography>
+                {activationHeight && !backstopPending && (
+                  <Chip icon={<CheckCircleIcon />} label="Height reached — enforced"
+                    sx={{ backgroundColor: '#2e7d32', color: 'white', fontWeight: 'bold' }} size="small" />
+                )}
+              </Box>
               {activationHeight ? (
                 <Grid container spacing={3}>
                   <Grid item xs={6} sm={3}>
-                    <Typography variant="body2" color="#777">Backstop height</Typography>
+                    <Typography variant="body2" color="#777">Enforcement height</Typography>
                     <Typography variant="h6" fontWeight="bold">{activationHeight.toLocaleString()}</Typography>
                   </Grid>
                   <Grid item xs={6} sm={3}>
@@ -417,21 +436,27 @@ const PoolUpgradeTrackerPage = () => {
                     <Typography variant="h6" fontWeight="bold">{currentHeight ? currentHeight.toLocaleString() : '—'}</Typography>
                   </Grid>
                   <Grid item xs={6} sm={3}>
-                    <Typography variant="body2" color="#777">Blocks remaining</Typography>
-                    <Typography variant="h6" fontWeight="bold">{backstopBlocks != null ? backstopBlocks.toLocaleString() : '—'}</Typography>
+                    <Typography variant="body2" color="#777">Status</Typography>
+                    <Typography variant="h6" fontWeight="bold" color={backstopPending ? '#e65100' : '#2e7d32'}>
+                      {backstopPending ? `${backstopBlocks.toLocaleString()} blocks to go` : 'Reached'}
+                    </Typography>
                   </Grid>
                   <Grid item xs={6} sm={3}>
-                    <Typography variant="body2" color="#777">Est. time (15s blocks)</Typography>
-                    <Typography variant="h6" fontWeight="bold">{fmtEta(backstopBlocks)}</Typography>
+                    <Typography variant="body2" color="#777">{backstopPending ? 'Est. time (15s blocks)' : 'Groestl blocks'}</Typography>
+                    <Typography variant="h6" fontWeight="bold" color={backstopPending ? undefined : '#2e7d32'}>
+                      {backstopPending ? fmtEta(backstopBlocks) : 'Rejected'}
+                    </Typography>
                   </Grid>
                 </Grid>
               ) : (
                 <Alert severity="info">Algolock enforcement is not scheduled on this network.</Alert>
               )}
               <Typography variant="body2" sx={{ mt: 2, color: '#555' }}>
-                At the backstop height, blocks using the retired Groestl algorithm (or any unknown algorithm)
-                are rejected unconditionally — regardless of BIP9 signalling. Pools should be on v9.26.2 before
-                this height to stay on the canonical chain.
+                The algolock height has been reached, so the retired Myriad-Groestl algorithm is now rejected by
+                consensus from block {activationHeight ? activationHeight.toLocaleString() : '23,808,000'}. Any
+                block using Groestl (or an unknown algorithm) is rejected unconditionally, independent of BIP9
+                signalling. Because bit&nbsp;0 only rides on blocks from upgraded nodes, algolock is the dependable
+                measure of genuine v9.26 mining — where bit&nbsp;23 alone can mislead.
               </Typography>
             </Card>
 

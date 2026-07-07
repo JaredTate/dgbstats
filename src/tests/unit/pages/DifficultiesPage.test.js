@@ -84,7 +84,7 @@ import { screen, waitFor, act } from '@testing-library/react';
 import DifficultiesPage, { computeDisplayedAlgos } from '../../../pages/DifficultiesPage';
 import { renderWithProviders, createWebSocketMock, waitForAsync } from '../../utils/testUtils';
 
-describe('computeDisplayedAlgos (Myriad-Groestl visibility)', () => {
+describe('computeDisplayedAlgos (Groestl retired — card disabled)', () => {
   const base = ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo'];
 
   it('shows only the five active algorithms when Myriad-Groestl has no recent blocks', () => {
@@ -92,14 +92,14 @@ describe('computeDisplayedAlgos (Myriad-Groestl visibility)', () => {
     expect(computeDisplayedAlgos(difficulties)).toEqual(base);
   });
 
-  it('omits Myriad-Groestl entirely when the key is absent (post-rejection state)', () => {
+  it('omits Myriad-Groestl entirely when the key is absent', () => {
     const difficulties = { SHA256D: [1], Scrypt: [1], Skein: [1], Qubit: [1], Odo: [1] };
     expect(computeDisplayedAlgos(difficulties)).toEqual(base);
   });
 
-  it('adds Myriad-Groestl while it is still being mined (has recent blocks)', () => {
+  it('never shows Myriad-Groestl even when it still has recent blocks (retired algorithm, card disabled)', () => {
     const difficulties = { SHA256D: [1], Scrypt: [1], Skein: [1], Qubit: [1], Odo: [1], 'Myriad-Groestl': [1757.6, 926.9] };
-    expect(computeDisplayedAlgos(difficulties)).toEqual([...base, 'Myriad-Groestl']);
+    expect(computeDisplayedAlgos(difficulties)).toEqual(base);
   });
 });
 
@@ -186,6 +186,30 @@ describe('DifficultiesPage', () => {
         expect(screen.getByText('Qubit')).toBeInTheDocument();
         expect(screen.getByText('Odo')).toBeInTheDocument();
       });
+    });
+
+    it('does not render a Myriad-Groestl card even when groestl blocks arrive (retired/disabled)', async () => {
+      renderWithProviders(<DifficultiesPage />);
+
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      ws.receiveMessage({
+        type: 'recentBlocks',
+        data: [
+          ...sampleRecentBlocks,
+          { algo: 'groestl', difficulty: 1757.6, height: 1100 },
+        ]
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('SHA256D')).toBeInTheDocument();
+      });
+
+      // Only the five active algorithms render; the retired Groestl card is disabled.
+      expect(screen.queryByText('Myriad-Groestl')).not.toBeInTheDocument();
+      const cards = screen.getAllByText(/Latest Difficulty:/);
+      expect(cards).toHaveLength(5);
     });
 
     it('should render DigiShield information section', async () => {

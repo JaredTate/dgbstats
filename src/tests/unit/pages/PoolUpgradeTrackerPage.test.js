@@ -359,4 +359,40 @@ describe('PoolUpgradeTrackerPage', () => {
       });
     });
   });
+
+  describe('v9.26 adoption messaging (algolock bit 0 vs DigiDollar bit 23)', () => {
+    it('hero explains algolock bit 0 is the reliable true-v9.26 signal, bit 23 spoofable by v8.26 ASICBoost rolling', () => {
+      renderWithProviders(<PoolUpgradeTrackerPage />);
+
+      // Bit 0 is the trustworthy adoption signal...
+      expect(screen.getByText(/reliable indicator of true v9\.26 adoption/i)).toBeInTheDocument();
+      // ...and bit 23 can be a false positive from older ASICBoost version-rolling miners.
+      expect(screen.getByText(/older v8\.26 ASICBoost miners can set it by chance/i)).toBeInTheDocument();
+    });
+
+    it('DigiDollar card warns that bit 23 can overstate adoption', async () => {
+      renderWithProviders(<PoolUpgradeTrackerPage />);
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      ws.receiveMessage({ type: 'recentBlocks', data: cleanSkeinBlocks });
+
+      await waitFor(() => {
+        expect(screen.getByText(/Bit 23 can overstate adoption/i)).toBeInTheDocument();
+      });
+    });
+
+    it('shows a Groestl retirement card explaining Groestl is now rejected', async () => {
+      renderWithProviders(<PoolUpgradeTrackerPage />);
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      ws.receiveMessage({ type: 'recentBlocks', data: cleanSkeinBlocks });
+
+      await waitFor(() => {
+        expect(screen.getByText('Groestl Retirement')).toBeInTheDocument();
+      });
+      expect(screen.getByText(/retired Myriad-Groestl algorithm is now rejected/i)).toBeInTheDocument();
+    });
+  });
 });

@@ -20,27 +20,24 @@ const algoNames = ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo'];
 
 /**
  * Retired algorithm (Myriad-Groestl). It is no longer one of the five active
- * algorithms, but it is being mined again during the v9.26.2 incident, so it is
- * tracked and shown while it still produces blocks. Once v9.26.2 rejects it at the
- * activation height, no new Myriad-Groestl blocks arrive and it drops off the page.
+ * algorithms and is rejected by consensus from the algolock height, so its
+ * difficulty card is disabled. The name is kept only so any stray legacy Groestl
+ * block is recognised and quietly ignored rather than mislabelled.
  */
 const RETIRED_ALGO_NAME = 'Myriad-Groestl';
 
-/** All algorithms whose difficulty we collect (active five plus the retired one). */
+/** All algorithm names we recognise (active five plus the retired one, which is not displayed). */
 const trackedAlgoNames = [...algoNames, RETIRED_ALGO_NAME];
 
 /**
- * Decide which algorithms to display. The five active algorithms are always shown.
- * Myriad-Groestl is shown only while it still has recent blocks; when those drain
- * from the recent-block window (after v9.26.2 rejects it) the card disappears.
- * @param {Object} difficulties - map of algo name -> array of recent difficulty values
+ * The algorithms to display: the five active DigiByte algorithms only.
+ *
+ * Myriad-Groestl was retired and is rejected by consensus from the algolock
+ * height, so its difficulty card is disabled — it is never shown, even if a
+ * stray legacy Groestl block still appears in the recent-block window.
  * @returns {string[]} ordered list of algorithms to render
  */
-export const computeDisplayedAlgos = (difficulties) => {
-  const groestlSeries = difficulties?.[RETIRED_ALGO_NAME];
-  const hasGroestl = Array.isArray(groestlSeries) && groestlSeries.length > 0;
-  return hasGroestl ? [...algoNames, RETIRED_ALGO_NAME] : [...algoNames];
-};
+export const computeDisplayedAlgos = () => [...algoNames];
 
 const normalizeAlgoName = (algo) => {
   const normalized = String(algo || '').toLowerCase();
@@ -277,8 +274,8 @@ const DigiShieldInfoSection = () => (
         </Grid>
 
         <Typography variant="body2" sx={{ mt: 1, color: '#666' }}>
-          Note: Myriad-Groestl is a retired algorithm shown temporarily while it still produces blocks;
-          it will be rejected by consensus from block 23,808,000 and its card will disappear.
+          Note: Myriad-Groestl is a retired algorithm. It is rejected by consensus from the algolock
+          height (block 23,808,000), so it is no longer shown among the active algorithms.
         </Typography>
       </CardContent>
     </Card>
@@ -349,10 +346,9 @@ const DifficultiesPage = ({ difficultiesData }) => {
   // Use the prop if provided, otherwise use local state
   const currentDifficulties = difficultiesData || localDifficulties;
 
-  // Algorithms to render: the five active ones, plus Myriad-Groestl while it is
-  // still being mined. Recomputed whenever the difficulty series change so the
-  // Myriad-Groestl card appears/disappears automatically.
-  const displayedAlgos = useMemo(() => computeDisplayedAlgos(difficulties), [difficulties]);
+  // Algorithms to render: the five active DigiByte algorithms. Myriad-Groestl is
+  // retired (rejected at the algolock height), so its card is disabled.
+  const displayedAlgos = useMemo(() => computeDisplayedAlgos(), []);
 
   /**
    * WebSocket connection effect for real-time difficulty updates
