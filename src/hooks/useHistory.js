@@ -11,11 +11,13 @@ import { useNetwork } from '../context/NetworkContext';
  *   GET /api/history/hourly?hours=24 → hourly aggregates (entries keyed by `hour`)
  *
  * @param {object} [opts]
- * @param {number} [opts.days=1095] daily depth to request (up to 3 years)
+ * @param {number} [opts.days=6000] daily depth to request. 6000 (~16y) reaches
+ *   genesis (2014-01-10), so the "5Y" and "All" ranges have full data; the
+ *   server clamps to what it has backfilled. Sliced client-side per range.
  * @param {number} [opts.hours=24]  hourly depth to request
  * @returns {{ daily:Array, hourly:Array, algos:string[], loading:boolean, error:string|null }}
  */
-export const useHistory = ({ days = 1095, hours = 24 } = {}) => {
+export const useHistory = ({ days = 6000, hours = 24 } = {}) => {
   const { getApiUrl } = useNetwork();
   const [state, setState] = useState({
     daily: [], hourly: [], algos: [], loading: true, error: null,

@@ -17,10 +17,12 @@ import { useHistory } from '../hooks/useHistory';
 const algoNames = ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo'];
 
 /**
- * Algorithm keys used for the hashrate history chart. These match the
- * exact keys returned by useHistory()'s perAlgo map.
+ * Algorithm keys for the hashrate history chart: the five active algorithms plus
+ * retired Myriad-Groestl (mined 2014-09 → 2019-07). HistoryChart drops any algo
+ * with no data in the visible window, so Groestl only appears on the deep 5Y /
+ * All ranges that reach its era. Keys match useHistory()'s perAlgo map.
  */
-const HISTORY_ALGOS = ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo'];
+const HISTORY_ALGOS = ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo', 'Myriad-Groestl'];
 
 /**
  * Color mapping for each algorithm to maintain visual consistency
@@ -32,6 +34,7 @@ const algoColors = {
   'Skein': '#ff9800',   // Orange
   'Qubit': '#9c27b0',   // Purple
   'Odo': '#f44336',     // Red
+  'Myriad-Groestl': '#795548', // Brown - retired algorithm (mined 2014-2019)
 };
 
 /**

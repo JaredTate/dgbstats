@@ -3,20 +3,21 @@ import {
   resolveView, bucketLabel, applyZoom, sliderMarks,
   entryToDate, monthYearLabel, fullDateLabel,
   HISTORY_RANGES, DEFAULT_RANGE_KEY, ZOOMABLE_RANGES,
+  DGB_ERAS, eraBoundariesInRange, erasOverlappingRange, activeAlgosIn,
 } from '../../../components/HistoryChart';
 
-const daily = Array.from({ length: 1200 }, (_, i) => ({ date: `d${i}`, perAlgo: {} }));
+const daily = Array.from({ length: 2000 }, (_, i) => ({ date: `d${i}`, perAlgo: {} }));
 const hourly = Array.from({ length: 30 }, (_, i) => ({ hour: `h${i}`, perAlgo: {} }));
 
 describe('HISTORY_RANGES / defaults', () => {
-  it('exposes Daily / 7D / 30D / 3M / 6M / 1Y / 3Y in order', () => {
-    expect(HISTORY_RANGES.map((r) => r.label)).toEqual(['Daily', '7D', '30D', '3M', '6M', '1Y', '3Y']);
+  it('exposes Daily / 7D / 30D / 3M / 6M / 1Y / 3Y / 5Y / All in order', () => {
+    expect(HISTORY_RANGES.map((r) => r.label)).toEqual(['Daily', '7D', '30D', '3M', '6M', '1Y', '3Y', '5Y', 'All']);
   });
   it('defaults to the 30-day range', () => {
     expect(DEFAULT_RANGE_KEY).toBe('30d');
   });
-  it('marks 1Y and 3Y as zoomable', () => {
-    expect(ZOOMABLE_RANGES).toEqual(['1y', '3y']);
+  it('marks 1Y / 3Y / 5Y / All as zoomable (long ranges get the brush slider)', () => {
+    expect(ZOOMABLE_RANGES).toEqual(['1y', '3y', '5y', 'all']);
   });
 });
 
@@ -25,15 +26,24 @@ describe('resolveView', () => {
     const v = resolveView(daily, hourly, DEFAULT_RANGE_KEY);
     expect(v.granularity).toBe('daily');
     expect(v.entries).toHaveLength(30);
-    expect(v.entries.at(-1).date).toBe('d1199');
+    expect(v.entries.at(-1).date).toBe('d1999');
   });
 
-  it('slices 7 / 90 / 180 / 365 / 1095 for 7D / 3M / 6M / 1Y / 3Y', () => {
+  it('slices 7 / 90 / 180 / 365 / 1095 / 1825 for 7D / 3M / 6M / 1Y / 3Y / 5Y', () => {
     expect(resolveView(daily, hourly, '7d').entries).toHaveLength(7);
     expect(resolveView(daily, hourly, '3m').entries).toHaveLength(90);
     expect(resolveView(daily, hourly, '6m').entries).toHaveLength(180);
     expect(resolveView(daily, hourly, '1y').entries).toHaveLength(365);
     expect(resolveView(daily, hourly, '3y').entries).toHaveLength(1095);
+    expect(resolveView(daily, hourly, '5y').entries).toHaveLength(1825);
+  });
+
+  it('the All range returns the ENTIRE daily series (no slice)', () => {
+    const v = resolveView(daily, hourly, 'all');
+    expect(v.granularity).toBe('daily');
+    expect(v.entries).toHaveLength(daily.length);
+    expect(v.entries[0].date).toBe('d0');
+    expect(v.entries.at(-1).date).toBe('d1999');
   });
 
   it('the Daily range uses the last 24 hourly entries', () => {
@@ -131,5 +141,81 @@ describe('bucketLabel', () => {
     expect(bucketLabel({ date: '' }, 'daily')).toBe('');
     expect(bucketLabel({ hour: 'not-a-date' }, 'hourly')).toBe('not-a-date');
     expect(bucketLabel(null, 'daily')).toBe('');
+  });
+});
+
+describe('DGB_ERAS (chain mining eras)', () => {
+  it('lists the five mainnet eras oldest -> newest, starting single-algo Scrypt at genesis', () => {
+    expect(DGB_ERAS.map((e) => e.key)).toEqual(['digishield', 'multialgo', 'multishield', 'digispeed', 'odocrypt']);
+    expect(DGB_ERAS[0]).toMatchObject({ start: '2014-01-10', startHeight: 0 });
+    expect(DGB_ERAS[0].algos).toEqual(['Scrypt']); // single-algo launch
+    expect(DGB_ERAS.at(-1).algos).toContain('Odo'); // current era mines Odocrypt
+    expect(DGB_ERAS.at(-1).algos).not.toContain('Myriad-Groestl'); // Groestl swapped out
+    DGB_ERAS.forEach((e) => expect(typeof e.name).toBe('string'));
+  });
+  it('records the verified activation dates / heights', () => {
+    const byKey = Object.fromEntries(DGB_ERAS.map((e) => [e.key, e]));
+    expect(byKey.multialgo).toMatchObject({ start: '2014-09-01', startHeight: 145000 });
+    expect(byKey.multishield).toMatchObject({ start: '2014-12-10', startHeight: 400000 });
+    expect(byKey.digispeed).toMatchObject({ start: '2015-12-04', startHeight: 1430000 });
+    expect(byKey.odocrypt).toMatchObject({ start: '2019-07-22', startHeight: 9112320 });
+  });
+});
+
+describe('eraBoundariesInRange — vertical divider positions (max/All view)', () => {
+  it('returns the 4 internal boundaries across the full history (genesis is the left edge, excluded)', () => {
+    const b = eraBoundariesInRange('2014-01-10', '2026-07-07');
+    expect(b.map((x) => x.key)).toEqual(['multialgo', 'multishield', 'digispeed', 'odocrypt']);
+    expect(b[0]).toMatchObject({ start: '2014-09-01', name: expect.any(String) });
+  });
+  it('returns none for a window entirely inside one era (e.g. a 5Y view in the Odocrypt era)', () => {
+    expect(eraBoundariesInRange('2021-07-01', '2026-07-07')).toEqual([]);
+  });
+  it('returns only the boundaries that fall inside the window', () => {
+    expect(eraBoundariesInRange('2014-08-01', '2015-01-01').map((x) => x.key))
+      .toEqual(['multialgo', 'multishield']);
+  });
+  it('excludes a boundary exactly at the left edge (no redundant divider)', () => {
+    expect(eraBoundariesInRange('2014-09-01', '2015-01-01').map((x) => x.key)).toEqual(['multishield']);
+  });
+});
+
+describe('erasOverlappingRange — which eras the explainer lists', () => {
+  it('lists all five for the full history', () => {
+    expect(erasOverlappingRange('2014-01-10', '2026-07-07').map((e) => e.key))
+      .toEqual(['digishield', 'multialgo', 'multishield', 'digispeed', 'odocrypt']);
+  });
+  it('lists only the Odocrypt era for a recent 5Y window', () => {
+    expect(erasOverlappingRange('2021-07-01', '2026-07-07').map((e) => e.key)).toEqual(['odocrypt']);
+  });
+  it('lists the single era a narrow window sits inside', () => {
+    expect(erasOverlappingRange('2015-01-01', '2015-06-01').map((e) => e.key)).toEqual(['multishield']);
+  });
+  it('includes both eras a window straddling a boundary intersects', () => {
+    expect(erasOverlappingRange('2019-06-01', '2019-08-01').map((e) => e.key))
+      .toEqual(['digispeed', 'odocrypt']);
+  });
+});
+
+describe('activeAlgosIn — drop algos with no data in the visible window', () => {
+  const gv = (e, a) => e.perAlgo[a];
+  const algos = ['SHA256D', 'Scrypt', 'Myriad-Groestl', 'Odo'];
+  it('keeps only algos with a positive value somewhere in the entries, in input order', () => {
+    const entries = [
+      { perAlgo: { SHA256D: 5, Scrypt: 3, 'Myriad-Groestl': 0 } },
+      { perAlgo: { SHA256D: 6, Scrypt: 4, Odo: 0 } },
+    ];
+    expect(activeAlgosIn(entries, algos, gv)).toEqual(['SHA256D', 'Scrypt']);
+  });
+  it('surfaces a historical algo that only has data early in the window (e.g. Groestl)', () => {
+    const entries = [
+      { perAlgo: { Scrypt: 1, 'Myriad-Groestl': 7 } }, // early era
+      { perAlgo: { Scrypt: 1, Odo: 5 } }, // later era
+    ];
+    expect(activeAlgosIn(entries, algos, gv)).toEqual(['Scrypt', 'Myriad-Groestl', 'Odo']);
+  });
+  it('is safe with empty entries / missing getValue results', () => {
+    expect(activeAlgosIn([], algos, gv)).toEqual([]);
+    expect(activeAlgosIn([{ perAlgo: {} }], algos, gv)).toEqual([]);
   });
 });

@@ -20,9 +20,12 @@ export const HISTORY_RANGES = [
   { key: '6m', label: '6M', granularity: 'daily', days: 180 },
   { key: '1y', label: '1Y', granularity: 'daily', days: 365 },
   { key: '3y', label: '3Y', granularity: 'daily', days: 1095 },
+  { key: '5y', label: '5Y', granularity: 'daily', days: 1825 },
+  { key: 'all', label: 'All', granularity: 'daily', days: Infinity }, // full history back to genesis
 ];
 export const DEFAULT_RANGE_KEY = '30d';
-export const ZOOMABLE_RANGES = ['1y', '3y'];
+// Long ranges get a brush slider to zoom into a sub-period.
+export const ZOOMABLE_RANGES = ['1y', '3y', '5y', 'all'];
 
 /**
  * Entries + granularity to plot for a range key. Pure/testable.
@@ -34,7 +37,10 @@ export const resolveView = (daily = [], hourly = [], rangeKey = DEFAULT_RANGE_KE
   if (range.granularity === 'hourly') {
     return { entries: (hourly || []).slice(-24), granularity: 'hourly' };
   }
-  return { entries: (daily || []).slice(-range.days), granularity: 'daily' };
+  const d = daily || [];
+  // "All" (days = Infinity) returns the entire series; the rest slice the tail.
+  const entries = Number.isFinite(range.days) ? d.slice(-range.days) : d.slice();
+  return { entries, granularity: 'daily' };
 };
 
 /** Apply an inclusive [startIdx, endIdx] zoom window to entries; null → full. Pure/testable. */
@@ -101,6 +107,74 @@ export const sliderMarks = (entries = [], maxMarks = 6) => {
   return marks;
 };
 
+// ---------------------------------------------------------------------------
+// DigiByte mining eras — verified against the live chain (block heights + the
+// UTC date of each activation block). Used to draw era divider lines + labels on
+// the long-range (5Y / All) charts and an explainer beneath them. `algos` is the
+// set active during the era (Myriad-Groestl = DigiByte's ALGO_GROESTL, swapped
+// for Odocrypt at 9,112,320). Source: DIGIBYTE_v8.26_MULTI_ALGO_MINING_REPORT.md.
+// ---------------------------------------------------------------------------
+export const DGB_ERAS = [
+  { key: 'digishield', name: 'DigiShield', start: '2014-01-10', startHeight: 0,
+    algos: ['Scrypt'],
+    note: 'Single-algo launch on Scrypt; DigiShield real-time difficulty from block 67,200.' },
+  { key: 'multialgo', name: 'MultiAlgo', start: '2014-09-01', startHeight: 145000,
+    algos: ['SHA256D', 'Scrypt', 'Myriad-Groestl', 'Skein', 'Qubit'],
+    note: 'Five simultaneous mining algorithms activated — a blockchain first.' },
+  { key: 'multishield', name: 'MultiShield', start: '2014-12-10', startHeight: 400000,
+    algos: ['SHA256D', 'Scrypt', 'Myriad-Groestl', 'Skein', 'Qubit'],
+    note: 'Global + per-algorithm difficulty balancing.' },
+  { key: 'digispeed', name: 'DigiSpeed', start: '2015-12-04', startHeight: 1430000,
+    algos: ['SHA256D', 'Scrypt', 'Myriad-Groestl', 'Skein', 'Qubit'],
+    note: '15-second blocks — 2× faster confirmations.' },
+  { key: 'odocrypt', name: 'Odocrypt', start: '2019-07-22', startHeight: 9112320,
+    algos: ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo'],
+    note: 'Groestl swapped for ASIC-resistant Odocrypt (self-changing every 10 days).' },
+];
+
+// Muted slate palette for era markers — deliberately distinct from the vivid
+// algorithm colors so era annotations never read as a data series.
+export const ERA_COLORS = {
+  digishield: '#8d99ae', multialgo: '#5c6b8a', multishield: '#7d6b91',
+  digispeed: '#4a7a96', odocrypt: '#3a5a78',
+};
+
+/**
+ * Era-start boundaries whose activation date falls inside (firstDate, lastDate].
+ * The genesis era is the left edge, so it never yields a divider. ISO 'YYYY-MM-DD'
+ * strings compare chronologically. Pure/testable.
+ */
+export const eraBoundariesInRange = (firstDate, lastDate, eras = DGB_ERAS) => {
+  if (!firstDate || !lastDate) return [];
+  return eras
+    .filter((e, i) => i > 0 && e.start > firstDate && e.start <= lastDate)
+    .map((e) => ({ key: e.key, name: e.name, start: e.start }));
+};
+
+/** Eras whose [start, nextStart) span intersects [firstDate, lastDate]. Pure/testable. */
+export const erasOverlappingRange = (firstDate, lastDate, eras = DGB_ERAS) => {
+  if (!firstDate || !lastDate) return [];
+  return eras.filter((e, i) => {
+    const end = i < eras.length - 1 ? eras[i + 1].start : '9999-12-31';
+    return e.start <= lastDate && end > firstDate;
+  });
+};
+
+/** Compact "Sep 2014 – Dec 2014" (or "… – now") span for an era's card. */
+export const eraSpanLabel = (era, eras = DGB_ERAS) => {
+  const fmt = (iso) => {
+    const p = String(iso).split('-').map(Number);
+    return p.length >= 2 && !Number.isNaN(p[1]) ? `${MONTHS[p[1] - 1]} ${p[0]}` : String(iso);
+  };
+  const i = eras.findIndex((e) => e.key === era.key);
+  const next = i >= 0 ? eras[i + 1] : null;
+  return `${fmt(era.start)} – ${next ? fmt(next.start) : 'now'}`;
+};
+
+/** Algos with at least one positive value across the visible entries, in input order. Pure/testable. */
+export const activeAlgosIn = (entries = [], algos = [], getValue) =>
+  algos.filter((a) => (entries || []).some((e) => (getValue(e, a) || 0) > 0));
+
 /** Faint plot-surface tint so thin light-colored lines keep contrast (dataviz). */
 const surfacePlugin = {
   id: 'historySurface',
@@ -145,6 +219,104 @@ const endLabelPlugin = {
 };
 
 /**
+ * Era divider lines + bottom labels. Reads boundaries from
+ * options.plugins.eraDividers.boundaries = [{ time:<ms>, name }]. Draws a dashed
+ * vertical line at each boundary that lands inside the plot, then labels it near
+ * the BOTTOM of the chart. Labels are stacked into lanes (greedy) so tightly
+ * clustered eras (2014–2015) never overlap.
+ */
+const eraDividerPlugin = {
+  id: 'eraDividers',
+  afterDatasetsDraw: (chart) => {
+    const cfg = chart.options.plugins.eraDividers;
+    const boundaries = cfg && cfg.boundaries;
+    if (!boundaries || !boundaries.length) return;
+    const { ctx, chartArea, scales } = chart;
+    const x = scales.x;
+    if (!x || !chartArea) return;
+
+    ctx.save();
+    ctx.font = '700 10px Roboto, Helvetica, Arial, sans-serif';
+    ctx.textBaseline = 'bottom';
+    const laneRightEdge = []; // laneRightEdge[l] = right-most label x used in lane l
+
+    // Ascending by pixel so greedy lane packing reads left→right.
+    const placed = boundaries
+      .map((b) => ({ ...b, px: x.getPixelForValue(b.time) }))
+      .filter((b) => b.px != null && b.px >= chartArea.left - 1 && b.px <= chartArea.right + 1)
+      .sort((a, b) => a.px - b.px);
+
+    placed.forEach((b) => {
+      // Vertical dashed divider.
+      ctx.beginPath();
+      ctx.setLineDash([5, 4]);
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = ERA_COLORS[b.key] ? `${ERA_COLORS[b.key]}` : 'rgba(50,50,60,0.6)';
+      ctx.globalAlpha = 0.75;
+      ctx.moveTo(b.px, chartArea.top);
+      ctx.lineTo(b.px, chartArea.bottom);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.setLineDash([]);
+
+      // Label: to the right of the line, flipped left if it would overflow.
+      const tw = ctx.measureText(b.name).width;
+      let lx = b.px + 5;
+      if (lx + tw > chartArea.right) lx = b.px - 5 - tw;
+      // Greedy lane: first lane whose last label ends left of this one.
+      let lane = 0;
+      while (lane < laneRightEdge.length && laneRightEdge[lane] > lx - 6) lane += 1;
+      laneRightEdge[lane] = lx + tw;
+      const ly = chartArea.bottom - 4 - lane * 14;
+
+      ctx.fillStyle = 'rgba(255,255,255,0.88)';
+      ctx.fillRect(lx - 3, ly - 12, tw + 6, 14);
+      ctx.fillStyle = ERA_COLORS[b.key] || '#2b2b33';
+      ctx.fillText(b.name, lx, ly);
+    });
+    ctx.restore();
+  },
+};
+
+/**
+ * EraLegend — the explainer beneath the chart on 5Y / All views. Lists each
+ * DigiByte mining era intersecting the visible window: color swatch, name, span,
+ * active algorithms, and a one-line note. Memoized (pure render from props).
+ */
+const EraLegend = React.memo(({ eras }) => {
+  if (!eras || !eras.length) return null;
+  return (
+    <Box sx={{ mt: 2, pt: 1.5, borderTop: '1px solid #eee' }}>
+      <Typography variant="caption" sx={{ display: 'block', color: '#555', fontWeight: 700, mb: 1 }}>
+        DigiByte mining eras in view
+      </Typography>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+        {eras.map((e) => (
+          <Box
+            key={e.key}
+            sx={{
+              flex: '1 1 240px', minWidth: 200, border: '1px solid #eee',
+              borderLeft: `3px solid ${ERA_COLORS[e.key] || '#888'}`,
+              borderRadius: '8px', p: 1.25, bgcolor: '#fafbfd',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: 0.75, mb: 0.25 }}>
+              <Typography variant="body2" sx={{ fontWeight: 700, color: '#222' }}>{e.name}</Typography>
+              <Typography variant="caption" sx={{ color: '#888' }}>{eraSpanLabel(e)}</Typography>
+            </Box>
+            <Typography variant="caption" sx={{ display: 'block', color: '#666', lineHeight: 1.35 }}>{e.note}</Typography>
+            <Typography variant="caption" sx={{ display: 'block', color: '#9098a6', mt: 0.5, fontWeight: 600 }}>
+              {e.algos.join(' · ')}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+});
+EraLegend.displayName = 'EraLegend';
+
+/**
  * HistoryChart — reusable daily/hourly time-series chart for the Algos /
  * Difficulties / Hashrate history features.
  *
@@ -185,19 +357,40 @@ const HistoryChart = ({
     () => (zoomable ? sliderMarks(fullEntries, isMobile ? 4 : 7) : []), [fullEntries, zoomable, isMobile],
   );
 
+  // Era annotations (5Y / All only, daily granularity). The visible date window
+  // — after any zoom — drives which era dividers + explainer cards appear.
+  const showEras = granularity === 'daily' && (rangeKey === '5y' || rangeKey === 'all');
+  const firstDate = granularity === 'daily' && entries.length ? entries[0].date : null;
+  const lastDate = granularity === 'daily' && entries.length ? entries[entries.length - 1].date : null;
+  const eraBoundaries = useMemo(
+    () => (showEras ? eraBoundariesInRange(firstDate, lastDate) : []),
+    [showEras, firstDate, lastDate],
+  );
+  const visibleEras = useMemo(
+    () => (showEras ? erasOverlappingRange(firstDate, lastDate) : []),
+    [showEras, firstDate, lastDate],
+  );
+  // Plot only algos with data in the visible window: drops the retired
+  // Myriad-Groestl on post-2019 ranges, surfaces it on All. Colors stay keyed by
+  // algo name, so survivors never repaint. Falls back to all algos if empty.
+  const drawAlgos = useMemo(() => {
+    const a = activeAlgosIn(entries, algos, getValue);
+    return a.length ? a : algos;
+  }, [entries, algos, getValue]);
+
   useEffect(() => {
     if (!canvasRef.current || loading || error || entries.length === 0) return;
     const ctx = canvasRef.current.getContext('2d');
 
-    const dayTotals = entries.map((entry) => algos.reduce((sum, a) => sum + (getValue(entry, a) || 0), 0));
+    const dayTotals = entries.map((entry) => drawAlgos.reduce((sum, a) => sum + (getValue(entry, a) || 0), 0));
     // Running cumulative % per entry → a smooth 100% stacked area that always fills
     // 0–100% (deterministic; no reliance on Chart.js scale-stacking of filled lines).
     const running = entries.map(() => 0);
 
-    const datasets = algos.map((algo, idx) => {
+    const datasets = drawAlgos.map((algo, idx) => {
       const color = colors[algo] || '#0066cc';
-      const raw = entries.map((entry) => getValue(entry, algo) || 0);
       if (stacked) {
+        const raw = entries.map((entry) => getValue(entry, algo) || 0);
         const share = raw.map((v, i) => (dayTotals[i] > 0 ? (v / dayTotals[i]) * 100 : 0));
         const data = share.map((s, i) => { running[i] += s; return running[i]; });
         return {
@@ -214,9 +407,13 @@ const HistoryChart = ({
           cubicInterpolationMode: 'monotone',
         };
       }
+      // lines-log: use null (not 0) where an algo has no block that bucket, so the
+      // log axis skips it and era gaps render honestly (e.g. Groestl only exists
+      // 2014-09 → 2019-07; leading/trailing nulls aren't bridged by spanGaps).
+      const data = entries.map((entry) => { const v = getValue(entry, algo); return v > 0 ? v : null; });
       return {
         label: algo,
-        data: raw,
+        data,
         borderColor: color,
         backgroundColor: `${color}14`,
         borderWidth: 2,
@@ -234,7 +431,7 @@ const HistoryChart = ({
     chartRef.current = new Chart(ctx, {
       type: 'line',
       data: { labels, datasets },
-      plugins: stacked ? [surfacePlugin] : [surfacePlugin, endLabelPlugin],
+      plugins: stacked ? [surfacePlugin, eraDividerPlugin] : [surfacePlugin, endLabelPlugin, eraDividerPlugin],
       options: {
         responsive: true,
         maintainAspectRatio: false,
@@ -242,6 +439,11 @@ const HistoryChart = ({
         interaction: { mode: 'index', intersect: false },
         plugins: {
           historyEndLabels: { show: !stacked && !isMobile },
+          eraDividers: {
+            boundaries: eraBoundaries.map((b) => ({
+              key: b.key, name: b.name, time: Date.parse(`${b.start}T00:00:00Z`),
+            })),
+          },
           legend: {
             display: true, position: 'top',
             labels: { usePointStyle: true, boxWidth: 8, padding: 14, color: '#333', font: { size: 12, weight: '600' } },
@@ -316,7 +518,7 @@ const HistoryChart = ({
     });
 
     return () => { if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; } };
-  }, [entries, labels, granularity, algos, colors, getValue, valueFormat, stacked, yLabel, loading, error, isMobile]);
+  }, [entries, labels, granularity, drawAlgos, colors, getValue, valueFormat, stacked, yLabel, loading, error, isMobile, eraBoundaries]);
 
   const hourlyMissing = rangeKey === 'daily' && !loading && !error && entries.length === 0;
 
@@ -380,6 +582,7 @@ const HistoryChart = ({
                 </Typography>
               </Box>
             )}
+            {showEras && <EraLegend eras={visibleEras} />}
           </>
         )}
       </CardContent>

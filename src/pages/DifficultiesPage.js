@@ -73,11 +73,12 @@ const algoColors = {
 };
 
 /**
- * Algorithms shown in the difficulty history chart: the five active DigiByte
- * algorithms only. Myriad-Groestl is excluded to match the live page, which
- * retired (disabled) it.
+ * Algorithms shown in the difficulty history chart. The five active algorithms
+ * plus retired Myriad-Groestl (mined 2014-09 → 2019-07). HistoryChart drops any
+ * algo with no data in the visible window, so Groestl only appears on the deep
+ * ranges (5Y / All) that reach its era — recent ranges still show just five.
  */
-const HISTORY_ALGOS = ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo'];
+const HISTORY_ALGOS = ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo', 'Myriad-Groestl'];
 
 /**
  * Compact difficulty formatter for the history chart's log axis and tooltips.
