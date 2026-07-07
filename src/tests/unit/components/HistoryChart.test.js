@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   resolveView, bucketLabel, applyZoom, sliderMarks,
+  entryToDate, monthYearLabel, fullDateLabel,
   HISTORY_RANGES, DEFAULT_RANGE_KEY, ZOOMABLE_RANGES,
 } from '../../../components/HistoryChart';
 
@@ -90,7 +91,29 @@ describe('sliderMarks', () => {
     expect(sliderMarks([], 6)).toEqual([]);
     const one = sliderMarks([{ date: '2026-06-08' }], 6);
     expect(one).toHaveLength(1);
-    expect(one[0]).toEqual({ value: 0, label: 'Jun 8' });
+    expect(one[0]).toEqual({ value: 0, label: "Jun '26" });
+  });
+});
+
+describe('date helpers (time-axis + slider labels)', () => {
+  it('entryToDate builds a UTC date for daily and hourly', () => {
+    expect(entryToDate({ date: '2026-06-08' }, 'daily').toISOString()).toBe('2026-06-08T00:00:00.000Z');
+    expect(entryToDate({ hour: '2026-07-07T14:00:00Z' }, 'hourly').toISOString()).toBe('2026-07-07T14:00:00.000Z');
+  });
+
+  it("monthYearLabel → \"Mon 'YY\"", () => {
+    expect(monthYearLabel({ date: '2025-01-03' })).toBe("Jan '25");
+    expect(monthYearLabel({ date: '2026-12-31' })).toBe("Dec '26");
+  });
+
+  it('fullDateLabel → "Mon D, YYYY"', () => {
+    expect(fullDateLabel({ date: '2026-06-08' })).toBe('Jun 8, 2026');
+    expect(fullDateLabel({ date: '2024-11-01' })).toBe('Nov 1, 2024');
+  });
+
+  it('degrade gracefully on bad input', () => {
+    expect(monthYearLabel({ date: '' })).toBe('');
+    expect(fullDateLabel({})).toBe('');
   });
 });
 

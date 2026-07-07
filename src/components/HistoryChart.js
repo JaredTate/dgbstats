@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Chart, registerables } from 'chart.js';
+import 'chartjs-adapter-luxon';
 import {
   Box, Card, CardContent, Typography, Divider, CircularProgress,
   ToggleButtonGroup, ToggleButton, Slider, useTheme, useMediaQuery,
@@ -63,7 +64,28 @@ export const bucketLabel = (entry, granularity) => {
   return `${MONTHS[parts[1] - 1]} ${parts[2]}`;
 };
 
-/** Evenly-spaced slider marks (index + short date label). Pure/testable. */
+/** UTC Date for a bucket entry — daily → midnight UTC; hourly → the hour instant. Pure/testable. */
+export const entryToDate = (entry, granularity) => {
+  if (!entry) return new Date(NaN);
+  if (granularity === 'hourly') return new Date(entry.hour);
+  return new Date(`${entry.date}T00:00:00Z`);
+};
+
+/** "Jun '25" — month + 2-digit year (slider marks on long ranges). Pure/testable. */
+export const monthYearLabel = (entry) => {
+  const p = String(entry?.date || '').split('-').map(Number);
+  if (p.length < 3 || Number.isNaN(p[1])) return String(entry?.date || '');
+  return `${MONTHS[p[1] - 1]} '${String(p[0]).slice(-2)}`;
+};
+
+/** "Jun 8, 2026" — full date (slider thumb + daily tooltip). Pure/testable. */
+export const fullDateLabel = (entry) => {
+  const p = String(entry?.date || '').split('-').map(Number);
+  if (p.length < 3 || Number.isNaN(p[1])) return String(entry?.date || '');
+  return `${MONTHS[p[1] - 1]} ${p[2]}, ${p[0]}`;
+};
+
+/** Evenly-spaced slider marks (index + month/year label). Pure/testable. */
 export const sliderMarks = (entries = [], maxMarks = 6) => {
   const n = entries.length;
   if (n === 0) return [];
@@ -74,7 +96,7 @@ export const sliderMarks = (entries = [], maxMarks = 6) => {
     const idx = count === 1 ? 0 : Math.round((k * (n - 1)) / (count - 1));
     if (seen.has(idx)) continue;
     seen.add(idx);
-    marks.push({ value: idx, label: bucketLabel(entries[idx], 'daily') });
+    marks.push({ value: idx, label: monthYearLabel(entries[idx]) });
   }
   return marks;
 };
@@ -158,7 +180,7 @@ const HistoryChart = ({
   const entries = useMemo(
     () => (zoomable ? applyZoom(fullEntries, zoom) : fullEntries), [fullEntries, zoom, zoomable],
   );
-  const labels = useMemo(() => entries.map((e) => bucketLabel(e, granularity)), [entries, granularity]);
+  const labels = useMemo(() => entries.map((e) => entryToDate(e, granularity)), [entries, granularity]);
   const marks = useMemo(
     () => (zoomable ? sliderMarks(fullEntries, isMobile ? 4 : 7) : []), [fullEntries, zoomable, isMobile],
   );
@@ -230,7 +252,13 @@ const HistoryChart = ({
             callbacks: {
               title: (items) => {
                 const e = entries[items[0]?.dataIndex];
-                return e ? (granularity === 'hourly' ? e.hour : e.date) : '';
+                if (!e) return '';
+                if (granularity === 'hourly') {
+                  const d = new Date(e.hour);
+                  let h = d.getHours(); const ap = h >= 12 ? 'p' : 'a'; h %= 12; if (h === 0) h = 12;
+                  return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${h}${ap}`;
+                }
+                return fullDateLabel(e);
               },
               label: (item) => {
                 const ds = item.dataset;
@@ -250,8 +278,18 @@ const HistoryChart = ({
         },
         scales: {
           x: {
+            type: 'time',
+            time: {
+              displayFormats: {
+                hour: 'ha', day: 'MMM d', week: 'MMM d',
+                month: "MMM ''yy", quarter: "MMM ''yy", year: 'yyyy',
+              },
+            },
             grid: { display: false },
-            ticks: { color: '#888', font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: isMobile ? 6 : 12 },
+            ticks: {
+              color: '#888', font: { size: 10 }, maxRotation: 0,
+              autoSkip: true, maxTicksLimit: isMobile ? 7 : 13, major: { enabled: true },
+            },
           },
           y: stacked
             ? {
@@ -331,10 +369,10 @@ const HistoryChart = ({
                   marks={marks}
                   onChange={(_, v) => Array.isArray(v) && v[1] - v[0] >= 2 && setZoom(v)}
                   valueLabelDisplay="auto"
-                  valueLabelFormat={(idx) => bucketLabel(fullEntries[idx], 'daily')}
+                  valueLabelFormat={(idx) => fullDateLabel(fullEntries[idx])}
                   disableSwap
                   getAriaLabel={(i) => (i === 0 ? 'Zoom period start' : 'Zoom period end')}
-                  getAriaValueText={(idx) => bucketLabel(fullEntries[idx], 'daily')}
+                  getAriaValueText={(idx) => fullDateLabel(fullEntries[idx])}
                   sx={{ color: accentColor, '& .MuiSlider-markLabel': { fontSize: '0.68rem', color: '#888' } }}
                 />
                 <Typography variant="caption" sx={{ display: 'block', color: '#888', textAlign: 'center' }}>
