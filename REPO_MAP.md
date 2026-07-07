@@ -2,7 +2,7 @@
 
 Repository map for `~/Code/dgbstats`.
 
-Snapshot of the source tree: 19 page components, 9 shared components, 1 context,
+Snapshot of the source tree: 19 page components, 10 shared components, 2 hooks modules, 1 context,
 1 hooks module, and the supporting test/config files. Regenerate/refresh when files
 are added or their exports change.
 
@@ -77,6 +77,12 @@ are added or their exports change.
 - Network-aware nav (distinct mainnet / testnet menus), external-resource links, mobile drawer, Mainnet/Testnet switch
 - Imports local modules: `../context/NetworkContext`; libraries: `react`, `@mui/material`, `@mui/icons-material/Menu`, `@mui/icons-material/GitHub`, `@mui/icons-material/OpenInNew`, `react-router-dom`
 
+### src/components/HistoryChart.js
+- Default export: `HistoryChart`
+- Named export: `HISTORY_RANGES`, `DEFAULT_RANGE_KEY`, `resolveView`, `bucketLabel` (pure, unit-tested)
+- Reusable daily/hourly time-series chart (Chart.js) for the Algos/Difficulties/Hashrate history sections. Range selector Daily/7D/30D/3M (default 30D); `mode="lines-log"` → line+log y, `mode="stacked-100"` → 100% stacked bar. Uses `useDailyHistory`-style data via props.
+- Imports libraries: `react`, `chart.js`, `@mui/material`
+
 ### src/components/IntegrationGuides.js
 - Default export: `IntegrationGuides`
 - Defines: `IntegrationGuides`
@@ -113,6 +119,11 @@ are added or their exports change.
 
 ### src/countries-110m.json
 - Top-level keys: `type`, `objects`, `arcs`, `bbox`, `transform` (TopoJSON world map)
+
+### src/hooks/useHistory.js
+- Named export: `useHistory` (const); Default export: `useHistory`
+- Fetches the network-aware daily (`/api/history/daily?days=90`) + hourly (`/api/history/hourly?hours=24`) per-algo history; returns `{ daily, hourly, algos, loading, error }` (hourly best-effort). Powers the HistoryChart on Algos/Difficulties/Hashrate.
+- Imports local modules: `../context/NetworkContext`; libraries: `react`
 
 ### src/hooks/useNetworkData.js
 - Named export: `useBlockchainInfo`, `useChainTxStats`, `useTxOutsetInfo`, `useBlockReward`, `useNetworkWebSocket` (all const)

@@ -8,6 +8,8 @@ import {
 } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import { useNetwork } from '../context/NetworkContext';
+import HistoryChart from '../components/HistoryChart';
+import { useHistory } from '../hooks/useHistory';
 
 Chart.register(...registerables);
 Chart.register(LineController);
@@ -68,6 +70,29 @@ const algoColors = {
   'Qubit': '#9c27b0', // Purple - Lightweight algorithm
   'Odo': '#f44336', // Red - ASIC-resistant algorithm
   'Myriad-Groestl': '#795548', // Brown - retired algorithm (rejected at v9.26.2 activation)
+};
+
+/**
+ * Algorithms shown in the difficulty history chart: the five active DigiByte
+ * algorithms only. Myriad-Groestl is excluded to match the live page, which
+ * retired (disabled) it.
+ */
+const HISTORY_ALGOS = ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo'];
+
+/**
+ * Compact difficulty formatter for the history chart's log axis and tooltips.
+ * Difficulties span from sub-1 (Scrypt/Odo) up to billions (SHA256D), so we
+ * abbreviate large magnitudes and keep two decimals for readability.
+ * @param {number} n - raw difficulty value
+ * @returns {string} formatted value (e.g. "1.23B", "4.56M", "7.89K", "0.42")
+ */
+const formatDiff = (n) => {
+  if (!n || Number.isNaN(n)) return '0';
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
+  if (abs >= 1e3) return `${(n / 1e3).toFixed(2)}K`;
+  return n.toFixed(2);
 };
 
 /**
@@ -309,6 +334,11 @@ const DifficultiesPage = ({ difficultiesData }) => {
 
   // Network context for network-aware data fetching
   const { getApiUrl, isTestnet, wsBaseUrl, theme: networkTheme } = useNetwork();
+
+  // Per-algo difficulty history from the shared network-aware history infra.
+  // Fetches daily (90d) + hourly (24h); the range selector (Daily/7D/30D/3M) is
+  // internal to HistoryChart, so both series are passed straight through.
+  const { daily: historyDaily, hourly: historyHourly, loading: historyLoading, error: historyError } = useHistory();
 
   // Chart management references
   const chartRefs = useRef([]);
@@ -621,7 +651,25 @@ const DifficultiesPage = ({ difficultiesData }) => {
                 setChartRef={setChartRef}
               />
             ))}
-            
+
+            <Grid item xs={12}>
+              <HistoryChart
+                mode="lines-log"
+                daily={historyDaily}
+                hourly={historyHourly}
+                algos={HISTORY_ALGOS}
+                colors={algoColors}
+                getValue={(entry, algo) => entry.perAlgo[algo]?.avgDifficulty}
+                valueFormat={formatDiff}
+                title="Difficulty History"
+                subtitle="Per-algorithm difficulty over time. DigiByte retargets every block (DigiShield); each daily point is that day's average, and the Daily view breaks it down by hour."
+                yLabel="Difficulty (log)"
+                loading={historyLoading}
+                error={historyError}
+                accentColor={networkTheme?.primary || '#002352'}
+              />
+            </Grid>
+
             <DigiShieldInfoSection />
           </Grid>
         )}

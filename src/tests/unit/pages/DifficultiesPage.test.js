@@ -43,6 +43,42 @@ vi.mock('@mui/material', async () => {
   };
 });
 
+// Mock the shared history hook so the Difficulty History chart renders
+// deterministically without hitting the /history/daily|hourly endpoints.
+// Default state is "loading" (the chart shows its own spinner, no <canvas>), so
+// the existing per-algo canvas-count assertions stay at 5. The dedicated history
+// test overrides this with fixture data (5 algos, 2 days) via mockReturnValue.
+const { mockUseHistory, HISTORY_LOADING_STATE, HISTORY_FIXTURE } = vi.hoisted(() => {
+  const loadingState = { daily: [], hourly: [], algos: [], loading: true, error: null };
+  const day = (date, mult) => ({
+    date,
+    perAlgo: {
+      SHA256D: { avgDifficulty: 5e8 * mult },
+      Scrypt: { avgDifficulty: 2e5 * mult },
+      Skein: { avgDifficulty: 1e6 * mult },
+      Qubit: { avgDifficulty: 7e5 * mult },
+      Odo: { avgDifficulty: 1e5 * mult },
+    },
+  });
+  const fixture = {
+    daily: [day('2026-06-08', 1), day('2026-06-09', 1.01)],
+    hourly: [],
+    algos: ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo'],
+    loading: false,
+    error: null,
+  };
+  return {
+    mockUseHistory: vi.fn(() => loadingState),
+    HISTORY_LOADING_STATE: loadingState,
+    HISTORY_FIXTURE: fixture,
+  };
+});
+
+vi.mock('../../../hooks/useHistory', () => ({
+  useHistory: mockUseHistory,
+  default: mockUseHistory,
+}));
+
 // Mock Canvas context for Chart.js
 Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
   value: vi.fn().mockReturnValue({
@@ -124,6 +160,10 @@ describe('DifficultiesPage', () => {
   ];
 
   beforeEach(async () => {
+    // Default the history hook to its loading state so the history chart
+    // renders its title/spinner but no <canvas> (keeps per-algo canvas count at 5).
+    mockUseHistory.mockReturnValue(HISTORY_LOADING_STATE);
+
     // Setup WebSocket mock
     wsSetup = createWebSocketMock();
     mockWebSocket = wsSetup.MockWebSocket;
@@ -210,6 +250,26 @@ describe('DifficultiesPage', () => {
       expect(screen.queryByText('Myriad-Groestl')).not.toBeInTheDocument();
       const cards = screen.getAllByText(/Latest Difficulty:/);
       expect(cards).toHaveLength(5);
+    });
+
+    it('should render the Difficulty History chart after data loads', async () => {
+      // Provide fixture history data (5 algos, 2 days) so the chart renders fully.
+      mockUseHistory.mockReturnValue(HISTORY_FIXTURE);
+
+      renderWithProviders(<DifficultiesPage />);
+
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      // Send recentBlocks to exit the realtime loading gate.
+      ws.receiveMessage({
+        type: 'recentBlocks',
+        data: sampleRecentBlocks
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Difficulty History')).toBeInTheDocument();
+      });
     });
 
     it('should render DigiShield information section', async () => {

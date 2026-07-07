@@ -322,6 +322,8 @@ subscribeRoadmap       // { clientId } — sent by RoadmapPage on socket open
 | `/api/gettxoutsetinfo` | App.js, `useTxOutsetInfo`, SupplyPage | UTXO set and supply data |
 | `/api/getblockreward` | App.js, `useBlockReward` | Current block reward |
 | `/api/getdeploymentinfo` | DDActivationPage, PoolUpgradeTrackerPage (30s poll) | BIP9 deployment stats (digidollar, algolock) |
+| `/api/history/daily?days=90` | AlgosPage, DifficultiesPage, HashratePage (via `useHistory`) | Daily per-algo block count, difficulty, hashrate (SQLite, backfilled from headers) |
+| `/api/history/hourly?hours=24` | same (Daily range view) | Hourly per-algo rollup for the intraday view |
 | `/api/visitstats` | Footer | Page-view analytics |
 | GitHub Releases API | DownloadsPage | `api.github.com/repos/digibyte-core/digibyte/releases` |
 
