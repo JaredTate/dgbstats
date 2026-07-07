@@ -25,6 +25,45 @@ vi.mock('d3', () => ({
   }))
 }));
 
+// Fixture: 3 days of daily algo history where the retired Myriad-Groestl share
+// shrinks to zero (10 -> 5 -> 0 blocks) toward the algolock height.
+const HISTORY_FIXTURE = {
+  daily: [
+    {
+      date: '2026-07-04', partial: false, totalBlocks: 100,
+      perAlgo: {
+        'SHA256D': { blocks: 18 }, 'Scrypt': { blocks: 18 }, 'Skein': { blocks: 18 },
+        'Qubit': { blocks: 18 }, 'Odo': { blocks: 18 }, 'Myriad-Groestl': { blocks: 10 },
+      },
+    },
+    {
+      date: '2026-07-05', partial: false, totalBlocks: 100,
+      perAlgo: {
+        'SHA256D': { blocks: 19 }, 'Scrypt': { blocks: 19 }, 'Skein': { blocks: 19 },
+        'Qubit': { blocks: 19 }, 'Odo': { blocks: 19 }, 'Myriad-Groestl': { blocks: 5 },
+      },
+    },
+    {
+      date: '2026-07-06', partial: true, totalBlocks: 100,
+      perAlgo: {
+        'SHA256D': { blocks: 20 }, 'Scrypt': { blocks: 20 }, 'Skein': { blocks: 20 },
+        'Qubit': { blocks: 20 }, 'Odo': { blocks: 20 }, 'Myriad-Groestl': { blocks: 0 },
+      },
+    },
+  ],
+  hourly: [],
+  algos: ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo', 'Myriad-Groestl'],
+  loading: false,
+  error: null,
+};
+
+// Mock the shared history hook so the page's history chart renders with
+// deterministic data (and no network fetch, keeping MSW's onUnhandledRequest happy).
+vi.mock('../../../hooks/useHistory', () => ({
+  useHistory: () => HISTORY_FIXTURE,
+  default: () => HISTORY_FIXTURE,
+}));
+
 describe('AlgosPage', () => {
   let wsSetup;
   let mockWebSocket;
@@ -109,9 +148,28 @@ describe('AlgosPage', () => {
 
     it('should render multi-algorithm mining information section', () => {
       renderWithProviders(<AlgosPage />);
-      
+
       expect(screen.getByText("About DigiByte's MultiAlgo Mining")).toBeInTheDocument();
       expect(screen.getByText(/DigiByte employs a unique multi-algorithm approach/)).toBeInTheDocument();
+    });
+
+    it('should render the algorithm distribution history chart', async () => {
+      // Uses the mocked useHistory fixture (3 days, Groestl share -> 0).
+      renderWithProviders(<AlgosPage />);
+
+      // The stacked-100 history chart renders regardless of the realtime pie's
+      // WebSocket loading state, so its title is present immediately.
+      await waitFor(() => {
+        expect(screen.getByText('Algorithm Distribution History')).toBeInTheDocument();
+      });
+
+      // Its explanatory subtitle references the algolock backstop height.
+      expect(
+        screen.getByText(/fades to zero at the algolock height \(block 23,808,000\)/)
+      ).toBeInTheDocument();
+
+      // A canvas is mounted for the Chart.js-rendered history chart.
+      expect(document.querySelector('canvas')).toBeInTheDocument();
     });
 
     it('should display algorithm descriptions', () => {

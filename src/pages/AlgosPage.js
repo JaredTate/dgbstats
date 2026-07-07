@@ -6,6 +6,8 @@ import {
 import PieChartIcon from '@mui/icons-material/PieChart';
 import * as d3 from 'd3';
 import { useNetwork } from '../context/NetworkContext';
+import HistoryChart from '../components/HistoryChart';
+import { useHistory } from '../hooks/useHistory';
 
 /**
  * Algorithm color mapping for consistent visual identification
@@ -21,6 +23,27 @@ const ALGO_COLORS = {
   'myriad-groestl': '#795548', // Brown - retired algorithm (rejected from v9.26.2 activation)
   'groestl': '#795548',   // Alias for Myriad-Groestl
 };
+
+/**
+ * Canonical-keyed color map for the history chart.
+ * The realtime ALGO_COLORS map above is keyed LOWERCASE and won't match the
+ * useHistory API's canonical algo keys, so we keep a separate map here.
+ */
+const HISTORY_COLORS = {
+  'SHA256D': '#4caf50',
+  'Scrypt': '#2196f3',
+  'Skein': '#ff9800',
+  'Qubit': '#9c27b0',
+  'Odo': '#f44336',
+  'Myriad-Groestl': '#795548',
+};
+
+/**
+ * Fixed series order for the stacked history chart (identity colors, oldest algos first).
+ * Myriad-Groestl is retired and only appears in the older days of the window; it fades
+ * to zero at the algolock/backstop height (block 23,808,000).
+ */
+const ALGO_ORDER = ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo', 'Myriad-Groestl'];
 
 /**
  * Algorithm information for educational content
@@ -212,6 +235,21 @@ const AlgosPage = () => {
 
   // Loading state
   const [loading, setLoading] = useState(true);
+
+  // Historical algorithm distribution (shared daily/hourly history infra)
+  const {
+    daily: historyDaily,
+    hourly: historyHourly,
+    algos: historyAlgos,
+    loading: historyLoading,
+    error: historyError,
+  } = useHistory();
+
+  // Restrict the stacked series to the canonical order, keeping only algos the
+  // API actually reports (falling back to the full order before data arrives).
+  const stackAlgos = ALGO_ORDER.filter(
+    (a) => (historyAlgos && historyAlgos.length ? historyAlgos.includes(a) : true)
+  );
 
   // D3.js SVG reference for pie chart
   const svgRef = useRef();
@@ -491,6 +529,22 @@ const AlgosPage = () => {
             </>
           )}
         </Card>
+
+        <HistoryChart
+          mode="stacked-100"
+          daily={historyDaily}
+          hourly={historyHourly}
+          algos={stackAlgos}
+          colors={HISTORY_COLORS}
+          getValue={(e, a) => e.perAlgo[a]?.blocks}
+          valueFormat={(n) => Number(n || 0).toLocaleString()}
+          title="Algorithm Distribution History"
+          subtitle="Share of blocks by algorithm over time. The retired Myriad-Groestl fades to zero at the algolock height (block 23,808,000). The Daily view breaks it down by hour."
+          yLabel="Share of blocks"
+          loading={historyLoading}
+          error={historyError}
+          accentColor={networkTheme?.primary || '#002352'}
+        />
 
         <MultiAlgoInfoSection />
       </Container>
