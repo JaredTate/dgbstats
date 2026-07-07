@@ -2,43 +2,54 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Chart, registerables } from 'chart.js';
 import {
   Box, Card, CardContent, Typography, Divider, CircularProgress,
-  ToggleButtonGroup, ToggleButton, useTheme, useMediaQuery,
+  ToggleButtonGroup, ToggleButton, Slider, useTheme, useMediaQuery,
 } from '@mui/material';
 
 Chart.register(...registerables);
 
 /**
- * Range options for the history charts. Daily → hourly granularity (last 24h);
- * the others slice the daily series. Default view is 30D.
+ * Range options. Daily → hourly granularity (last 24h); the rest slice the daily
+ * series. 1Y / 3Y are zoomable (a brush slider lets you focus a sub-period).
  */
 export const HISTORY_RANGES = [
   { key: 'daily', label: 'Daily', granularity: 'hourly' },
   { key: '7d', label: '7D', granularity: 'daily', days: 7 },
   { key: '30d', label: '30D', granularity: 'daily', days: 30 },
   { key: '3m', label: '3M', granularity: 'daily', days: 90 },
+  { key: '6m', label: '6M', granularity: 'daily', days: 180 },
+  { key: '1y', label: '1Y', granularity: 'daily', days: 365 },
+  { key: '3y', label: '3Y', granularity: 'daily', days: 1095 },
 ];
 export const DEFAULT_RANGE_KEY = '30d';
+export const ZOOMABLE_RANGES = ['1y', '3y'];
 
 /**
- * Pick the entries + granularity to plot for a given range key. Pure/testable.
+ * Entries + granularity to plot for a range key. Pure/testable.
  * @returns {{ entries: Array, granularity: 'daily'|'hourly' }}
  */
 export const resolveView = (daily = [], hourly = [], rangeKey = DEFAULT_RANGE_KEY) => {
   const range = HISTORY_RANGES.find((r) => r.key === rangeKey)
     || HISTORY_RANGES.find((r) => r.key === DEFAULT_RANGE_KEY);
   if (range.granularity === 'hourly') {
-    return { entries: hourly.slice(-24), granularity: 'hourly' };
+    return { entries: (hourly || []).slice(-24), granularity: 'hourly' };
   }
-  return { entries: daily.slice(-range.days), granularity: 'daily' };
+  return { entries: (daily || []).slice(-range.days), granularity: 'daily' };
+};
+
+/** Apply an inclusive [startIdx, endIdx] zoom window to entries; null → full. Pure/testable. */
+export const applyZoom = (entries = [], zoom) => {
+  if (!zoom || !Array.isArray(zoom) || zoom.length !== 2) return entries;
+  const lo = Math.max(0, Math.min(zoom[0], zoom[1]));
+  const hi = Math.min(entries.length - 1, Math.max(zoom[0], zoom[1]));
+  if (hi < lo) return entries;
+  return entries.slice(lo, hi + 1);
 };
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-/**
- * Short axis label for a bucket. Daily → 'Jun 8'; hourly → local hour like '2p'.
- * Pure/testable.
- */
+/** Short axis label for a bucket. Daily → 'Jun 8'; hourly → local hour like '2p'. Pure/testable. */
 export const bucketLabel = (entry, granularity) => {
+  if (!entry) return '';
   if (granularity === 'hourly') {
     const d = new Date(entry.hour);
     if (Number.isNaN(d.getTime())) return String(entry.hour || '');
@@ -48,8 +59,24 @@ export const bucketLabel = (entry, granularity) => {
     return `${h}${ampm}`;
   }
   const parts = String(entry.date || '').split('-').map(Number);
-  if (parts.length < 3) return String(entry.date || '');
+  if (parts.length < 3 || Number.isNaN(parts[1])) return String(entry.date || '');
   return `${MONTHS[parts[1] - 1]} ${parts[2]}`;
+};
+
+/** Evenly-spaced slider marks (index + short date label). Pure/testable. */
+export const sliderMarks = (entries = [], maxMarks = 6) => {
+  const n = entries.length;
+  if (n === 0) return [];
+  const count = Math.min(maxMarks, n);
+  const marks = [];
+  const seen = new Set();
+  for (let k = 0; k < count; k += 1) {
+    const idx = count === 1 ? 0 : Math.round((k * (n - 1)) / (count - 1));
+    if (seen.has(idx)) continue;
+    seen.add(idx);
+    marks.push({ value: idx, label: bucketLabel(entries[idx], 'daily') });
+  }
+  return marks;
 };
 
 /** Faint plot-surface tint so thin light-colored lines keep contrast (dataviz). */
@@ -101,23 +128,10 @@ const endLabelPlugin = {
  *
  * Modes:
  *  - "lines-log"   : one line per algorithm, logarithmic y (difficulty, hashrate).
- *  - "stacked-100" : 100% stacked BAR of each algorithm's per-bucket share.
+ *  - "stacked-100" : smooth 100% stacked area of each algorithm's per-bucket share.
  *
- * @param {object} props
- * @param {'lines-log'|'stacked-100'} props.mode
- * @param {Array}  props.daily   - daily entries ({date, perAlgo, ...})
- * @param {Array}  props.hourly  - hourly entries ({hour, perAlgo, ...})
- * @param {string[]} props.algos - series order (fixed identity colors)
- * @param {Object} props.colors  - algo -> hex
- * @param {(entry:object, algo:string)=>number} props.getValue
- * @param {(n:number)=>string} [props.valueFormat]
- * @param {string} props.title
- * @param {string} [props.subtitle]
- * @param {string} [props.yLabel]
- * @param {boolean} props.loading
- * @param {string|null} props.error
- * @param {number} [props.height=380]
- * @param {string} [props.accentColor='#002352']
+ * Ranges: Daily / 7D / 30D / 3M / 6M / 1Y / 3Y (default 30D). On 1Y & 3Y a brush
+ * slider under the chart zooms into a sub-period.
  */
 const HistoryChart = ({
   mode = 'lines-log', daily = [], hourly = [], algos = [], colors = {}, getValue,
@@ -129,34 +143,53 @@ const HistoryChart = ({
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
   const [rangeKey, setRangeKey] = useState(DEFAULT_RANGE_KEY);
+  const [zoom, setZoom] = useState(null);
 
-  const { entries, granularity } = useMemo(
+  const stacked = mode === 'stacked-100';
+  const zoomable = ZOOMABLE_RANGES.includes(rangeKey);
+
+  const { entries: fullEntries, granularity } = useMemo(
     () => resolveView(daily, hourly, rangeKey), [daily, hourly, rangeKey],
   );
+
+  // Reset the zoom window whenever the range or the data length changes.
+  useEffect(() => { setZoom(null); }, [rangeKey, fullEntries.length]);
+
+  const entries = useMemo(
+    () => (zoomable ? applyZoom(fullEntries, zoom) : fullEntries), [fullEntries, zoom, zoomable],
+  );
   const labels = useMemo(() => entries.map((e) => bucketLabel(e, granularity)), [entries, granularity]);
-  const stacked = mode === 'stacked-100';
+  const marks = useMemo(
+    () => (zoomable ? sliderMarks(fullEntries, isMobile ? 4 : 7) : []), [fullEntries, zoomable, isMobile],
+  );
 
   useEffect(() => {
     if (!canvasRef.current || loading || error || entries.length === 0) return;
     const ctx = canvasRef.current.getContext('2d');
 
-    const dayTotals = entries.map((entry) =>
-      algos.reduce((sum, a) => sum + (getValue(entry, a) || 0), 0));
+    const dayTotals = entries.map((entry) => algos.reduce((sum, a) => sum + (getValue(entry, a) || 0), 0));
+    // Running cumulative % per entry → a smooth 100% stacked area that always fills
+    // 0–100% (deterministic; no reliance on Chart.js scale-stacking of filled lines).
+    const running = entries.map(() => 0);
 
-    const datasets = algos.map((algo) => {
+    const datasets = algos.map((algo, idx) => {
       const color = colors[algo] || '#0066cc';
       const raw = entries.map((entry) => getValue(entry, algo) || 0);
       if (stacked) {
+        const share = raw.map((v, i) => (dayTotals[i] > 0 ? (v / dayTotals[i]) * 100 : 0));
+        const data = share.map((s, i) => { running[i] += s; return running[i]; });
         return {
           label: algo,
-          data: raw.map((v, i) => (dayTotals[i] > 0 ? (v / dayTotals[i]) * 100 : 0)),
+          data,
+          _share: share,
           _raw: raw,
-          backgroundColor: color,
+          backgroundColor: `${color}D9`,
           borderColor: '#ffffff',
-          borderWidth: { top: 0, right: 0, bottom: 0, left: 0 },
-          borderSkipped: false,
-          categoryPercentage: 0.98,
-          barPercentage: 0.98,
+          borderWidth: 1,
+          fill: idx === 0 ? 'origin' : '-1',
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          cubicInterpolationMode: 'monotone',
         };
       }
       return {
@@ -170,14 +203,14 @@ const HistoryChart = ({
         pointHoverRadius: 5,
         pointHoverBackgroundColor: color,
         pointHoverBorderColor: '#fff',
-        tension: 0.3,
+        cubicInterpolationMode: 'monotone',
         spanGaps: true,
       };
     });
 
     if (chartRef.current) chartRef.current.destroy();
     chartRef.current = new Chart(ctx, {
-      type: stacked ? 'bar' : 'line',
+      type: 'line',
       data: { labels, datasets },
       plugins: stacked ? [surfacePlugin] : [surfacePlugin, endLabelPlugin],
       options: {
@@ -202,8 +235,9 @@ const HistoryChart = ({
               label: (item) => {
                 const ds = item.dataset;
                 if (stacked) {
+                  const share = ds._share ? ds._share[item.dataIndex] : item.parsed.y;
                   const rawv = ds._raw ? ds._raw[item.dataIndex] : null;
-                  return `  ${ds.label}: ${item.parsed.y.toFixed(1)}%${rawv != null ? ` (${valueFormat(rawv)})` : ''}`;
+                  return `  ${ds.label}: ${share.toFixed(1)}%${rawv != null ? ` (${valueFormat(rawv)})` : ''}`;
                 }
                 return `  ${ds.label}: ${valueFormat(item.parsed.y)}`;
               },
@@ -216,12 +250,12 @@ const HistoryChart = ({
         },
         scales: {
           x: {
-            stacked, grid: { display: false },
+            grid: { display: false },
             ticks: { color: '#888', font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: isMobile ? 6 : 12 },
           },
           y: stacked
             ? {
-                stacked: true, min: 0, max: 100,
+                min: 0, max: 100,
                 grid: { color: 'rgba(0,0,0,0.05)' },
                 ticks: { color: '#888', font: { size: 10 }, callback: (v) => `${v}%` },
                 title: { display: !!yLabel, text: yLabel, color: '#888' },
@@ -253,9 +287,13 @@ const HistoryChart = ({
       <CardContent sx={{ p: { xs: 2, md: 3 } }}>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 0.5 }}>
           <Typography variant="h5" fontWeight="bold" sx={{ color: accentColor }}>{title}</Typography>
-          <ToggleButtonGroup size="small" exclusive value={rangeKey} onChange={(_, v) => v && setRangeKey(v)} aria-label="history range">
+          <ToggleButtonGroup
+            size="small" exclusive value={rangeKey}
+            onChange={(_, v) => v && setRangeKey(v)}
+            aria-label="history range" sx={{ flexWrap: 'wrap' }}
+          >
             {HISTORY_RANGES.map((r) => (
-              <ToggleButton key={r.key} value={r.key} sx={{ px: 1.4, py: 0.25, textTransform: 'none' }}>
+              <ToggleButton key={r.key} value={r.key} sx={{ px: 1.25, py: 0.25, textTransform: 'none' }}>
                 {r.label}
               </ToggleButton>
             ))}
@@ -281,7 +319,30 @@ const HistoryChart = ({
             <Typography variant="body2" color="#888">No history recorded yet — check back soon.</Typography>
           </Box>
         ) : (
-          <Box sx={{ position: 'relative', height }}><canvas ref={canvasRef} /></Box>
+          <>
+            <Box sx={{ position: 'relative', height }}><canvas ref={canvasRef} /></Box>
+            {zoomable && fullEntries.length > 2 && (
+              <Box sx={{ px: { xs: 1, md: 3 }, mt: 2 }}>
+                <Slider
+                  size="small"
+                  value={zoom || [0, fullEntries.length - 1]}
+                  min={0}
+                  max={fullEntries.length - 1}
+                  marks={marks}
+                  onChange={(_, v) => Array.isArray(v) && v[1] - v[0] >= 2 && setZoom(v)}
+                  valueLabelDisplay="auto"
+                  valueLabelFormat={(idx) => bucketLabel(fullEntries[idx], 'daily')}
+                  disableSwap
+                  getAriaLabel={(i) => (i === 0 ? 'Zoom period start' : 'Zoom period end')}
+                  getAriaValueText={(idx) => bucketLabel(fullEntries[idx], 'daily')}
+                  sx={{ color: accentColor, '& .MuiSlider-markLabel': { fontSize: '0.68rem', color: '#888' } }}
+                />
+                <Typography variant="caption" sx={{ display: 'block', color: '#888', textAlign: 'center' }}>
+                  Drag the handles to zoom into a specific time period
+                </Typography>
+              </Box>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

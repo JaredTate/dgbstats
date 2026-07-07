@@ -123,8 +123,11 @@ Update `dgbstats/ARCHITECTURE.md` + `REPO_MAP.md`.
 - **Visual QA in Chrome** against the live server with real 30-day data before each frontend commit.
 
 ## Decisions (v2 — confirmed)
-- Backfill depth: **90 days (3 months)** of daily data; plus an **hourly rollup** of the last ~48h.
-- Range buttons on every chart: **Daily / 7D / 30D / 3M**, **default 30D**.
+- Backfill depth: **3 years (1095 days)** of daily data (smart gap backfill, resumable); plus an **hourly rollup** of the last ~48h.
+- Range buttons on every chart: **Daily / 7D / 30D / 3M / 6M / 1Y / 3Y**, **default 30D**.
+- On **1Y / 3Y** a brush **slider** under the chart zooms into a sub-period.
+- Algo distribution is a **smooth 100% stacked area** (monotone, pre-stacked cumulative).
+- See **CHART_DEPLOY.md** for production deploy notes (backfill timing, config, what to watch).
   - **Daily** = last 24h at **hourly** granularity (endpoint `/api/history/hourly?hours=24`).
   - 7D / 30D / 3M = daily granularity (`/api/history/daily?days=90`, sliced client-side).
 - Difficulty & Hashrate charts: multi-line, **log** y-axis, daily average (hourly average in Daily view).

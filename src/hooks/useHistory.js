@@ -11,11 +11,11 @@ import { useNetwork } from '../context/NetworkContext';
  *   GET /api/history/hourly?hours=24 → hourly aggregates (entries keyed by `hour`)
  *
  * @param {object} [opts]
- * @param {number} [opts.days=90]  daily depth to request
- * @param {number} [opts.hours=24] hourly depth to request
+ * @param {number} [opts.days=1095] daily depth to request (up to 3 years)
+ * @param {number} [opts.hours=24]  hourly depth to request
  * @returns {{ daily:Array, hourly:Array, algos:string[], loading:boolean, error:string|null }}
  */
-export const useHistory = ({ days = 90, hours = 24 } = {}) => {
+export const useHistory = ({ days = 1095, hours = 24 } = {}) => {
   const { getApiUrl } = useNetwork();
   const [state, setState] = useState({
     daily: [], hourly: [], algos: [], loading: true, error: null,
