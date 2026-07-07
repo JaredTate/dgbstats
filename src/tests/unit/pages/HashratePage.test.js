@@ -28,6 +28,42 @@ vi.mock('../../../config', () => ({
   }
 }));
 
+// Mock the shared history hook so the Hashrate History chart has fixture
+// data without hitting the network-aware /history endpoints.
+const historyFixture = {
+  daily: [
+    {
+      date: '2026-06-08',
+      perAlgo: {
+        SHA256D: { hashrate: 1.7e13 },
+        Scrypt: { hashrate: 2e9 },
+        Skein: { hashrate: 5e8 },
+        Qubit: { hashrate: 3e8 },
+        Odo: { hashrate: 1e7 },
+      },
+    },
+    {
+      date: '2026-06-09',
+      perAlgo: {
+        SHA256D: { hashrate: 1.75e13 },
+        Scrypt: { hashrate: 2.1e9 },
+        Skein: { hashrate: 5.2e8 },
+        Qubit: { hashrate: 3.1e8 },
+        Odo: { hashrate: 1.1e7 },
+      },
+    },
+  ],
+  hourly: [],
+  algos: ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo'],
+  loading: false,
+  error: null,
+};
+
+vi.mock('../../../hooks/useHistory', () => ({
+  useHistory: () => historyFixture,
+  default: () => historyFixture,
+}));
+
 describe('HashratePage', () => {
   let wsSetup;
   let mockWebSocket;
@@ -109,16 +145,35 @@ describe('HashratePage', () => {
 
     it('should display the hashrate formula', async () => {
       renderWithProviders(<HashratePage />);
-      
+
       // Send data to exit loading state
       await waitForAsync();
       const ws = webSocketInstances[0];
       ws.receiveMessage(mockRecentBlocks);
-      
+
       await waitFor(() => {
         expect(screen.getByText(/blocks solved over last hour \/ 48/)).toBeInTheDocument();
         expect(screen.getByText(/\* difficulty \* 2\^32/)).toBeInTheDocument();
       });
+    });
+
+    it('should render the hashrate history chart', async () => {
+      renderWithProviders(<HashratePage />);
+
+      // Send data to exit the realtime loading gate so the non-loading
+      // region (which contains the history chart) renders.
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+      ws.receiveMessage(mockRecentBlocks);
+
+      await waitFor(() => {
+        expect(screen.getByText('Hashrate History')).toBeInTheDocument();
+      });
+
+      // Chart subtitle from the fixture-backed HistoryChart should also render.
+      expect(
+        screen.getByText(/Per-algorithm network hashrate over time/)
+      ).toBeInTheDocument();
     });
   });
 

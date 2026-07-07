@@ -7,12 +7,20 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import TimerIcon from '@mui/icons-material/Timer';
 import LanguageIcon from '@mui/icons-material/Language';
 import { useNetwork } from '../context/NetworkContext';
+import HistoryChart from '../components/HistoryChart';
+import { useHistory } from '../hooks/useHistory';
 
 /**
  * DigiByte's five mining algorithms
  * Each algorithm provides security and decentralization to the network
  */
 const algoNames = ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo'];
+
+/**
+ * Algorithm keys used for the hashrate history chart. These match the
+ * exact keys returned by useHistory()'s perAlgo map.
+ */
+const HISTORY_ALGOS = ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo'];
 
 /**
  * Color mapping for each algorithm to maintain visual consistency
@@ -24,6 +32,26 @@ const algoColors = {
   'Skein': '#ff9800',   // Orange
   'Qubit': '#9c27b0',   // Purple
   'Odo': '#f44336',     // Red
+};
+
+/**
+ * Format a raw hashrate (H/s) with the most readable unit — module-level twin of
+ * the component's formatHashrate, so it can be passed to the shared HistoryChart.
+ *
+ * @param {number} n - Raw hashrate value in H/s
+ * @returns {string} - Formatted hashrate with appropriate unit
+ */
+const formatHashrateShort = (n) => {
+  const units = ['H/s', 'KH/s', 'MH/s', 'GH/s', 'TH/s', 'PH/s', 'EH/s'];
+  let value = Number(n) || 0;
+  let index = 0;
+
+  while (value >= 1000 && index < units.length - 1) {
+    value /= 1000;
+    index++;
+  }
+
+  return `${value.toFixed(2)} ${units[index]}`;
 };
 
 /**
@@ -59,6 +87,10 @@ const HashratePage = ({ difficultiesData }) => {
 
   // Local state for difficulties when prop is not provided (e.g., testnet)
   const [localDifficulties, setLocalDifficulties] = useState(null);
+
+  // Per-algo hashrate history (shared, network-aware backend series) with
+  // internal Daily/7D/30D/3M range switching in the chart itself.
+  const { daily: historyDaily, hourly: historyHourly, loading: historyLoading, error: historyError } = useHistory();
 
   // Ref to store blocks data for calculations
   const blocksRef = useRef([]);
@@ -640,6 +672,23 @@ const HashratePage = ({ difficultiesData }) => {
 
             {/* Individual algorithm statistics cards */}
             <AlgorithmCardsSection />
+
+            {/* Historical hashrate per algorithm (log scale, internal range switching) */}
+            <HistoryChart
+              mode="lines-log"
+              daily={historyDaily}
+              hourly={historyHourly}
+              algos={HISTORY_ALGOS}
+              colors={algoColors}
+              getValue={(e, a) => e.perAlgo[a]?.hashrate}
+              valueFormat={formatHashrateShort}
+              title="Hashrate History"
+              subtitle="Per-algorithm network hashrate over time (daily average; the Daily view breaks it down by hour)."
+              yLabel="Hashrate (log, H/s)"
+              loading={historyLoading}
+              error={historyError}
+              accentColor={networkTheme?.primary || '#002352'}
+            />
 
             {/* Educational content about hashrate calculations */}
             <HashrateCalculationSection />
