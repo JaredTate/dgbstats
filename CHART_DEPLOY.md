@@ -28,7 +28,7 @@ Two repos changed together:
 ## Config / env
 - **History is ON by default.** To turn it off: set **`DGB_HISTORY_DISABLED=1`**.
 - No other new required config. Uses the existing `DGB_RPC_*` (mainnet) / `DGB_TESTNET_RPC_*` env. Node needs `server=1` + reachable RPC (already required); pruned is fine.
-- `history.db*` is gitignored and persistent on disk. Back it up if you want to avoid re-running the 3-year backfill after a volume wipe (otherwise it just re-backfills on next start).
+- `history.db*` is gitignored and persistent on disk. Back it up if you want to avoid re-running the **full-chain backfill** (~1.5–3h, back to genesis) after a volume wipe (otherwise it just re-backfills from scratch on next start).
 
 ## What to watch
 - **First-run backfill** now drives sustained RPC to the node for **~1.5–3 hours** (full-chain, ~23.8M headers). Fine for a healthy node; a slow/loaded node just makes the deep walk take longer (still non-blocking, still safe). If you'd rather not run the deep walk on a given host, set `DGB_HISTORY_DISABLED=1`.
