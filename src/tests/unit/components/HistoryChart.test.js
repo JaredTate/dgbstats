@@ -4,6 +4,7 @@ import {
   entryToDate, monthYearLabel, fullDateLabel,
   HISTORY_RANGES, DEFAULT_RANGE_KEY, ZOOMABLE_RANGES,
   DGB_ERAS, eraBoundariesInRange, erasOverlappingRange, activeAlgosIn,
+  applyAlgoFilter, toggleHidden,
 } from '../../../components/HistoryChart';
 
 const daily = Array.from({ length: 2000 }, (_, i) => ({ date: `d${i}`, perAlgo: {} }));
@@ -217,5 +218,45 @@ describe('activeAlgosIn — drop algos with no data in the visible window', () =
   it('is safe with empty entries / missing getValue results', () => {
     expect(activeAlgosIn([], algos, gv)).toEqual([]);
     expect(activeAlgosIn([{ perAlgo: {} }], algos, gv)).toEqual([]);
+  });
+});
+
+describe('algo filter (Difficulties / Hashrate line charts)', () => {
+  const algos = ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo'];
+
+  describe('applyAlgoFilter', () => {
+    it('shows all when nothing is hidden', () => {
+      expect(applyAlgoFilter(algos, new Set())).toEqual(algos);
+      expect(applyAlgoFilter(algos, undefined)).toEqual(algos);
+    });
+    it('drops hidden algos, preserving input order (color stability)', () => {
+      expect(applyAlgoFilter(algos, new Set(['Scrypt', 'Qubit']))).toEqual(['SHA256D', 'Skein', 'Odo']);
+    });
+    it('supports soloing a single algo', () => {
+      expect(applyAlgoFilter(algos, new Set(['SHA256D', 'Scrypt', 'Skein', 'Qubit']))).toEqual(['Odo']);
+    });
+    it('never returns empty — falls back to all if every algo got hidden (e.g. after a range change)', () => {
+      expect(applyAlgoFilter(algos, new Set(algos))).toEqual(algos);
+    });
+  });
+
+  describe('toggleHidden', () => {
+    it('hides a shown algo', () => {
+      expect([...toggleHidden(new Set(), 'Scrypt', algos)]).toEqual(['Scrypt']);
+    });
+    it('un-hides a hidden algo', () => {
+      expect([...toggleHidden(new Set(['Scrypt']), 'Scrypt', algos)]).toEqual([]);
+    });
+    it('refuses to hide the LAST visible algo (never corrupts to an empty chart)', () => {
+      const hidden = new Set(['SHA256D', 'Scrypt', 'Skein', 'Qubit']); // only Odo left
+      const next = toggleHidden(hidden, 'Odo', algos);
+      expect(next.has('Odo')).toBe(false); // Odo stays visible
+      expect(applyAlgoFilter(algos, next)).toEqual(['Odo']);
+    });
+    it('does not mutate the input set', () => {
+      const h = new Set(['Scrypt']);
+      toggleHidden(h, 'Skein', algos);
+      expect([...h]).toEqual(['Scrypt']);
+    });
   });
 });

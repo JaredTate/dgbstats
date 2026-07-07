@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Chart, registerables } from 'chart.js';
 import 'chartjs-adapter-luxon';
 import {
@@ -175,6 +175,31 @@ export const eraSpanLabel = (era, eras = DGB_ERAS) => {
 export const activeAlgosIn = (entries = [], algos = [], getValue) =>
   algos.filter((a) => (entries || []).some((e) => (getValue(e, a) || 0) > 0));
 
+/**
+ * Visible algos after applying the user's hidden set (line charts). Preserves
+ * order (colors stay stable) and NEVER returns empty — if every algo is hidden
+ * (e.g. the window shrank after a range change) it falls back to all, so the
+ * chart can't be corrupted into a blank/broken axis. Pure/testable.
+ */
+export const applyAlgoFilter = (windowAlgos = [], hidden) => {
+  if (!hidden || hidden.size === 0) return windowAlgos;
+  const shown = windowAlgos.filter((a) => !hidden.has(a));
+  return shown.length ? shown : windowAlgos;
+};
+
+/**
+ * Toggle one algo in the hidden set, but never hide the LAST visible algo (keeps
+ * ≥1 line on screen). Returns a NEW set (no mutation). Pure/testable.
+ */
+export const toggleHidden = (hidden, algo, windowAlgos = []) => {
+  const next = new Set(hidden || []);
+  if (next.has(algo)) { next.delete(algo); return next; }
+  const stillVisible = windowAlgos.filter((a) => a !== algo && !next.has(a));
+  if (stillVisible.length === 0) return next; // would empty the chart → ignore
+  next.add(algo);
+  return next;
+};
+
 /** Faint plot-surface tint so thin light-colored lines keep contrast (dataviz). */
 const surfacePlugin = {
   id: 'historySurface',
@@ -317,6 +342,66 @@ const EraLegend = React.memo(({ eras }) => {
 EraLegend.displayName = 'EraLegend';
 
 /**
+ * AlgoFilter — the tap-to-compare chip row on the line charts (Difficulties /
+ * Hashrate). Each chip doubles as a legend entry: colored dot + name when shown,
+ * greyed + struck-through when hidden. Tap toggles; the parent guards against an
+ * empty selection. Wraps on mobile with 30px tap targets. Memoized.
+ */
+const AlgoFilter = React.memo(({ algos, hidden, colors, onToggle, onReset, showReset }) => {
+  if (!algos || algos.length <= 1) return null; // nothing to compare
+  return (
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.75, mb: 1.5 }}>
+      <Typography variant="caption" sx={{ color: '#888', fontWeight: 700, mr: 0.25 }}>Show:</Typography>
+      {algos.map((a) => {
+        const off = hidden.has(a);
+        const color = colors[a] || '#0066cc';
+        return (
+          <Box
+            key={a}
+            role="button"
+            tabIndex={0}
+            aria-pressed={!off}
+            aria-label={`${off ? 'Show' : 'Hide'} ${a}`}
+            onClick={() => onToggle(a)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(a); } }}
+            sx={{
+              display: 'inline-flex', alignItems: 'center', gap: 0.75, px: 1, py: 0.4,
+              borderRadius: '16px', cursor: 'pointer', userSelect: 'none', minHeight: 30,
+              border: '1px solid', transition: 'all .15s',
+              borderColor: off ? '#e0e0e0' : `${color}66`,
+              bgcolor: off ? '#f6f6f6' : `${color}14`,
+              opacity: off ? 0.65 : 1,
+              '&:hover': { borderColor: off ? '#c8c8c8' : color },
+            }}
+          >
+            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: off ? '#bbb' : color, flexShrink: 0 }} />
+            <Typography
+              variant="caption"
+              sx={{ fontWeight: 700, color: off ? '#999' : '#333', textDecoration: off ? 'line-through' : 'none' }}
+            >
+              {a}
+            </Typography>
+          </Box>
+        );
+      })}
+      {showReset && (
+        <Typography
+          variant="caption"
+          role="button"
+          tabIndex={0}
+          onClick={onReset}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onReset(); } }}
+          sx={{ color: '#0066cc', cursor: 'pointer', fontWeight: 700, ml: 0.5, '&:hover': { textDecoration: 'underline' } }}
+        >
+          Reset
+        </Typography>
+      )}
+    </Box>
+  );
+});
+AlgoFilter.displayName = 'AlgoFilter';
+
+/**
  * HistoryChart — reusable daily/hourly time-series chart for the Algos /
  * Difficulties / Hashrate history features.
  *
@@ -331,6 +416,7 @@ const HistoryChart = ({
   mode = 'lines-log', daily = [], hourly = [], algos = [], colors = {}, getValue,
   valueFormat = (n) => `${n}`, title, subtitle, yLabel,
   loading = false, error = null, height = 380, accentColor = '#002352',
+  defaultHidden = [],
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -338,9 +424,14 @@ const HistoryChart = ({
   const chartRef = useRef(null);
   const [rangeKey, setRangeKey] = useState(DEFAULT_RANGE_KEY);
   const [zoom, setZoom] = useState(null);
+  // Algos toggled off on line charts. Starts from defaultHidden (e.g. the retired
+  // Myriad-Groestl, whose near-zero recent difficulty would otherwise squash the
+  // log axis) — always one tap away via its chip.
+  const [hidden, setHidden] = useState(() => new Set(defaultHidden));
 
   const stacked = mode === 'stacked-100';
   const zoomable = ZOOMABLE_RANGES.includes(rangeKey);
+  const filterable = mode === 'lines-log'; // tap-to-compare chips (not for the stacked distribution)
 
   const { entries: fullEntries, granularity } = useMemo(
     () => resolveView(daily, hourly, rangeKey), [daily, hourly, rangeKey],
@@ -370,13 +461,26 @@ const HistoryChart = ({
     () => (showEras ? erasOverlappingRange(firstDate, lastDate) : []),
     [showEras, firstDate, lastDate],
   );
-  // Plot only algos with data in the visible window: drops the retired
-  // Myriad-Groestl on post-2019 ranges, surfaces it on All. Colors stay keyed by
-  // algo name, so survivors never repaint. Falls back to all algos if empty.
-  const drawAlgos = useMemo(() => {
+  // Algos with data in the visible window: drops retired Myriad-Groestl on
+  // post-2019 ranges, surfaces it on All. Colors stay keyed by algo name, so
+  // survivors never repaint. Falls back to all algos if the window is empty.
+  const windowAlgos = useMemo(() => {
     const a = activeAlgosIn(entries, algos, getValue);
     return a.length ? a : algos;
   }, [entries, algos, getValue]);
+  // What actually gets plotted: on line charts, minus the user's hidden set
+  // (never empty — see applyAlgoFilter). Stacked distribution isn't filterable.
+  const drawAlgos = useMemo(
+    () => (filterable ? applyAlgoFilter(windowAlgos, hidden) : windowAlgos),
+    [filterable, windowAlgos, hidden],
+  );
+  const toggleAlgo = useCallback((a) => setHidden((h) => toggleHidden(h, a, windowAlgos)), [windowAlgos]);
+  const resetAlgos = useCallback(() => setHidden(new Set(defaultHidden)), [defaultHidden]);
+  // "Reset" is offered only once the user has diverged from the default filter,
+  // so it never appears on first load just because a retired algo starts hidden.
+  const defaultHiddenSet = useMemo(() => new Set(defaultHidden), [defaultHidden]);
+  const isDefaultFilter = hidden.size === defaultHiddenSet.size
+    && [...hidden].every((a) => defaultHiddenSet.has(a));
 
   useEffect(() => {
     if (!canvasRef.current || loading || error || entries.length === 0) return;
@@ -445,7 +549,8 @@ const HistoryChart = ({
             })),
           },
           legend: {
-            display: true, position: 'top',
+            // On line charts the AlgoFilter chip row is the (interactive) legend.
+            display: !filterable, position: 'top',
             labels: { usePointStyle: true, boxWidth: 8, padding: 14, color: '#333', font: { size: 12, weight: '600' } },
           },
           tooltip: {
@@ -518,7 +623,7 @@ const HistoryChart = ({
     });
 
     return () => { if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; } };
-  }, [entries, labels, granularity, drawAlgos, colors, getValue, valueFormat, stacked, yLabel, loading, error, isMobile, eraBoundaries]);
+  }, [entries, labels, granularity, drawAlgos, colors, getValue, valueFormat, stacked, filterable, yLabel, loading, error, isMobile, eraBoundaries]);
 
   const hourlyMissing = rangeKey === 'daily' && !loading && !error && entries.length === 0;
 
@@ -560,6 +665,12 @@ const HistoryChart = ({
           </Box>
         ) : (
           <>
+            {filterable && (
+              <AlgoFilter
+                algos={windowAlgos} hidden={hidden} colors={colors}
+                onToggle={toggleAlgo} onReset={resetAlgos} showReset={!isDefaultFilter}
+              />
+            )}
             <Box sx={{ position: 'relative', height }}><canvas ref={canvasRef} /></Box>
             {zoomable && fullEntries.length > 2 && (
               <Box sx={{ px: { xs: 1, md: 3 }, mt: 2 }}>

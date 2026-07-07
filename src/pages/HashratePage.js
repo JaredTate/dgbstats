@@ -24,6 +24,10 @@ const algoNames = ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo'];
  */
 const HISTORY_ALGOS = ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo', 'Myriad-Groestl'];
 
+// Retired Myriad-Groestl starts hidden on the history chart (its near-zero recent
+// hashrate would squash the log axis); one tap on its chip brings it back.
+const HISTORY_DEFAULT_HIDDEN = ['Myriad-Groestl'];
+
 /**
  * Color mapping for each algorithm to maintain visual consistency
  * These colors are used throughout the UI for algorithm identification
@@ -683,6 +687,7 @@ const HashratePage = ({ difficultiesData }) => {
               hourly={historyHourly}
               algos={HISTORY_ALGOS}
               colors={algoColors}
+              defaultHidden={HISTORY_DEFAULT_HIDDEN}
               getValue={(e, a) => e.perAlgo[a]?.hashrate}
               valueFormat={formatHashrateShort}
               title="Hashrate History"

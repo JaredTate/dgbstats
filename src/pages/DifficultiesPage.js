@@ -80,6 +80,11 @@ const algoColors = {
  */
 const HISTORY_ALGOS = ['SHA256D', 'Scrypt', 'Skein', 'Qubit', 'Odo', 'Myriad-Groestl'];
 
+// The retired algo starts hidden on the history chart — its near-zero recent
+// difficulty would squash the log axis. One tap on its chip re-enables it
+// (e.g. to see its real 2014-2019 difficulty on the 5Y / All ranges).
+const HISTORY_DEFAULT_HIDDEN = ['Myriad-Groestl'];
+
 /**
  * Compact difficulty formatter for the history chart's log axis and tooltips.
  * Difficulties span from sub-1 (Scrypt/Odo) up to billions (SHA256D), so we
@@ -660,6 +665,7 @@ const DifficultiesPage = ({ difficultiesData }) => {
                 hourly={historyHourly}
                 algos={HISTORY_ALGOS}
                 colors={algoColors}
+                defaultHidden={HISTORY_DEFAULT_HIDDEN}
                 getValue={(entry, algo) => entry.perAlgo[algo]?.avgDifficulty}
                 valueFormat={formatDiff}
                 title="Difficulty History"
