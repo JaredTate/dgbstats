@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container, Typography, Box, Grid, Card, CardContent,
   Divider, Chip, LinearProgress, Paper, Alert, Tooltip,
@@ -124,6 +124,31 @@ const DDStatsPage = () => {
 
     return () => socket.close();
   }, [wsBaseUrl]);
+
+  // Authoritative REST poll of the getdeploymentinfo RPC (mirrors DDActivationPage).
+  // The WebSocket ddDeploymentData message can silently never arrive, which would
+  // hide the "not active yet" banner. Polling REST makes the not-active state
+  // robust: DigiDollar's BIP9 status is derived and drives the banner regardless
+  // of whether the WebSocket feed is available. Both sources set ddDeploymentStatus.
+  const fetchDeploymentStatus = useCallback(async () => {
+    try {
+      const res = await fetch(network.getApiUrl('/getdeploymentinfo'));
+      if (res.ok) {
+        const dep = await res.json();
+        const dd = dep?.deployments?.digidollar;
+        const status = dd ? (dd.active ? 'active' : dd.bip9?.status) : null;
+        if (status) setDdDeploymentStatus(status);
+      }
+    } catch (err) {
+      console.error('DDStats getdeploymentinfo error:', err);
+    }
+  }, [network]);
+
+  useEffect(() => {
+    fetchDeploymentStatus();
+    const id = setInterval(fetchDeploymentStatus, 30000);
+    return () => clearInterval(id);
+  }, [fetchDeploymentStatus]);
 
   // Format helpers - show "Not Reporting" when no data
   const formatDGB = (amount) => {

@@ -12,6 +12,12 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { useNetwork } from '../context/NetworkContext';
 import IntegrationGuides from '../components/IntegrationGuides';
 import config from '../config';
+import {
+  lockInActivationHeight,
+  blocksRemaining,
+  splitDuration,
+  formatEta as fmtEta,
+} from '../utils/activation';
 
 /**
  * Color mapping for BIP9 activation states
@@ -39,12 +45,125 @@ const STATE_ICONS = {
 // height, retired-algorithm blocks are rejected regardless of BIP9 signalling.
 const GROESTL_BACKSTOP = { mainnet: 23808000, testnet: null };
 
-/** Rough ETA from block count at DigiByte's 15s spacing. */
-function fmtEta(blocks) {
-  if (blocks == null) return '—';
-  const hours = (blocks * 15) / 3600;
-  if (hours >= 24) return `~${(hours / 24).toFixed(1)} days`;
-  return `~${hours.toFixed(1)} hours`;
+// DigiByte targets one block every 15 seconds across all five algorithms.
+const BLOCK_SPACING_SECONDS = 15;
+
+/**
+ * Live countdown to the LOCKED_IN -> ACTIVE transition. Seeds from the block gap
+ * (blocksLeft * ~15s) and ticks down once per second, re-syncing whenever a new
+ * block shrinks the gap. The block count is authoritative; the clock is only a
+ * smooth visual estimate between blocks.
+ */
+function ActivationCountdown({
+  activationHeight,
+  currentHeight,
+  blocksLeft,
+  windowStartBlock,
+  periodBlocks,
+  primaryColor,
+  secondaryColor,
+}) {
+  const [secondsLeft, setSecondsLeft] = useState(() => (blocksLeft || 0) * BLOCK_SPACING_SECONDS);
+
+  // Re-seed the clock whenever the block gap changes (new block mined).
+  useEffect(() => {
+    setSecondsLeft((blocksLeft || 0) * BLOCK_SPACING_SECONDS);
+  }, [blocksLeft]);
+
+  // Tick down between blocks.
+  useEffect(() => {
+    if (!blocksLeft) return undefined;
+    const id = setInterval(() => {
+      setSecondsLeft((s) => (s > 1 ? s - 1 : 0));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [blocksLeft]);
+
+  const { days, hours, minutes, seconds } = splitDuration(secondsLeft);
+  const tiles = [
+    { value: days, label: 'Days' },
+    { value: hours, label: 'Hours' },
+    { value: minutes, label: 'Minutes' },
+    { value: seconds, label: 'Seconds' },
+  ];
+
+  const windowProgress = periodBlocks > 0 && windowStartBlock != null && currentHeight > 0
+    ? Math.min(100, Math.max(0, ((currentHeight - windowStartBlock) / periodBlocks) * 100))
+    : 0;
+
+  return (
+    <Card elevation={4} sx={{ mb: 4, borderRadius: '12px', overflow: 'hidden' }}>
+      <Box
+        sx={{
+          backgroundImage: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+          color: '#fff',
+          px: { xs: 2, sm: 4 },
+          py: { xs: 3, sm: 4 },
+          textAlign: 'center',
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 2 }}>
+          <LockIcon sx={{ fontSize: '1.4rem' }} />
+          <Typography variant="overline" sx={{ letterSpacing: '2px', fontWeight: 700, fontSize: '0.85rem' }}>
+            Locked In — Activates In
+          </Typography>
+        </Box>
+
+        <Box sx={{ display: 'flex', justifyContent: 'center', gap: { xs: 1, sm: 2 } }}>
+          {tiles.map((tile) => (
+            <Box
+              key={tile.label}
+              sx={{
+                backgroundColor: 'rgba(255,255,255,0.14)',
+                border: '1px solid rgba(255,255,255,0.25)',
+                borderRadius: '12px',
+                px: { xs: 1.25, sm: 2.5 },
+                py: { xs: 1.25, sm: 2 },
+                minWidth: { xs: 62, sm: 92 },
+              }}
+            >
+              <Typography
+                sx={{
+                  fontWeight: 800,
+                  fontVariantNumeric: 'tabular-nums',
+                  lineHeight: 1,
+                  fontSize: { xs: '1.9rem', sm: '3rem' },
+                }}
+              >
+                {String(tile.value).padStart(2, '0')}
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.85, letterSpacing: '1px', textTransform: 'uppercase' }}>
+                {tile.label}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+
+        <Typography variant="body2" sx={{ mt: 2.5, opacity: 0.95 }}>
+          Activates at block{' '}
+          <strong>{activationHeight != null ? activationHeight.toLocaleString() : '…'}</strong>
+          {blocksLeft != null && (
+            <> &nbsp;·&nbsp; {blocksLeft.toLocaleString()} blocks to go &nbsp;·&nbsp; ~15s per block</>
+          )}
+        </Typography>
+      </Box>
+
+      <Box sx={{ px: { xs: 2, sm: 3 }, py: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
+          <Typography variant="caption" color="text.secondary">Progress through the final window</Typography>
+          <Typography variant="caption" color="text.secondary">{Math.round(windowProgress)}%</Typography>
+        </Box>
+        <LinearProgress
+          variant="determinate"
+          value={windowProgress}
+          sx={{ height: 8, borderRadius: 4, '& .MuiLinearProgress-bar': { backgroundColor: STATE_COLORS.locked_in } }}
+        />
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.25, textAlign: 'center' }}>
+          Activation is guaranteed. It happens automatically at the next BIP9 retarget boundary — the estimate assumes DigiByte&apos;s 15-second block target.
+        </Typography>
+      </Box>
+    </Card>
+  );
 }
 
 /**
@@ -187,6 +306,25 @@ const DDActivationPage = () => {
   const windowEndBlock = windowStartBlock + periodBlocks - 1;
   const nextWindowStart = currentHeight > 0 ? windowEndBlock + 1 : null;
   const nextWindowBlocks = nextWindowStart ? Math.max(0, nextWindowStart - currentHeight) : null;
+
+  // LOCKED_IN activation target. Per versionbits.cpp, a locked-in deployment
+  // activates at the first retarget boundary after lock-in (since + period),
+  // never before min_activation_height — NOT at min_activation_height itself
+  // (which on mainnet was passed long ago). See utils/activation.js.
+  const minActivationHeight = officialDD?.bip9?.min_activation_height
+    ?? deploymentInfo.min_activation_height
+    ?? params.minActivationHeight;
+  const activationHeight = status === 'locked_in'
+    ? lockInActivationHeight({
+        currentHeight,
+        period: periodBlocks,
+        minActivationHeight,
+        since: officialDD?.bip9?.since,
+      })
+    : null;
+  const activationBlocksLeft = activationHeight != null && currentHeight > 0
+    ? blocksRemaining(activationHeight, currentHeight)
+    : null;
 
   // Algolock (bit 0) deployment state
   const alStatus = officialAlgolock
@@ -502,8 +640,11 @@ const DDActivationPage = () => {
       {status === 'locked_in' && (
         <Alert severity="info" sx={{ mt: 3 }} icon={<LockIcon />}>
           <Typography variant="body1">
-            <strong>DigiDollar activation is locked in!</strong> It will activate at block {deploymentInfo.min_activation_height || params.minActivationHeight}.
-            {currentHeight > 0 && ` (${Math.max(0, (deploymentInfo.min_activation_height || params.minActivationHeight) - currentHeight)} blocks remaining)`}
+            <strong>DigiDollar activation is locked in!</strong> It will activate at block {activationHeight != null ? activationHeight.toLocaleString() : '…'}
+            {activationBlocksLeft != null && ` (${activationBlocksLeft.toLocaleString()} blocks remaining, ${fmtEta(activationBlocksLeft)}).`}
+            {activationHeight != null && activationHeight !== minActivationHeight && (
+              <> Block {minActivationHeight.toLocaleString()} is only the earliest permitted height; activation lands on the next BIP9 retarget boundary.</>
+            )}
           </Typography>
         </Alert>
       )}
@@ -731,6 +872,17 @@ const DDActivationPage = () => {
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <HeroSection />
       <StatusCards />
+      {status === 'locked_in' && currentHeight > 0 && activationHeight != null && (
+        <ActivationCountdown
+          activationHeight={activationHeight}
+          currentHeight={currentHeight}
+          blocksLeft={activationBlocksLeft}
+          windowStartBlock={windowStartBlock}
+          periodBlocks={periodBlocks}
+          primaryColor={primaryColor}
+          secondaryColor={secondaryColor}
+        />
+      )}
       <StageFlow />
       <AlgolockSection />
       <BIP9Explanation />

@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, waitFor, act } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import OraclesPage from '../../../pages/OraclesPage';
 import { renderWithProviders, createWebSocketMock, waitForAsync } from '../../utils/testUtils';
+import { server } from '../../mocks/server';
+import { mockApiResponses } from '../../mocks/mockData';
 
 // Mock data matching the WebSocket message format
 // Backend sends: { type: 'oracleData', data: { price, allPrices, oracles } }
@@ -794,6 +797,19 @@ describe('OraclesPage', () => {
   });
 
   describe('DigiDollar Activation Banner', () => {
+    // These tests exercise the WebSocket ddDeploymentData path that drives the
+    // banner. Pin getdeploymentinfo to 404 so the authoritative REST poll does
+    // not override the WS-driven status under test (mirrors the DDActivationPage
+    // WS-fallback setup). The 'REST-driven activation banner' block below
+    // restores the default handler to test the REST path.
+    beforeEach(() => {
+      const notFound = () => HttpResponse.json({ error: 'Not found' }, { status: 404 });
+      server.use(
+        http.get('http://localhost:5001/api/getdeploymentinfo', notFound),
+        http.get('http://localhost:5001/api/testnet/getdeploymentinfo', notFound)
+      );
+    });
+
     it('should show activation banner when DigiDollar is not active', async () => {
       renderWithProviders(<OraclesPage />, { network: 'testnet' });
       await waitForAsync();
@@ -867,6 +883,75 @@ describe('OraclesPage', () => {
 
       const link = screen.getByText('Track Activation →');
       expect(link.closest('a')).toHaveAttribute('href', '/testnet/activation');
+    });
+  });
+
+  // =====================================================================
+  // REST-DRIVEN BANNER — getdeploymentinfo is an authoritative source that
+  // keeps the "DigiDollar is not active yet" banner reliable even when the
+  // ddDeploymentData WebSocket message never arrives (the live bug).
+  // =====================================================================
+  describe('REST-driven activation banner (getdeploymentinfo)', () => {
+    // These tests rely on the default MSW handler for getdeploymentinfo, which
+    // returns deployments.digidollar with status 'started', active: false.
+    it('should show the not-active banner from getdeploymentinfo when no WebSocket deployment message arrives', async () => {
+      renderWithProviders(<OraclesPage />, { network: 'testnet' });
+
+      // Deliberately never send a ddDeploymentData WebSocket message — the REST
+      // poll alone must drive the banner into view.
+      expect(await screen.findByText(/DigiDollar is not active yet/)).toBeInTheDocument();
+
+      // Stage text is derived from the same default deployment payload.
+      const restStatus = mockApiResponses.deploymentInfo.deployments.digidollar.bip9.status;
+      expect(screen.getByText(restStatus.toUpperCase())).toBeInTheDocument();
+      expect(screen.getByText('Track Activation →')).toBeInTheDocument();
+    });
+
+    it('should poll the testnet getdeploymentinfo endpoint via network.getApiUrl', async () => {
+      let requested = false;
+      server.use(
+        http.get('http://localhost:5001/api/testnet/getdeploymentinfo', () => {
+          requested = true;
+          return HttpResponse.json(mockApiResponses.deploymentInfo);
+        })
+      );
+
+      renderWithProviders(<OraclesPage />, { network: 'testnet' });
+
+      await screen.findByText(/DigiDollar is not active yet/);
+      expect(requested).toBe(true);
+    });
+
+    it('should NOT show the not-active banner when getdeploymentinfo reports digidollar active', async () => {
+      server.use(
+        http.get('http://localhost:5001/api/testnet/getdeploymentinfo', () =>
+          HttpResponse.json({
+            height: 999,
+            deployments: { digidollar: { active: true, bip9: { status: 'active' } } }
+          }))
+      );
+
+      renderWithProviders(<OraclesPage />, { network: 'testnet' });
+
+      // Allow the getdeploymentinfo poll to resolve before asserting absence.
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      });
+
+      expect(screen.queryByText(/DigiDollar is not active yet/)).not.toBeInTheDocument();
+    });
+
+    it('should keep the WebSocket ddDeploymentData path working alongside the REST poll', async () => {
+      // With the default 'started' REST payload AND a WS 'defined' message, the
+      // banner is shown; whichever source resolves last wins, but both mean
+      // "not active" so the banner remains visible.
+      renderWithProviders(<OraclesPage />, { network: 'testnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      ws.receiveMessage({ type: 'ddDeploymentData', data: { status: 'defined' } });
+
+      expect(await screen.findByText(/DigiDollar is not active yet/)).toBeInTheDocument();
     });
   });
 

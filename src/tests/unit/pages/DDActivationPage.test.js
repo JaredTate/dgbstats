@@ -523,6 +523,77 @@ describe('DDActivationPage', () => {
     });
   });
 
+  describe('LOCKED_IN State — mainnet next-window activation (countdown)', () => {
+    // On mainnet, min_activation_height (23,627,520) was passed long before
+    // lock-in, so the deployment activates at the next retarget boundary
+    // (since + period), NOT at min_activation_height. Regression guard for the
+    // "It will activate at block 23,627,520 (0 blocks remaining)" bug.
+    const mockMainnetLockedIn = {
+      enabled: false,
+      status: 'locked_in',
+      bit: 23,
+      start_time: 1780272000,
+      timeout: 1811808000,
+      min_activation_height: 23627520,
+      signaling_blocks: 15241,
+      threshold: 28224,
+      period_blocks: 40320,
+      progress_percent: 100
+    };
+
+    // Chain tip 23,846,625 sits in window 591 [23,829,120 .. 23,869,439];
+    // activation is the next boundary, 23,869,440 (592 * 40320).
+    const TIP = 23846625;
+
+    async function renderMainnetLockedIn() {
+      renderWithProviders(<DDActivationPage />, { network: 'mainnet' });
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+      sendInitialData(ws, { blockchainInfo: { blocks: TIP } });
+      sendDeploymentData(ws, mockMainnetLockedIn);
+    }
+
+    it('activates at the next window boundary, not min_activation_height', async () => {
+      await renderMainnetLockedIn();
+
+      await waitFor(() => {
+        expect(screen.getByText(/will activate at block 23,869,440/)).toBeInTheDocument();
+      });
+    });
+
+    it('shows the real blocks-remaining countdown instead of 0', async () => {
+      await renderMainnetLockedIn();
+
+      await waitFor(() => {
+        // 23,869,440 - 23,846,625 = 22,815 blocks (the old bug rendered 0)
+        expect(screen.getByText(/22,815 blocks remaining/)).toBeInTheDocument();
+      });
+      expect(screen.queryByText(/0 blocks remaining/)).not.toBeInTheDocument();
+    });
+
+    it('renders the live D/H/M/S countdown card', async () => {
+      await renderMainnetLockedIn();
+
+      await waitFor(() => {
+        expect(screen.getByText(/Locked In .* Activates In/)).toBeInTheDocument();
+      });
+      expect(screen.getByText('Days')).toBeInTheDocument();
+      expect(screen.getByText('Hours')).toBeInTheDocument();
+      expect(screen.getByText('Minutes')).toBeInTheDocument();
+      expect(screen.getByText('Seconds')).toBeInTheDocument();
+      // Target block appears in both the countdown and the lock-in alert.
+      expect(screen.getAllByText('23,869,440').length).toBeGreaterThan(0);
+    });
+
+    it('clarifies that min_activation_height is only the earliest permitted height', async () => {
+      await renderMainnetLockedIn();
+
+      await waitFor(() => {
+        expect(screen.getByText(/only the earliest permitted height/)).toBeInTheDocument();
+      });
+    });
+  });
+
   describe('ACTIVE State', () => {
     it('should show "YES" for "Is DigiDollar Active?"', async () => {
       renderWithProviders(<DDActivationPage />, { network: 'testnet' });

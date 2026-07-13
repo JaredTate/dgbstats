@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container, Typography, Box, Grid, Card, CardContent,
   Divider, Chip, Table, TableBody, TableCell, TableContainer,
@@ -255,6 +255,30 @@ const OraclesPage = () => {
 
     return () => socket.close();
   }, [wsBaseUrl]);
+
+  // Authoritative BIP9 deployment status from the node's getdeploymentinfo RPC.
+  // The WebSocket ddDeploymentData message above is a live source, but it can
+  // silently never arrive — polling REST here keeps the "DigiDollar is not
+  // active yet" banner reliable regardless. Mirrors DDActivationPage.
+  const fetchDeploymentInfo = useCallback(async () => {
+    try {
+      const res = await fetch(network.getApiUrl('/getdeploymentinfo'));
+      if (res.ok) {
+        const dep = await res.json();
+        const dd = dep?.deployments?.digidollar;
+        const status = dd ? (dd.active ? 'active' : dd.bip9?.status) : null;
+        if (status) setDdDeploymentStatus(status);
+      }
+    } catch (err) {
+      console.error('OraclesPage getdeploymentinfo error:', err);
+    }
+  }, [network]);
+
+  useEffect(() => {
+    fetchDeploymentInfo();
+    const id = setInterval(fetchDeploymentInfo, 30000);
+    return () => clearInterval(id);
+  }, [fetchDeploymentInfo]);
 
   // Format price from micro-USD to display format
   const formatPrice = (microUsd) => {

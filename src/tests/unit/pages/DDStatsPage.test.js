@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, waitFor, act } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import DDStatsPage from '../../../pages/DDStatsPage';
 import { renderWithProviders, createWebSocketMock, waitForAsync } from '../../utils/testUtils';
+import { server } from '../../mocks/server';
 
 // Mock data for WebSocket responses
 // Backend sends: { type: 'ddStatsData', data: { stats, oraclePrice } }
@@ -443,7 +445,45 @@ describe('DDStatsPage', () => {
       expect(screen.queryByText(/DigiDollar is not active yet/)).not.toBeInTheDocument();
     });
 
-    it('should not show activation banner before deployment data arrives', async () => {
+    it('should not show activation banner when no deployment data is available from any source', async () => {
+      // With neither a WebSocket ddDeploymentData message nor a usable REST
+      // getdeploymentinfo response (both endpoints 404), there is no deployment
+      // status to drive the banner, so it must stay hidden.
+      const notFound = () => HttpResponse.json({ error: 'Not found' }, { status: 404 });
+      server.use(
+        http.get('http://localhost:5001/api/getdeploymentinfo', notFound),
+        http.get('http://localhost:5001/api/testnet/getdeploymentinfo', notFound)
+      );
+
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
+      await waitForAsync();
+
+      expect(screen.queryByText(/DigiDollar is not active yet/)).not.toBeInTheDocument();
+    });
+
+    it('should show the banner from REST getdeploymentinfo alone (no WebSocket message)', async () => {
+      // The default MSW handler returns digidollar status 'started' (active:false).
+      // No ddDeploymentData WebSocket message is ever sent here, proving the REST
+      // poll is an authoritative, independent source for the not-active banner.
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
+
+      expect(await screen.findByText(/DigiDollar is not active yet/)).toBeInTheDocument();
+      expect(screen.getByText('STARTED')).toBeInTheDocument();
+      expect(screen.getByText('Track Activation →')).toBeInTheDocument();
+    });
+
+    it('should not show the banner when REST getdeploymentinfo reports DigiDollar active', async () => {
+      // Override the REST endpoint so digidollar is active. No WebSocket message
+      // is sent, so REST is the only status source and the banner must stay hidden.
+      server.use(
+        http.get('http://localhost:5001/api/testnet/getdeploymentinfo', () =>
+          HttpResponse.json({
+            height: 999,
+            deployments: { digidollar: { active: true, bip9: { status: 'active' } } }
+          })
+        )
+      );
+
       renderWithProviders(<DDStatsPage />, { network: 'testnet' });
       await waitForAsync();
 
