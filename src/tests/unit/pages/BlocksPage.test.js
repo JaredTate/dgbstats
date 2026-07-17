@@ -219,7 +219,7 @@ describe('BlocksPage', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getAllByText('DD Oracle Bundle').length).toBe(20);
+        expect(screen.getAllByText('DigiDollar Bundle').length).toBe(20);
       });
       // No bundle -> muted dash in every cell
       expect(screen.getAllByText('—').length).toBe(20);
@@ -261,7 +261,7 @@ describe('BlocksPage', () => {
       await waitFor(() => {
         expect(screen.getByText('7 signers')).toBeInTheDocument();
       });
-      expect(screen.getByText('DD Oracle Bundle')).toBeInTheDocument();
+      expect(screen.getByText('DigiDollar Bundle')).toBeInTheDocument();
       // Rolled/signaling state renders nothing now
       expect(screen.queryByText('Rolling')).not.toBeInTheDocument();
       expect(screen.queryByText('None')).not.toBeInTheDocument();

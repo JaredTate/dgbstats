@@ -99,14 +99,14 @@ describe('PoolUpgradeTrackerPage', () => {
   });
 
   describe('Per-pool status classification', () => {
-    it('marks a pool mining bundle blocks as Publishing bundles', async () => {
+    it('marks a pool mining bundle blocks with the green DigiDollar Bundles badge', async () => {
       await renderWithBlocks();
 
       await waitFor(() => {
         expect(screen.getByText('BundlePool')).toBeInTheDocument();
       });
       const row = screen.getByText('BundlePool').closest('tr');
-      expect(within(row).getByText('Publishing bundles')).toBeInTheDocument();
+      expect(within(row).getByText('Publishing DigiDollar Bundles')).toBeInTheDocument();
       // 2 of its 3 blocks carried bundles
       expect(within(row).getByText('2/3 (67%)')).toBeInTheDocument();
     });
@@ -119,17 +119,17 @@ describe('PoolUpgradeTrackerPage', () => {
       });
       const row = screen.getByText('AlgolockPool').closest('tr');
       expect(within(row).getByText('Upgraded — not publishing')).toBeInTheDocument();
-      expect(within(row).queryByText('Publishing bundles')).not.toBeInTheDocument();
+      expect(within(row).queryByText('Publishing DigiDollar Bundles')).not.toBeInTheDocument();
     });
 
-    it('marks a pool with no v9.26 evidence as Not upgraded', async () => {
+    it('marks a pool with no evidence at all as No bundles', async () => {
       await renderWithBlocks();
 
       await waitFor(() => {
         expect(screen.getByText('OldPool')).toBeInTheDocument();
       });
       const row = screen.getByText('OldPool').closest('tr');
-      expect(within(row).getByText('Not upgraded')).toBeInTheDocument();
+      expect(within(row).getByText('No bundles')).toBeInTheDocument();
     });
 
     it('treats historical clean bit-23 signaling as upgrade evidence', async () => {
@@ -147,12 +147,12 @@ describe('PoolUpgradeTrackerPage', () => {
   });
 
   describe('Network-wide summaries', () => {
-    it('reports oracle bundle coverage over the window', async () => {
+    it('reports DigiDollar Bundle coverage over the window', async () => {
       await renderWithBlocks();
 
       // 2 bundles across 7 observed blocks
       await waitFor(() => {
-        expect(screen.getByText(/2 of 7 recent blocks carry an oracle price bundle/i)).toBeInTheDocument();
+        expect(screen.getByText(/2 of 7 recent blocks carry a DigiDollar Bundle/i)).toBeInTheDocument();
       });
     });
 
@@ -160,13 +160,31 @@ describe('PoolUpgradeTrackerPage', () => {
       await renderWithBlocks();
 
       // KPI tiles: 1 publishing / 1 upgraded-not-publishing / 1 not-upgraded
+      // (label appears on both the KPI tile and the status chip)
       await waitFor(() => {
-        expect(screen.getByText(/Publishing pools/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/Publishing DigiDollar Bundles/i).length).toBeGreaterThan(0);
       });
       expect(screen.getByText(/Upgraded, not publishing/i)).toBeInTheDocument();
-      expect(screen.getByText(/Not upgraded yet/i)).toBeInTheDocument();
+      // Signalling has ended network-wide, so the third bucket claims only
+      // what the chain proves: no bundles (tile + chip may both match).
+      expect(screen.getAllByText(/No bundles/i).length).toBeGreaterThan(0);
       // one pool in each bucket for this fixture
       expect(screen.getAllByText('1').length).toBeGreaterThanOrEqual(3);
+    });
+
+    it('no longer shows the retired Algolock / Groestl sections', async () => {
+      await renderWithBlocks();
+
+      await waitFor(() => {
+        expect(screen.getByText('BundlePool')).toBeInTheDocument();
+      });
+      // Section titles/columns from the signalling era must be gone. (The
+      // fixture pool literally named 'AlgolockPool' still renders — assert on
+      // the retired UI strings, not the substring.)
+      expect(screen.queryByText(/Algolock \(bit\s?0\)/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/v9\.26 adoption/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Groestl Retirement/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/version-rolling window/i)).not.toBeInTheDocument();
     });
 
     it('explains the GBT fix for upgraded-but-not-publishing pools', async () => {
@@ -191,7 +209,7 @@ describe('PoolUpgradeTrackerPage', () => {
 
       await waitFor(() => {
         const row = screen.getByText('OldPool').closest('tr');
-        expect(within(row).getByText('Publishing bundles')).toBeInTheDocument();
+        expect(within(row).getByText('Publishing DigiDollar Bundles')).toBeInTheDocument();
       });
       // No pool row carries the Not upgraded chip any more (the footer legend
       // still mentions the term, so scope to chips).

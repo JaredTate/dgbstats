@@ -108,7 +108,7 @@ describe('Oracle bundle tracking', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getAllByText('DD Oracle Bundle')[0]).toBeInTheDocument();
+        expect(screen.getAllByText('DigiDollar Bundle')[0]).toBeInTheDocument();
       });
       expect(screen.queryByTestId('oracle-bundle-chip')).not.toBeInTheDocument();
     });
@@ -147,26 +147,26 @@ describe('Oracle bundle tracking', () => {
       wsBlock({ height: 23800000, minerAddress: 'DSolo1', poolIdentifier: 'Unknown' }),
     ];
 
-    it('shows an Oracle n/m chip for miners whose blocks carry bundles', async () => {
+    it('shows a green DigiDollar Bundles n/m chip for miners whose blocks carry bundles', async () => {
       renderWithProviders(<PoolsPage />);
       await waitForAsync();
       webSocketInstances[0].receiveMessage({ type: 'recentBlocks', data: poolBlocks });
 
       await waitFor(() => {
-        expect(screen.getByText('Oracle 2/3')).toBeInTheDocument();
+        expect(screen.getByText('DigiDollar Bundles 2/3')).toBeInTheDocument();
       });
     });
 
-    it('does not show an oracle chip for miners without bundle blocks', async () => {
+    it('does not show a bundle chip for miners without bundle blocks', async () => {
       renderWithProviders(<PoolsPage />);
       await waitForAsync();
       webSocketInstances[0].receiveMessage({ type: 'recentBlocks', data: poolBlocks });
 
       await waitFor(() => {
-        expect(screen.getByText('Oracle 2/3')).toBeInTheDocument();
+        expect(screen.getByText('DigiDollar Bundles 2/3')).toBeInTheDocument();
       });
-      // ViaBTC (2 blocks) and the solo miner have no bundles → exactly one oracle chip
-      expect(screen.getAllByText(/^Oracle \d+\/\d+$/)).toHaveLength(1);
+      // ViaBTC (2 blocks) and the solo miner have no bundles → exactly one bundle chip
+      expect(screen.getAllByText(/^DigiDollar Bundles \d+\/\d+$/)).toHaveLength(1);
     });
 
     it('reports network-wide bundle coverage in the stats summary', async () => {
@@ -175,7 +175,7 @@ describe('Oracle bundle tracking', () => {
       webSocketInstances[0].receiveMessage({ type: 'recentBlocks', data: poolBlocks });
 
       await waitFor(() => {
-        expect(screen.getByText(/2 of 6 blocks carry an oracle price bundle/i)).toBeInTheDocument();
+        expect(screen.getByText(/2 of 6 blocks carry a DigiDollar Bundle/i)).toBeInTheDocument();
       });
     });
   });
@@ -219,11 +219,11 @@ describe('Oracle bundle tracking', () => {
       return ws;
     }
 
-    it('renders the Oracle Bundle Adoption section with per-pool status', async () => {
+    it('renders the DigiDollar Bundle Adoption section with per-pool status', async () => {
       await renderWithAdoptionData();
 
       await waitFor(() => {
-        expect(screen.getByText(/Oracle Bundle Adoption/i)).toBeInTheDocument();
+        expect(screen.getByText(/DigiDollar Bundle Adoption/i)).toBeInTheDocument();
       });
       expect(screen.getByText('PoolA')).toBeInTheDocument();
       expect(screen.getByText('PoolB')).toBeInTheDocument();
@@ -237,7 +237,7 @@ describe('Oracle bundle tracking', () => {
         expect(screen.getByText('Publishing')).toBeInTheDocument();
       });
       expect(screen.getByText('Upgraded — no bundles yet')).toBeInTheDocument();
-      expect(screen.getByText('Not upgraded')).toBeInTheDocument();
+      expect(screen.getByText('No bundles')).toBeInTheDocument();
     });
 
     it('reports bundle coverage over the observed blocks', async () => {
@@ -263,7 +263,7 @@ describe('Oracle bundle tracking', () => {
         expect(screen.getByText(/3 of 9 blocks/i)).toBeInTheDocument();
       });
       // PoolC just published its first bundle → no longer "Not upgraded"
-      expect(screen.queryByText('Not upgraded')).not.toBeInTheDocument();
+      expect(screen.queryByText('No bundles', { selector: '.MuiChip-label' })).not.toBeInTheDocument();
     });
   });
 });

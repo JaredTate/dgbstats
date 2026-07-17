@@ -847,38 +847,39 @@ const DDActivationPage = () => {
     );
   };
 
-  // Oracle Bundle Adoption — which pools are mining DigiDollar blocks with
-  // oracle price bundles attached, and which still need outreach.
+  // DigiDollar Bundle Adoption — which pools are mining DigiDollar blocks
+  // with signed price bundles attached, and which still need outreach.
   const OracleAdoptionSection = () => {
     if (!oracleAdoption) return null;
     const STATUS_CHIP = {
-      publishing: { label: 'Publishing', sx: { backgroundColor: 'rgba(255, 179, 0, 0.18)', color: '#9a6a00', fontWeight: 'bold', '& .MuiChip-icon': { color: '#b8860b' } }, icon: <CheckCircleIcon sx={{ fontSize: '1rem' }} /> },
+      publishing: { label: 'Publishing', sx: { backgroundColor: '#e8f5e9', color: '#2e7d32', fontWeight: 'bold', border: '1px solid rgba(46, 125, 50, 0.35)', '& .MuiChip-icon': { color: '#2e7d32' } }, icon: <CheckCircleIcon sx={{ fontSize: '1rem' }} /> },
       upgraded: { label: 'Upgraded — no bundles yet', sx: { backgroundColor: '#fff3e0', color: '#e65100', fontWeight: 'medium' } },
-      none: { label: 'Not upgraded', sx: { backgroundColor: '#ffebee', color: '#c62828', fontWeight: 'medium' } },
+      none: { label: 'No bundles', sx: { backgroundColor: '#ffebee', color: '#c62828', fontWeight: 'medium' } },
     };
     return (
       <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
           <Typography variant="h5" fontWeight="bold" sx={{ color: primaryColor }}>
-            Oracle Bundle Adoption
+            DigiDollar Bundle Adoption
           </Typography>
           <Chip
+            icon={<CheckCircleIcon sx={{ fontSize: '1rem' }} />}
             label={`${oracleAdoption.publishingCount} pool${oracleAdoption.publishingCount === 1 ? '' : 's'} publishing`}
             size="small"
-            sx={{ backgroundColor: 'rgba(255, 179, 0, 0.18)', color: '#9a6a00', fontWeight: 'bold' }}
+            sx={{ backgroundColor: '#e8f5e9', color: '#2e7d32', fontWeight: 'bold', '& .MuiChip-icon': { color: '#2e7d32' } }}
           />
         </Box>
         <Typography variant="body2" sx={{ mb: 2, color: '#555' }}>
-          A block carrying an <strong>oracle price bundle</strong> (the OP_RETURN OP_ORACLE coinbase
-          output) is definitive proof its pool runs a fully upgraded node with a live oracle
-          session. Pools below without bundles are the outreach list — they either need the
-          v9.26.x upgrade or an oracle-enabled configuration.
+          A block carrying a <strong>DigiDollar Bundle</strong> (the OP_RETURN OP_ORACLE coinbase
+          output with the MuSig2-signed DGB/USD price) is definitive proof its pool runs a fully
+          upgraded node with a live oracle session. Pools below without bundles are the outreach
+          list — they either need the v9.26.x upgrade or an oracle-enabled configuration.
         </Typography>
 
         <Grid container spacing={3} sx={{ mb: 2 }}>
           <Grid item xs={6} sm={3}>
             <Typography variant="body2" color="#777">Bundle coverage</Typography>
-            <Typography variant="h6" fontWeight="bold" sx={{ color: '#9a6a00' }}>
+            <Typography variant="h6" fontWeight="bold" sx={{ color: '#2e7d32' }}>
               {oracleAdoption.pct.toFixed(1)}%
             </Typography>
           </Grid>
@@ -914,8 +915,8 @@ const DDActivationPage = () => {
               sx={{
                 display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1,
                 py: 1, px: 1.5, mb: 0.75, borderRadius: '8px',
-                backgroundColor: pool.status === 'publishing' ? 'rgba(255, 215, 0, 0.08)' : '#fafafa',
-                border: pool.status === 'publishing' ? '1px solid rgba(255, 179, 0, 0.35)' : '1px solid #eee',
+                backgroundColor: pool.status === 'publishing' ? 'rgba(46, 125, 50, 0.07)' : '#fafafa',
+                border: pool.status === 'publishing' ? '1px solid rgba(46, 125, 50, 0.35)' : '1px solid #eee',
               }}
             >
               <Typography variant="body1" fontWeight="bold" sx={{ mr: 1 }}>

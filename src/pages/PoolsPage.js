@@ -564,20 +564,21 @@ const PoolsPage = () => {
               />
             )}
 
-            {/* Post-activation DigiDollar status. A gold Oracle n/m chip is the
-                definitive "fully integrated and publishing price data" badge;
-                the amber/red chips are the outreach list. */}
+            {/* Post-activation DigiDollar status. The green DigiDollar Bundles
+                chip is the definitive "fully integrated and publishing signed
+                price data" badge; the amber/red chips are the outreach list. */}
             {item.upgradeState === 'publishing' && (
               <Chip
                 icon={<CheckCircleIcon sx={{ fontSize: '1rem' }} />}
-                label={`Oracle ${item.oracleBlocks}/${item.count}`}
+                label={`DigiDollar Bundles ${item.oracleBlocks}/${item.count}`}
                 size="small"
                 sx={{
-                  backgroundColor: 'rgba(255, 179, 0, 0.18)',
-                  color: '#9a6a00',
+                  backgroundColor: '#e8f5e9',
+                  color: '#2e7d32',
                   fontWeight: 'bold',
+                  border: '1px solid rgba(46, 125, 50, 0.35)',
                   ml: isMultiBlock ? 0 : 'auto',
-                  '& .MuiChip-icon': { color: '#b8860b' }
+                  '& .MuiChip-icon': { color: '#2e7d32' }
                 }}
               />
             )}
@@ -590,7 +591,7 @@ const PoolsPage = () => {
             )}
             {item.upgradeState === 'none' && (
               <Chip
-                label="Not upgraded"
+                label="No bundles"
                 size="small"
                 sx={{ backgroundColor: '#ffebee', color: '#c62828', fontWeight: 'medium', ml: isMultiBlock ? 0 : 'auto' }}
               />
@@ -701,8 +702,9 @@ const PoolsPage = () => {
           Total Blocks Analyzed: {blocks.length}
         </Typography>
         {blocks.length > 0 && (
-          <Typography variant="body1" fontWeight="medium" sx={{ mt: 1, color: '#9a6a00' }}>
-            {blocks.filter(b => b.hasOracleBundle).length} of {blocks.length} blocks carry an oracle price bundle
+          <Typography variant="body1" fontWeight="medium" sx={{ mt: 1, color: '#2e7d32', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75 }}>
+            <CheckCircleIcon sx={{ fontSize: '1.1rem' }} />
+            {blocks.filter(b => b.hasOracleBundle).length} of {blocks.length} blocks carry a DigiDollar Bundle
           </Typography>
         )}
         <Typography variant="body1" color="#666" sx={{ mt: 1 }}>

@@ -149,14 +149,14 @@ const BlockCard = ({ block, index, isMobile }) => (
         },
         overflow: 'hidden',
         borderLeft: `5px solid ${getAlgoColor(block.algo)}`,
-        // Blocks carrying a DigiDollar oracle price bundle (mined by a fully
-        // upgraded, oracle-publishing pool) get a gold glow so they stand out.
+        // Blocks carrying a DigiDollar Bundle (mined by a fully upgraded,
+        // publishing pool) get a green glow so they stand out.
         ...(block.hasOracleBundle && {
-          boxShadow: 'inset 0 0 0 2px rgba(255, 179, 0, 0.55), 0 2px 8px rgba(255, 179, 0, 0.25)',
-          backgroundImage: 'linear-gradient(90deg, rgba(255, 215, 0, 0.10) 0%, rgba(255, 215, 0, 0.03) 45%, transparent 100%)',
+          boxShadow: 'inset 0 0 0 2px rgba(46, 125, 50, 0.55), 0 2px 8px rgba(46, 125, 50, 0.25)',
+          backgroundImage: 'linear-gradient(90deg, rgba(76, 175, 80, 0.12) 0%, rgba(76, 175, 80, 0.04) 45%, transparent 100%)',
           '&:hover': {
             transform: 'translateY(-2px)',
-            boxShadow: 'inset 0 0 0 2px rgba(255, 179, 0, 0.55), 0 8px 16px rgba(255, 179, 0, 0.3)',
+            boxShadow: 'inset 0 0 0 2px rgba(46, 125, 50, 0.55), 0 8px 16px rgba(46, 125, 50, 0.3)',
           },
         }),
       }}
@@ -261,7 +261,7 @@ const BlockCard = ({ block, index, isMobile }) => (
                 the strongest possible "this pool is DigiDollar-ready" proof. */}
             <Box>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                DD Oracle Bundle
+                DigiDollar Bundle
               </Typography>
               {block.hasOracleBundle ? (
                 <Chip
@@ -270,11 +270,12 @@ const BlockCard = ({ block, index, isMobile }) => (
                   label={block.oracleSignerCount != null ? `${block.oracleSignerCount} signers` : 'Attached'}
                   size="small"
                   sx={{
-                    bgcolor: 'rgba(255, 179, 0, 0.18)',
-                    color: '#9a6a00',
+                    bgcolor: '#e8f5e9',
+                    color: '#2e7d32',
                     fontWeight: 'bold',
                     fontSize: '0.75rem',
-                    '& .MuiChip-icon': { color: '#b8860b' }
+                    border: '1px solid rgba(46, 125, 50, 0.35)',
+                    '& .MuiChip-icon': { color: '#2e7d32' }
                   }}
                 />
               ) : (

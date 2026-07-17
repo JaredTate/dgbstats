@@ -238,10 +238,10 @@ describe('PoolsPage', () => {
       ws.receiveMessage({ type: 'recentBlocks', data: blocks });
 
       await waitFor(() => {
-        expect(screen.getByText('Oracle 1/2')).toBeInTheDocument();
+        expect(screen.getByText('DigiDollar Bundles 1/2')).toBeInTheDocument();
       });
       expect(screen.getAllByText('Upgraded — no bundles')).toHaveLength(2);
-      expect(screen.getByText('Not upgraded')).toBeInTheDocument();
+      expect(screen.getByText('No bundles')).toBeInTheDocument();
       // Retired signalling-era chips must be gone
       expect(screen.queryByText('v9.26.x')).not.toBeInTheDocument();
       expect(screen.queryByText('Rolling')).not.toBeInTheDocument();
