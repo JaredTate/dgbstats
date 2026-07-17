@@ -3,22 +3,118 @@ import { Box, Typography } from '@mui/material';
 
 // DigiByte-flavoured party palette (blue + accents).
 const PALETTE = ['#0066cc', '#4caf50', '#ffd54f', '#ff7043', '#26c6da', '#ab47bc', '#ffffff', '#ff4081', '#00e5ff'];
-const DURATION = 120000; // ms the show actively spawns particles/rockets (2 minutes)
-const FADE = 1500;       // ms fade-out after the show ends
+const DURATION = 30000;        // ms the show actively spawns particles/rockets (30 seconds)
+const FADE = 1500;             // ms fade-out after the show ends
+const ROCKET_DELAY_MS = 5000;  // DGB logo rocket ignites 5s into the show
+const ROCKET_FLIGHT_SECS = 10; // slow, majestic lift-off (2s shake + 8s ascent)
 
 const rand = (min, max) => Math.random() * (max - min) + min;
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
+// ---------------------------------------------------------------------------
+// Web Audio helpers — all sounds are synthesized (no audio assets). Browsers
+// gate audio behind a user gesture; ensureAudio() best-effort resumes the
+// context and the overlay also listens for the first pointer/key event to
+// unlock it. Every call is wrapped so missing/blocked audio can never break
+// the visual show.
+// ---------------------------------------------------------------------------
+function ensureAudio(ref) {
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    if (!ref.current || ref.current.state === 'closed') ref.current = new AC();
+    if (ref.current.state === 'suspended') ref.current.resume().catch(() => {});
+    return ref.current;
+  } catch (e) {
+    return null;
+  }
+}
+
+/** Rocket lift-off: long low engine rumble (filtered noise) + rising whoosh. */
+function playLaunchSound(ref) {
+  const ctx = ensureAudio(ref);
+  if (!ctx) return;
+  try {
+    const t = ctx.currentTime;
+    const dur = 4.5;
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const noise = ctx.createBufferSource();
+    noise.buffer = buf;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(300, t);
+    lp.frequency.exponentialRampToValueAtTime(1500, t + 1.2);
+    lp.frequency.exponentialRampToValueAtTime(140, t + dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.6, t + 0.3);
+    g.gain.setValueAtTime(0.6, t + 2.2);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    noise.connect(lp); lp.connect(g); g.connect(ctx.destination);
+    noise.start(t); noise.stop(t + dur);
+
+    const osc = ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(60, t);
+    osc.frequency.exponentialRampToValueAtTime(480, t + 3.2);
+    const og = ctx.createGain();
+    og.gain.setValueAtTime(0.0001, t);
+    og.gain.exponentialRampToValueAtTime(0.11, t + 0.4);
+    og.gain.exponentialRampToValueAtTime(0.0001, t + 3.6);
+    osc.connect(og); og.connect(ctx.destination);
+    osc.start(t); osc.stop(t + 3.6);
+  } catch (e) { /* audio unavailable — visuals carry on */ }
+}
+
+/** Firework burst: bandpassed crack + falling sine boom. */
+function playPopSound(ref) {
+  const ctx = ensureAudio(ref);
+  if (!ctx) return;
+  try {
+    const t = ctx.currentTime;
+    const dur = 0.3;
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+    const noise = ctx.createBufferSource();
+    noise.buffer = buf;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 1600;
+    bp.Q.value = 0.7;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.25, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    noise.connect(bp); bp.connect(g); g.connect(ctx.destination);
+    noise.start(t); noise.stop(t + dur);
+
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(320, t);
+    osc.frequency.exponentialRampToValueAtTime(70, t + 0.35);
+    const og = ctx.createGain();
+    og.gain.setValueAtTime(0.18, t);
+    og.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+    osc.connect(og); og.connect(ctx.destination);
+    osc.start(t); osc.stop(t + 0.35);
+  } catch (e) { /* ignore */ }
+}
+
 /**
- * ActivationCelebration — full-screen, click-through overlay that fires a
- * 2-minute all-out party (dense confetti, continuous firework volleys, rising
- * balloons, and a big flashing banner) the moment DigiDollar activation lands
- * (the LOCKED_IN countdown hitting zero / status flipping to ACTIVE).
+ * ActivationCelebration — full-screen, click-through overlay: a 30-second
+ * party (dense confetti, continuous firework volleys, rising balloons, a big
+ * DGB-logo rocket that ignites 5 seconds in and climbs slowly up through the
+ * middle with a synthesized launch rumble, and a big flashing banner). It runs
+ * for every visitor while DigiDollar is ACTIVE (trigger logic lives in
+ * DDActivationPage).
  *
  * Zero external dependencies: a single <canvas> drives confetti + firework
- * particles; balloons are CSS-animated DOM nodes. It honours the user's
- * prefers-reduced-motion setting by dropping the heavy motion and just showing
- * the (non-flashing) banner. The overlay is aria-hidden and pointer-events:none
+ * particles; balloons and the rocket are CSS-animated DOM nodes; all sounds
+ * are Web-Audio-synthesized. It honours the user's prefers-reduced-motion
+ * setting by dropping the heavy motion + audio and just showing the
+ * (non-flashing) banner. The overlay is aria-hidden and pointer-events:none
  * so it never blocks the page underneath.
  *
  * Implementation note: the show is started in two phases — a first effect
@@ -35,6 +131,7 @@ export default function ActivationCelebration({ run, onDone, message = 'DIGIDOLL
   const canvasRef = useRef(null);
   const rafRef = useRef(0);
   const onDoneRef = useRef(onDone);
+  const audioCtxRef = useRef(null);
   const [visible, setVisible] = useState(false);
   const [fading, setFading] = useState(false);
   const [reduced, setReduced] = useState(false);
@@ -61,9 +158,9 @@ export default function ActivationCelebration({ run, onDone, message = 'DIGIDOLL
     setReduced(prefersReduced);
 
     const showSecs = DURATION / 1000;
-    // Lots of rising balloons, launch times spread across the whole 2 minutes
-    // so there are always several in the air.
-    setBalloons(Array.from({ length: prefersReduced ? 0 : 130 }, (_, i) => ({
+    // Rising balloons with launch times spread across the show so there are
+    // always several in the air.
+    setBalloons(Array.from({ length: prefersReduced ? 0 : 60 }, (_, i) => ({
       id: i,
       left: rand(2, 95),
       color: pick(PALETTE),
@@ -76,6 +173,15 @@ export default function ActivationCelebration({ run, onDone, message = 'DIGIDOLL
     const timers = [];
     let stopped = false;
     let cleanupCanvas = null;
+
+    // Browsers keep audio suspended until a user gesture; the first
+    // pointer/key event anywhere unlocks it (overlay is click-through).
+    const unlockAudio = () => {
+      const c = audioCtxRef.current;
+      if (c && c.state === 'suspended') c.resume().catch(() => {});
+    };
+    window.addEventListener('pointerdown', unlockAudio);
+    window.addEventListener('keydown', unlockAudio);
 
     if (!prefersReduced && canvasRef.current) {
       const canvas = canvasRef.current;
@@ -98,6 +204,7 @@ export default function ActivationCelebration({ run, onDone, message = 'DIGIDOLL
       const confetti = [];
       const sparks = [];
       const rockets = [];
+      let lastPop = 0;
 
       const burstConfetti = (cx, cy, n) => {
         for (let i = 0; i < n; i++) {
@@ -145,6 +252,12 @@ export default function ActivationCelebration({ run, onDone, message = 'DIGIDOLL
             color, life: rand(55, 90), decay: rand(0.9, 1.5),
           });
         }
+        // Firework pop, throttled so volleys don't stack into noise.
+        const nowMs = performance.now();
+        if (nowMs - lastPop > 450) {
+          lastPop = nowMs;
+          playPopSound(audioCtxRef);
+        }
       };
 
       // Big opening triple burst.
@@ -153,7 +266,7 @@ export default function ActivationCelebration({ run, onDone, message = 'DIGIDOLL
       burstConfetti(W * 0.85, H * 0.28, 160);
 
       // Ongoing dense confetti rain, periodic mid-air bursts, and frequent
-      // multi-rocket firework volleys — sustained for the full 2 minutes.
+      // multi-rocket firework volleys — sustained for the whole show.
       const rainId = setInterval(() => { if (!stopped) rainConfetti(20); }, 180);
       const burstId = setInterval(() => {
         if (!stopped) burstConfetti(rand(W * 0.2, W * 0.8), rand(H * 0.2, H * 0.5), 90);
@@ -164,6 +277,10 @@ export default function ActivationCelebration({ run, onDone, message = 'DIGIDOLL
         for (let i = 0; i < volley; i++) launchRocket();
       }, 380);
       timers.push(rainId, burstId, rocketId);
+
+      // DGB rocket ignition sound, synced with the CSS launch animation delay.
+      const launchSoundId = setTimeout(() => { if (!stopped) playLaunchSound(audioCtxRef); }, ROCKET_DELAY_MS);
+      timers.push(launchSoundId);
 
       const draw = () => {
         ctx.clearRect(0, 0, W, H);
@@ -238,6 +355,12 @@ export default function ActivationCelebration({ run, onDone, message = 'DIGIDOLL
       timers.forEach((id) => { clearTimeout(id); clearInterval(id); });
       cancelAnimationFrame(rafRef.current);
       if (cleanupCanvas) cleanupCanvas();
+      window.removeEventListener('pointerdown', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtxRef.current.close().catch(() => {});
+        audioCtxRef.current = null;
+      }
     };
   }, [run, visible]);
 
@@ -309,6 +432,80 @@ export default function ActivationCelebration({ run, onDone, message = 'DIGIDOLL
         </Box>
       ))}
 
+      {/* Big DGB logo rocket — sits on the pad, ignites at 5s, climbs slowly
+          up through the middle of the celebration */}
+      {!reduced && (
+        <Box
+          sx={{
+            position: 'absolute',
+            left: '50%',
+            bottom: '3%',
+            animation: `dgb-rocket-launch ${ROCKET_FLIGHT_SECS}s linear ${ROCKET_DELAY_MS / 1000}s both`,
+          }}
+        >
+          <Box sx={{ position: 'relative', width: 170 }}>
+            {/* nose cone */}
+            <Box
+              sx={{
+                width: 0, height: 0, mx: 'auto',
+                borderLeft: '50px solid transparent',
+                borderRight: '50px solid transparent',
+                borderBottom: '80px solid #d32f2f',
+              }}
+            />
+            {/* body with DGB logo */}
+            <Box
+              sx={{
+                width: 100, height: 190, mx: 'auto',
+                background: 'linear-gradient(90deg, #e8eef7 0%, #ffffff 45%, #c9d6e8 100%)',
+                border: '3px solid #90a4c4',
+                borderRadius: '0 0 16px 16px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <Box
+                component="img"
+                src="/logo.png"
+                alt=""
+                sx={{
+                  width: 76, height: 76,
+                  borderRadius: '50%',
+                  background: '#fff',
+                  boxShadow: '0 0 18px rgba(0,102,204,0.65)',
+                }}
+              />
+            </Box>
+            {/* fins */}
+            <Box
+              sx={{
+                position: 'absolute', bottom: 106, left: 6,
+                width: 0, height: 0,
+                borderTop: '50px solid transparent',
+                borderRight: '32px solid #d32f2f',
+              }}
+            />
+            <Box
+              sx={{
+                position: 'absolute', bottom: 106, right: 6,
+                width: 0, height: 0,
+                borderTop: '50px solid transparent',
+                borderLeft: '32px solid #d32f2f',
+              }}
+            />
+            {/* flame */}
+            <Box
+              sx={{
+                width: 48, height: 110, mx: 'auto', mt: '-3px',
+                borderRadius: '50% 50% 50% 50% / 30% 30% 70% 70%',
+                background: 'radial-gradient(circle at 50% 18%, #fff59d, #ffb300 45%, #ff5722 75%, rgba(255,87,34,0))',
+                transformOrigin: 'top center',
+                animation: 'dgb-flame 120ms linear infinite alternate',
+              }}
+            />
+          </Box>
+        </Box>
+      )}
+
       {/* Big flashing centre banner */}
       <Typography
         component="div"
@@ -346,6 +543,29 @@ export default function ActivationCelebration({ run, onDone, message = 'DIGIDOLL
           8%   { opacity: 1; }
           92%  { opacity: 1; }
           100% { transform: translateY(-122vh) translateX(var(--sway, 0px)); opacity: 0; }
+        }
+        /* 2s of pad-shake, then a slow accelerating climb off the top */
+        @keyframes dgb-rocket-launch {
+          0%   { transform: translate(-50%, 0); }
+          2%   { transform: translate(calc(-50% - 5px), 0); }
+          4%   { transform: translate(calc(-50% + 5px), 0); }
+          6%   { transform: translate(calc(-50% - 5px), 0); }
+          8%   { transform: translate(calc(-50% + 5px), 0); }
+          10%  { transform: translate(calc(-50% - 4px), 0); }
+          12%  { transform: translate(calc(-50% + 4px), 0); }
+          14%  { transform: translate(calc(-50% - 4px), 0); }
+          16%  { transform: translate(calc(-50% + 4px), 0); }
+          18%  { transform: translate(calc(-50% - 3px), 0); }
+          20%  { transform: translate(-50%, -1vh); }
+          35%  { transform: translate(-50%, -8vh); }
+          50%  { transform: translate(-50%, -22vh); }
+          65%  { transform: translate(-50%, -45vh); }
+          80%  { transform: translate(-50%, -80vh); }
+          100% { transform: translate(-50%, -145vh); }
+        }
+        @keyframes dgb-flame {
+          from { transform: scaleY(0.75) scaleX(0.9); opacity: 0.85; }
+          to   { transform: scaleY(1.18) scaleX(1.06); opacity: 1; }
         }
         @keyframes dgb-pop {
           0%   { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }

@@ -63,22 +63,25 @@ function ActivationCountdown({
   periodBlocks,
   primaryColor,
   secondaryColor,
+  activated = false,
 }) {
-  const [secondsLeft, setSecondsLeft] = useState(() => (blocksLeft || 0) * BLOCK_SPACING_SECONDS);
+  // Once ACTIVE the countdown pins to zero permanently.
+  const effectiveBlocksLeft = activated ? 0 : blocksLeft;
+  const [secondsLeft, setSecondsLeft] = useState(() => (effectiveBlocksLeft || 0) * BLOCK_SPACING_SECONDS);
 
   // Re-seed the clock whenever the block gap changes (new block mined).
   useEffect(() => {
-    setSecondsLeft((blocksLeft || 0) * BLOCK_SPACING_SECONDS);
-  }, [blocksLeft]);
+    setSecondsLeft((effectiveBlocksLeft || 0) * BLOCK_SPACING_SECONDS);
+  }, [effectiveBlocksLeft]);
 
   // Tick down between blocks.
   useEffect(() => {
-    if (!blocksLeft) return undefined;
+    if (!effectiveBlocksLeft) return undefined;
     const id = setInterval(() => {
       setSecondsLeft((s) => (s > 1 ? s - 1 : 0));
     }, 1000);
     return () => clearInterval(id);
-  }, [blocksLeft]);
+  }, [effectiveBlocksLeft]);
 
   const { days, hours, minutes, seconds } = splitDuration(secondsLeft);
   const tiles = [
@@ -88,9 +91,11 @@ function ActivationCountdown({
     { value: seconds, label: 'Seconds' },
   ];
 
-  const windowProgress = periodBlocks > 0 && windowStartBlock != null && currentHeight > 0
-    ? Math.min(100, Math.max(0, ((currentHeight - windowStartBlock) / periodBlocks) * 100))
-    : 0;
+  const windowProgress = activated
+    ? 100
+    : (periodBlocks > 0 && windowStartBlock != null && currentHeight > 0
+      ? Math.min(100, Math.max(0, ((currentHeight - windowStartBlock) / periodBlocks) * 100))
+      : 0);
 
   return (
     <Card elevation={4} sx={{ mb: 4, borderRadius: '12px', overflow: 'hidden' }}>
@@ -104,9 +109,9 @@ function ActivationCountdown({
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 2 }}>
-          <LockIcon sx={{ fontSize: '1.4rem' }} />
+          {activated ? <CheckCircleIcon sx={{ fontSize: '1.4rem' }} /> : <LockIcon sx={{ fontSize: '1.4rem' }} />}
           <Typography variant="overline" sx={{ letterSpacing: '2px', fontWeight: 700, fontSize: '0.85rem' }}>
-            Locked In — Activates In
+            {activated ? 'Countdown Complete — DigiDollar Is Live' : 'Locked In — Activates In'}
           </Typography>
         </Box>
 
@@ -141,10 +146,19 @@ function ActivationCountdown({
         </Box>
 
         <Typography variant="body2" sx={{ mt: 2.5, opacity: 0.95 }}>
-          Activates at block{' '}
-          <strong>{activationHeight != null ? activationHeight.toLocaleString() : '…'}</strong>
-          {blocksLeft != null && (
-            <> &nbsp;·&nbsp; {blocksLeft.toLocaleString()} blocks to go &nbsp;·&nbsp; ~15s per block</>
+          {activated ? (
+            <>
+              🎉 Activated at block{' '}
+              <strong>{activationHeight != null ? activationHeight.toLocaleString() : '…'}</strong> 🎉
+            </>
+          ) : (
+            <>
+              Activates at block{' '}
+              <strong>{activationHeight != null ? activationHeight.toLocaleString() : '…'}</strong>
+              {blocksLeft != null && (
+                <> &nbsp;·&nbsp; {blocksLeft.toLocaleString()} blocks to go &nbsp;·&nbsp; ~15s per block</>
+              )}
+            </>
           )}
         </Typography>
       </Box>
@@ -157,10 +171,12 @@ function ActivationCountdown({
         <LinearProgress
           variant="determinate"
           value={windowProgress}
-          sx={{ height: 8, borderRadius: 4, '& .MuiLinearProgress-bar': { backgroundColor: STATE_COLORS.locked_in } }}
+          sx={{ height: 8, borderRadius: 4, '& .MuiLinearProgress-bar': { backgroundColor: activated ? STATE_COLORS.active : STATE_COLORS.locked_in } }}
         />
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.25, textAlign: 'center' }}>
-          Activation is guaranteed. It happens automatically at the next BIP9 retarget boundary — the estimate assumes DigiByte&apos;s 15-second block target.
+          {activated
+            ? 'DigiDollar is live — minting, sending, and redeeming are fully functional.'
+            : 'Activation is guaranteed. It happens automatically at the next BIP9 retarget boundary — the estimate assumes DigiByte’s 15-second block target.'}
         </Typography>
       </Box>
     </Card>
@@ -327,6 +343,12 @@ const DDActivationPage = () => {
     ? blocksRemaining(activationHeight, currentHeight)
     : null;
 
+  // Height at which the deployment actually went ACTIVE (bip9.since reports
+  // the height the current state began; WS activation_height is the fallback).
+  const activatedAtHeight = officialDD?.bip9?.since
+    ?? deploymentInfo.activation_height
+    ?? null;
+
   // Algolock (bit 0) deployment state
   const alStatus = officialAlgolock
     ? (officialAlgolock.active ? 'active' : officialAlgolock.bip9?.status) : null;
@@ -336,12 +358,11 @@ const DDActivationPage = () => {
   const backstopBlocks = groestlBackstop && currentHeight
     ? Math.max(0, groestlBackstop - currentHeight) : null;
 
-  // ---- Activation celebration (confetti / fireworks / balloons) ----------
-  // Fires once, the instant the LOCKED_IN countdown hits zero or the status
-  // flips to ACTIVE while the page is open. `?celebrate=1` forces the show for
-  // QA/demos regardless of chain state.
+  // ---- Activation celebration (confetti / fireworks / balloons / rocket) --
+  // DigiDollar is ACTIVE: the show fires for EVERY visitor, once per page
+  // load, whenever the deployment reports active (or a LOCKED_IN countdown
+  // sits at zero). `?celebrate=1` forces it regardless of chain state.
   const [celebrate, setCelebrate] = useState(false);
-  const prevStatusRef = useRef(null);
   const celebratedRef = useRef(false);
 
   useEffect(() => {
@@ -354,14 +375,12 @@ const DDActivationPage = () => {
   }, []);
 
   useEffect(() => {
-    const prev = prevStatusRef.current;
     const reachedActive = status === 'active';
     const countdownHitZero = status === 'locked_in' && activationBlocksLeft === 0;
-    if (!celebratedRef.current && prev != null && prev !== 'active' && (reachedActive || countdownHitZero)) {
+    if (!celebratedRef.current && (reachedActive || countdownHitZero)) {
       celebratedRef.current = true;
       setCelebrate(true);
     }
-    prevStatusRef.current = status;
   }, [status, activationBlocksLeft]);
 
   const stages = [
@@ -903,11 +922,12 @@ const DDActivationPage = () => {
       <ActivationCelebration run={celebrate} onDone={() => setCelebrate(false)} />
       <HeroSection />
       <StatusCards />
-      {status === 'locked_in' && currentHeight > 0 && activationHeight != null && (
+      {(status === 'active' || (status === 'locked_in' && currentHeight > 0 && activationHeight != null)) && (
         <ActivationCountdown
-          activationHeight={activationHeight}
+          activated={status === 'active'}
+          activationHeight={status === 'active' ? activatedAtHeight : activationHeight}
           currentHeight={currentHeight}
-          blocksLeft={activationBlocksLeft}
+          blocksLeft={status === 'active' ? 0 : activationBlocksLeft}
           windowStartBlock={windowStartBlock}
           periodBlocks={periodBlocks}
           primaryColor={primaryColor}
