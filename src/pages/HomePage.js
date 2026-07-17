@@ -536,7 +536,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
           <Grid item xs={12} sm={6} md={4}>
             <StatCard
               title="Latest Version"
-              value={isTestnet ? TESTNET_RELEASE.version : "v9.26.4"}
+              value={isTestnet ? TESTNET_RELEASE.version : "v9.26.4 DigiDollar"}
               icon={<UpdateIcon />}
               description="Latest DGB core version."
               loading={false}
