@@ -437,9 +437,9 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
             lineHeight: 1.6
           }}
         >
-          The DigiByte blockchain was launched on January 10th, 2014. There is <strong>NO </strong> 
+          The DigiByte blockchain launched on January 10th, 2014. There is <strong>NO </strong> 
           company, centralized group, mass premine, entity or individual who controls DGB. 
-          DGB is truly decentralized combination of speed, security & blockchain innovation.
+          DGB is a truly decentralized combination of speed, security & innovation.
         </Typography>
       </CardContent>
     </Card>
