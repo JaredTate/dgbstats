@@ -47,7 +47,9 @@ function playLaunchSound(ref) {
   if (!ctx || ctx.state !== 'running') return;
   try {
     const t = ctx.currentTime;
-    const DUR = 11;
+    // Covers the whole sequence: 5s roaring on the pad, 10s flight, fading
+    // out as the rocket recedes.
+    const DUR = 16;
     const sr = ctx.sampleRate;
 
     // Master: envelope -> compressor (glues layers, stops clipping) -> out
@@ -59,8 +61,8 @@ function playLaunchSound(ref) {
     comp.release.value = 0.2;
     const master = ctx.createGain();
     master.gain.setValueAtTime(0.0001, t);
-    master.gain.exponentialRampToValueAtTime(0.9, t + 0.35); // ignition slam
-    master.gain.setValueAtTime(0.9, t + 6.5);                // full throttle
+    master.gain.exponentialRampToValueAtTime(0.9, t + 0.4);  // ignition slam
+    master.gain.setValueAtTime(0.9, t + 11);                 // full throttle
     master.gain.exponentialRampToValueAtTime(0.0001, t + DUR); // climbs away
     master.connect(comp);
     comp.connect(ctx.destination);
@@ -89,7 +91,7 @@ function playLaunchSound(ref) {
     const rumbleLp = ctx.createBiquadFilter();
     rumbleLp.type = 'lowpass';
     rumbleLp.frequency.setValueAtTime(420, t);
-    rumbleLp.frequency.linearRampToValueAtTime(260, t + 7);
+    rumbleLp.frequency.linearRampToValueAtTime(300, t + 11);
     rumbleLp.frequency.linearRampToValueAtTime(90, t + DUR); // receding
     const rumbleGain = ctx.createGain();
     rumbleGain.gain.value = 1.0;
@@ -137,7 +139,7 @@ function playLaunchSound(ref) {
     const sub = ctx.createOscillator();
     sub.type = 'sine';
     sub.frequency.setValueAtTime(45, t);
-    sub.frequency.linearRampToValueAtTime(42, t + 7);
+    sub.frequency.linearRampToValueAtTime(42, t + 11);
     sub.frequency.linearRampToValueAtTime(28, t + DUR);
     const wob = ctx.createOscillator();
     wob.type = 'sine';
@@ -228,13 +230,13 @@ export default function ActivationCelebration({ run, onDone, message = 'DIGIDOLL
     const showStart = performance.now();
 
     // Browsers keep audio suspended until a user gesture; the first
-    // pointer/key event anywhere unlocks it (overlay is click-through). If
-    // the rocket already ignited while audio was locked, fire the launch
-    // rumble the moment it unlocks — as long as the rocket is still in flight.
-    const playLaunchIfInFlight = () => {
+    // pointer/key event anywhere unlocks it (overlay is click-through). The
+    // engine roar starts with the show — if audio was locked at that moment,
+    // fire it the instant it unlocks, any time until the rocket is gone.
+    const playRoar = () => {
       if (stopped || prefersReduced || launchSoundPlayed) return;
       const elapsed = performance.now() - showStart;
-      if (elapsed >= ROCKET_DELAY_MS && elapsed < ROCKET_DELAY_MS + ROCKET_FLIGHT_SECS * 1000) {
+      if (elapsed < ROCKET_DELAY_MS + ROCKET_FLIGHT_SECS * 1000) {
         launchSoundPlayed = true;
         playLaunchSound(audioCtxRef);
       }
@@ -243,9 +245,9 @@ export default function ActivationCelebration({ run, onDone, message = 'DIGIDOLL
       const c = ensureAudio(audioCtxRef);
       if (!c) return;
       if (c.state === 'suspended') {
-        c.resume().then(playLaunchIfInFlight).catch(() => {});
+        c.resume().then(playRoar).catch(() => {});
       } else {
-        playLaunchIfInFlight();
+        playRoar();
       }
     };
     window.addEventListener('pointerdown', unlockAudio);
@@ -342,18 +344,15 @@ export default function ActivationCelebration({ run, onDone, message = 'DIGIDOLL
       }, 380);
       timers.push(rainId, burstId, rocketId);
 
-      // DGB rocket ignition sound, synced with the CSS launch animation delay.
-      // If audio is still locked at ignition, unlockAudio() fires it on the
-      // visitor's first gesture while the rocket is still climbing.
-      const launchSoundId = setTimeout(() => {
-        if (stopped) return;
-        const c = audioCtxRef.current;
-        if (c && c.state === 'running') {
-          launchSoundPlayed = true;
-          playLaunchSound(audioCtxRef);
-        }
-      }, ROCKET_DELAY_MS);
-      timers.push(launchSoundId);
+      // Engine roar starts the moment the show loads — rumbling on the pad,
+      // lift-off at 5s, receding fade through the climb. If audio is still
+      // locked (no gesture yet), unlockAudio() fires it on the first
+      // click/tap/keypress instead.
+      const c0 = audioCtxRef.current;
+      if (c0 && c0.state === 'running') {
+        launchSoundPlayed = true;
+        playLaunchSound(audioCtxRef);
+      }
 
       const draw = () => {
         ctx.clearRect(0, 0, W, H);
