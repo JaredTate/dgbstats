@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Container, Typography, Box, Paper, LinearProgress, Card, CardContent,
   Divider, Grid, Chip, Alert, CircularProgress
@@ -11,6 +11,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { useNetwork } from '../context/NetworkContext';
 import IntegrationGuides from '../components/IntegrationGuides';
+import ActivationCelebration from '../components/ActivationCelebration';
 import config from '../config';
 import {
   lockInActivationHeight,
@@ -334,6 +335,34 @@ const DDActivationPage = () => {
   const groestlBackstop = GROESTL_BACKSTOP[networkName] ?? null;
   const backstopBlocks = groestlBackstop && currentHeight
     ? Math.max(0, groestlBackstop - currentHeight) : null;
+
+  // ---- Activation celebration (confetti / fireworks / balloons) ----------
+  // Fires once, the instant the LOCKED_IN countdown hits zero or the status
+  // flips to ACTIVE while the page is open. `?celebrate=1` forces the show for
+  // QA/demos regardless of chain state.
+  const [celebrate, setCelebrate] = useState(false);
+  const prevStatusRef = useRef(null);
+  const celebratedRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const q = new URLSearchParams(window.location.search);
+    if ((q.has('celebrate') || q.has('confetti')) && !celebratedRef.current) {
+      celebratedRef.current = true;
+      setCelebrate(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    const reachedActive = status === 'active';
+    const countdownHitZero = status === 'locked_in' && activationBlocksLeft === 0;
+    if (!celebratedRef.current && prev != null && prev !== 'active' && (reachedActive || countdownHitZero)) {
+      celebratedRef.current = true;
+      setCelebrate(true);
+    }
+    prevStatusRef.current = status;
+  }, [status, activationBlocksLeft]);
 
   const stages = [
     { key: 'defined', label: 'DEFINED', blocks: params.stages.defined, description: 'Code exists but is dormant' },
@@ -857,6 +886,7 @@ const DDActivationPage = () => {
   if (loading) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
+        <ActivationCelebration run={celebrate} onDone={() => setCelebrate(false)} />
         <HeroSection />
         <Box sx={{ textAlign: 'center', py: 8 }}>
           <CircularProgress size={40} sx={{ color: primaryColor }} />
@@ -870,6 +900,7 @@ const DDActivationPage = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      <ActivationCelebration run={celebrate} onDone={() => setCelebrate(false)} />
       <HeroSection />
       <StatusCards />
       {status === 'locked_in' && currentHeight > 0 && activationHeight != null && (
