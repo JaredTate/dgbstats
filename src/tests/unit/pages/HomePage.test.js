@@ -95,7 +95,8 @@ describe('HomePage', () => {
       renderHomePage();
 
       expect(screen.getByText('Latest Version')).toBeInTheDocument();
-      expect(screen.getAllByText('v9.26.4').length).toBeGreaterThan(0);
+      // Mainnet renders "v9.26.4 DigiDollar"; testnet renders the bare version.
+      expect(screen.getAllByText(/v9\.26\.4/).length).toBeGreaterThan(0);
     });
 
     it('should render algorithm difficulties card', async () => {

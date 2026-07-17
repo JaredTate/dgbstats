@@ -233,18 +233,6 @@ const DDStatsPage = () => {
         >
           Monitor DD Supply, Locked DGB, DCA & ERR Levels
         </Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            maxWidth: '860px',
-            mx: 'auto',
-            mt: 2,
-            color: secondaryColor,
-            fontWeight: 700
-          }}
-        >
-          {release.version} on {release.network}: {release.activationSummary}, P2P port {release.p2pPort}, {release.oracleThreshold} of {release.oracleTotalSlots} oracle consensus.
-        </Typography>
       </CardContent>
     </Card>
   );

@@ -22,6 +22,11 @@ import { format } from 'date-fns';
 import config from '../config';
 import { keyframes } from '@mui/material';
 
+// DigiDollar activated on mainnet via BIP9 (bit 23). bip9.since / "Activated At
+// Block" as reported by the node RPC on the /activation page.
+const DD_ACTIVATION_HEIGHT = 23869440;
+const DD_ACTIVATION_DATE = '2026-07-17';
+
 // Define pulse animation
 const pulse = keyframes`
   0% {
@@ -53,8 +58,8 @@ const RoadmapPage = () => {
 
   // Roadmap data structure for the next three years
   const initialRoadmapData = {
-    lastUpdated: '2026-07-03', // Update whenever roadmap content changes
-    overallProgress: 55, // Updated Feb 2026 - Phase 1-3 complete, Phase 4 in progress
+    lastUpdated: DD_ACTIVATION_DATE, // Update whenever roadmap content changes
+    overallProgress: 69, // Updated Jul 2026 - Phases 1-4 complete, Phase 5 (adoption) in progress
     phases: [
       {
         id: 'phase1',
@@ -358,20 +363,20 @@ const RoadmapPage = () => {
       {
         id: 'phase4',
         title: 'DigiByte v9.26 Mainnet Release & Activation',
-        subtitle: 'June 2026 - Mainnet Launch',
-        timeRange: 'March 2026 - 2027',
+        subtitle: 'Mainnet Launch & DigiDollar Activation',
+        timeRange: 'March - July 2026',
         startDate: '2026-03-01',
-        endDate: '2027-06-01',
-        status: 'in-progress',
-        progress: 46,
+        endDate: DD_ACTIVATION_DATE,
+        status: 'completed',
+        progress: 100,
         icon: <SpeedIcon />,
-        color: '#ff9800',
-        description: 'DigiByte v9.26.2 released on mainnet June 29, 2026. Miners can now signal for DigiDollar activation. Activation window: June 2026 through 2027. This is the world\'s first truly decentralized stablecoin on a UTXO blockchain.',
+        color: '#4caf50',
+        description: `DigiByte v9.26.2 shipped on mainnet June 29, 2026 and DigiDollar activated via BIP9 (bit 23) at block ${DD_ACTIVATION_HEIGHT.toLocaleString()} on July 17, 2026 — the world's first truly decentralized stablecoin on a UTXO blockchain is now live. Minting, sending, and redeeming are fully functional.`,
         keyFeatures: [
           '🚀 v9.26.2 mainnet release: June 29, 2026',
-          '⛏️ Miner signaling underway',
-          '🗳️ 70% miner threshold required',
-          '📅 Activation via BIP9 signaling'
+          `✅ Activated at block ${DD_ACTIVATION_HEIGHT.toLocaleString()}`,
+          '🗳️ 70% miner signaling threshold reached',
+          '📅 DigiDollar live since July 17, 2026'
         ],
         milestones: [
           {
@@ -410,16 +415,17 @@ const RoadmapPage = () => {
             id: 'mining-pool-coordination',
             title: 'Mining Pool & Exchange Outreach',
             date: '2026-06-29',
-            status: 'in-progress',
-            description: 'Coordinating with mining pools, wallets, and exchanges to upgrade to the latest release (currently v9.26.4)',
-            completionDate: null
+            status: 'completed',
+            description: 'Coordinated with mining pools, wallets, and exchanges to upgrade to the latest release (currently v9.26.4)',
+            completionDate: DD_ACTIVATION_DATE
           },
           {
             id: 'node-upgrade-campaign',
             title: 'Node Upgrade Campaign',
             date: '2026-06-29',
-            status: 'in-progress',
-            description: 'Community outreach for node operators to upgrade to the latest release (currently v9.26.4)'
+            status: 'completed',
+            description: 'Community outreach for node operators to upgrade to the latest release (currently v9.26.4)',
+            completionDate: DD_ACTIVATION_DATE
           },
           {
             id: 'bip9-parameters',
@@ -439,39 +445,35 @@ const RoadmapPage = () => {
           },
           {
             id: 'signaling-period-start',
-            title: '⛏️ Miner Signaling Underway',
+            title: '⛏️ Miner Signaling Complete',
             date: '2026-06-29',
-            status: 'in-progress',
-            description: 'BIP9 bit 23 signaling - miners vote on DigiDollar activation',
-            completionDate: null
+            status: 'completed',
+            description: 'BIP9 bit 23 signaling - miners voted to activate DigiDollar',
+            completionDate: DD_ACTIVATION_DATE
           },
           {
             id: 'signaling-threshold',
             title: '70% Signaling Threshold',
             date: '2026-07-01',
-            status: 'pending',
-            description: 'Reach 70% miner support (28,224 of 40,320 blocks) in a signaling window'
+            status: 'completed',
+            description: 'Reached 70% miner support (28,224 of 40,320 blocks) in a signaling window',
+            completionDate: DD_ACTIVATION_DATE
           },
           {
             id: 'soft-fork-lock-in',
             title: 'Soft Fork Lock-In',
             date: '2026-07-15',
-            status: 'pending',
-            description: 'Soft fork locks in after meeting the 70% signaling threshold'
+            status: 'completed',
+            description: 'Soft fork locked in after meeting the 70% signaling threshold',
+            completionDate: DD_ACTIVATION_DATE
           },
           {
             id: 'digidollar-activation',
             title: '✅ DigiDollar Mainnet Activation',
-            date: '2026-08-01',
-            status: 'pending',
-            description: 'DigiDollar consensus rules activate on mainnet (at or after minimum activation height 23,627,520) - first decentralized stablecoin on a UTXO blockchain goes live'
-          },
-          {
-            id: 'activation-window-end',
-            title: 'BIP9 Window Timeout',
-            date: '2027-06-01',
-            status: 'pending',
-            description: 'End of the BIP9 signaling window (timeout June 1, 2027) if the 70% threshold is not reached'
+            date: DD_ACTIVATION_DATE,
+            status: 'completed',
+            description: `DigiDollar consensus rules activated on mainnet at block ${DD_ACTIVATION_HEIGHT.toLocaleString()} — the first decentralized stablecoin on a UTXO blockchain is live`,
+            completionDate: DD_ACTIVATION_DATE
           }
         ]
       },
@@ -482,8 +484,8 @@ const RoadmapPage = () => {
         timeRange: 'Q3 2026 - Mid 2027',
         startDate: '2026-07-01',
         endDate: '2027-06-30',
-        status: 'pending',
-        progress: 0,
+        status: 'in-progress',
+        progress: 9,
         icon: <UpdateIcon />,
         color: '#666666',
         description: 'Implementation of post-DigiDollar activation use cases and ecosystem development.',
@@ -497,9 +499,10 @@ const RoadmapPage = () => {
           {
             id: 'soft-fork-activation',
             title: 'Successful DigiDollar Soft Fork Activation',
-            date: '2026-07-01',
-            status: 'pending',
-            description: 'DigiDollar soft fork successfully activated on mainnet'
+            date: DD_ACTIVATION_DATE,
+            status: 'completed',
+            description: `DigiDollar soft fork successfully activated on mainnet at block ${DD_ACTIVATION_HEIGHT.toLocaleString()}`,
+            completionDate: DD_ACTIVATION_DATE
           },
           {
             id: 'first-digidollars-minted',
@@ -894,7 +897,7 @@ const RoadmapPage = () => {
   );
 
   /**
-   * DigiDollar Launch Banner - Celebration announcement for May, 2026
+   * DigiDollar Launch Banner - mainnet activation celebration
    */
   const DigiDollarLaunchBanner = () => (
     <Card
@@ -920,7 +923,7 @@ const RoadmapPage = () => {
               textShadow: '0 2px 10px rgba(0,0,0,0.3)'
             }}
           >
-            DigiByte v9.26.2 Mainnet Release
+            DigiDollar Is Live on Mainnet
           </Typography>
           <RocketLaunchIcon sx={{ fontSize: { xs: '2rem', md: '3rem' }, color: '#ffb74d' }} />
         </Box>
@@ -934,7 +937,7 @@ const RoadmapPage = () => {
             fontSize: { xs: '1.3rem', sm: '1.6rem', md: '2rem' }
           }}
         >
-          Released June 29, 2026
+          Activated July 17, 2026 · Block {DD_ACTIVATION_HEIGHT.toLocaleString()}
         </Typography>
 
         <Divider sx={{ maxWidth: '200px', mx: 'auto', mb: 2, borderColor: 'rgba(255,183,77,0.5)', borderWidth: 2 }} />
@@ -963,10 +966,10 @@ const RoadmapPage = () => {
               }}
             >
               <Typography variant="body2" sx={{ color: '#ffb74d', fontWeight: 'bold' }}>
-                Miner Signaling
+                DigiDollar Status
               </Typography>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                Underway (bit 23)
+                ✅ ACTIVE (bit 23)
               </Typography>
             </Paper>
           </Grid>
@@ -981,10 +984,10 @@ const RoadmapPage = () => {
               }}
             >
               <Typography variant="body2" sx={{ color: '#ffb74d', fontWeight: 'bold' }}>
-                Activation Window
+                Activated At Block
               </Typography>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                June 2026 → 2027
+                {DD_ACTIVATION_HEIGHT.toLocaleString()}
               </Typography>
             </Paper>
           </Grid>
@@ -999,10 +1002,10 @@ const RoadmapPage = () => {
               }}
             >
               <Typography variant="body2" sx={{ color: '#ffb74d', fontWeight: 'bold' }}>
-                Threshold Required
+                Activation Date
               </Typography>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                70% Miner Support
+                July 17, 2026
               </Typography>
             </Paper>
           </Grid>
@@ -1017,7 +1020,7 @@ const RoadmapPage = () => {
             mx: 'auto'
           }}
         >
-          DigiDollar launched on mainnet in v9.26.2; the current release is v9.26.4. Mining pools, wallets & exchanges should upgrade to v9.26.4 and signal for DigiDollar activation.
+          DigiDollar activated on mainnet at block {DD_ACTIVATION_HEIGHT.toLocaleString()} on July 17, 2026 (shipped in v9.26.2; current release v9.26.4). Minting, sending, and redeeming are fully live — mining pools, wallets & exchanges should upgrade to v9.26.4 to publish oracle bundles.
         </Typography>
       </CardContent>
     </Card>
