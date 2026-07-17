@@ -439,8 +439,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
         >
           The DigiByte blockchain was launched on January 10th, 2014. There is <strong>NO </strong> 
           company, centralized group, mass premine, entity or individual who controls DGB. 
-          DGB is truly decentralized and is the best combination of speed, security & decentralization 
-          you will see in any blockchain in the world today.
+          DGB is truly decentralized combination of speed, security & blockchain innovation.
         </Typography>
       </CardContent>
     </Card>
