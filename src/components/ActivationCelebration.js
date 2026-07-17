@@ -33,7 +33,9 @@ function ensureAudio(ref) {
 /** Rocket lift-off: long low engine rumble (filtered noise) + rising whoosh. */
 function playLaunchSound(ref) {
   const ctx = ensureAudio(ref);
-  if (!ctx) return;
+  // A suspended context freezes currentTime — sounds scheduled on it would all
+  // fire in a burst on resume. Only play when audio is actually unlocked.
+  if (!ctx || ctx.state !== 'running') return;
   try {
     const t = ctx.currentTime;
     const dur = 4.5;
@@ -71,7 +73,7 @@ function playLaunchSound(ref) {
 /** Firework burst: bandpassed crack + falling sine boom. */
 function playPopSound(ref) {
   const ctx = ensureAudio(ref);
-  if (!ctx) return;
+  if (!ctx || ctx.state !== 'running') return;
   try {
     const t = ctx.currentTime;
     const dur = 0.3;
@@ -173,15 +175,35 @@ export default function ActivationCelebration({ run, onDone, message = 'DIGIDOLL
     const timers = [];
     let stopped = false;
     let cleanupCanvas = null;
+    let launchSoundPlayed = false;
+    const showStart = performance.now();
 
     // Browsers keep audio suspended until a user gesture; the first
-    // pointer/key event anywhere unlocks it (overlay is click-through).
+    // pointer/key event anywhere unlocks it (overlay is click-through). If
+    // the rocket already ignited while audio was locked, fire the launch
+    // rumble the moment it unlocks — as long as the rocket is still in flight.
+    const playLaunchIfInFlight = () => {
+      if (stopped || prefersReduced || launchSoundPlayed) return;
+      const elapsed = performance.now() - showStart;
+      if (elapsed >= ROCKET_DELAY_MS && elapsed < ROCKET_DELAY_MS + ROCKET_FLIGHT_SECS * 1000) {
+        launchSoundPlayed = true;
+        playLaunchSound(audioCtxRef);
+      }
+    };
     const unlockAudio = () => {
-      const c = audioCtxRef.current;
-      if (c && c.state === 'suspended') c.resume().catch(() => {});
+      const c = ensureAudio(audioCtxRef);
+      if (!c) return;
+      if (c.state === 'suspended') {
+        c.resume().then(playLaunchIfInFlight).catch(() => {});
+      } else {
+        playLaunchIfInFlight();
+      }
     };
     window.addEventListener('pointerdown', unlockAudio);
     window.addEventListener('keydown', unlockAudio);
+    // Eagerly create the context — some browsers start it running when the
+    // user has interacted with the site before (media engagement).
+    ensureAudio(audioCtxRef);
 
     if (!prefersReduced && canvasRef.current) {
       const canvas = canvasRef.current;
@@ -279,7 +301,16 @@ export default function ActivationCelebration({ run, onDone, message = 'DIGIDOLL
       timers.push(rainId, burstId, rocketId);
 
       // DGB rocket ignition sound, synced with the CSS launch animation delay.
-      const launchSoundId = setTimeout(() => { if (!stopped) playLaunchSound(audioCtxRef); }, ROCKET_DELAY_MS);
+      // If audio is still locked at ignition, unlockAudio() fires it on the
+      // visitor's first gesture while the rocket is still climbing.
+      const launchSoundId = setTimeout(() => {
+        if (stopped) return;
+        const c = audioCtxRef.current;
+        if (c && c.state === 'running') {
+          launchSoundPlayed = true;
+          playLaunchSound(audioCtxRef);
+        }
+      }, ROCKET_DELAY_MS);
       timers.push(launchSoundId);
 
       const draw = () => {
