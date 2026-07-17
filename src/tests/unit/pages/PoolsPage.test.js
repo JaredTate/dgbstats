@@ -220,11 +220,11 @@ describe('PoolsPage', () => {
       await waitForAsync();
       const ws = webSocketInstances[0];
 
-      // DigiDollar is ACTIVE: bit-23 signalling chips are retired. Buckets:
-      //   Pool A: mined a bundle block           -> gold 'Oracle n/m' chip
-      //   Pool B: algolock bit 0, no bundles     -> 'Upgraded — no bundles'
-      //   Pool C: historical clean bit 23 only   -> 'Upgraded — no bundles'
-      //   Pool D: nothing                        -> 'Not upgraded'
+      // Both deployments are ACTIVE: version bits prove nothing any more.
+      // Two states only:
+      //   Pool A: mined a bundle block -> green 'DigiDollar Bundles n/m' chip
+      //   Pools B/C/D: no bundles      -> 'No bundles' (residual signal bits
+      //                                   on B/C change nothing)
       const blocks = [
         { minerAddress: 'DAddr1', poolIdentifier: 'Pool A', height: 8, version: 0x20000202, digidollarSignaling: false, algolockSignaling: false, versionRolled: false, taprootSignaling: true, hasOracleBundle: true, oracleSignerCount: 7, oraclePriceUsd: 0.00913 },
         { minerAddress: 'DAddr1', poolIdentifier: 'Pool A', height: 7, version: 0x20000202, digidollarSignaling: false, algolockSignaling: false, versionRolled: false, taprootSignaling: true },
@@ -240,13 +240,13 @@ describe('PoolsPage', () => {
       await waitFor(() => {
         expect(screen.getByText('DigiDollar Bundles 1/2')).toBeInTheDocument();
       });
-      expect(screen.getAllByText('Upgraded — no bundles')).toHaveLength(2);
-      expect(screen.getByText('No bundles')).toBeInTheDocument();
+      expect(screen.getAllByText('No bundles')).toHaveLength(3);
       // Retired signalling-era chips must be gone
       expect(screen.queryByText('v9.26.x')).not.toBeInTheDocument();
       expect(screen.queryByText('Rolling')).not.toBeInTheDocument();
       expect(screen.queryByText('No signal')).not.toBeInTheDocument();
       expect(screen.queryByText('Partial')).not.toBeInTheDocument();
+      expect(screen.queryByText('Upgraded — no bundles')).not.toBeInTheDocument();
     });
 
     it('should display miner statistics correctly', async () => {

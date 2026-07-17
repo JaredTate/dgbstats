@@ -42,41 +42,17 @@ const PoolsPage = () => {
   const { sortedAddresses, singleBlockAddresses } = useMemo(() => {
     if (!blocks.length) return { sortedAddresses: [], singleBlockAddresses: [] };
 
-    // Post-activation status per miner. DigiDollar is ACTIVE, so BIP9 bit-23
-    // signalling chips are retired. Buckets (per the mining integration guide):
-    //   'publishing' — mined >=1 block carrying a v0x03 oracle bundle:
+    // Post-activation status per miner. BOTH BIP9 deployments (DigiDollar
+    // bit 23 and Algolock bit 0) are ACTIVE, so version-bit signalling has
+    // ended network-wide — version bits prove nothing any more. The chain
+    // offers exactly one provable positive:
+    //   'publishing' — mined >=1 block carrying a v0x03 DigiDollar Bundle:
     //                  definitive proof of full DigiDollar integration.
-    //   'upgraded'   — v9.26 evidence (algolock bit 0, which sits outside the
-    //                  ASIC version-rolling window, or a historical clean
-    //                  bit-23 signal) but no bundles: the pool needs the
-    //                  digidollar-oracle GBT rule / commitment preservation.
-    //   'none'       — no evidence at all: needs the Core upgrade.
-    // Server-computed flags preferred; raw version bits as fallback.
-    const signalsOf = (block) => {
-      if (block && typeof block.digidollarSignaling === 'boolean') {
-        return { ddRaw: block.digidollarSignaling, rolled: !!block.versionRolled, algolock: !!block.algolockSignaling };
-      }
-      const v = block && block.version;
-      if (typeof v !== 'number' || (v & 0xe0000000) !== 0x20000000) {
-        return { ddRaw: false, rolled: false, algolock: false };
-      }
-      // DigiByte consensus requires bit 28 clear (TOP_MASK 0xF0000000) for a
-      // block to count toward any deployment; bit 28 is itself rollable.
-      const top = (v & 0xf0000000) === 0x20000000;
-      return {
-        ddRaw: top && (v & 0x00800000) !== 0,
-        rolled: (v & ~(0x20000000 | 0x00000f00 | 0x000000ff) & ~0x00800000) !== 0,
-        algolock: top && (v & 1) !== 0,
-      };
-    };
-    const upgradeStateOf = (minerBlocks) => {
-      if (minerBlocks.some(b => b.hasOracleBundle)) return 'publishing';
-      const upgraded = minerBlocks.some(b => {
-        const c = signalsOf(b);
-        return c.algolock || (c.ddRaw && !c.rolled);
-      });
-      return upgraded ? 'upgraded' : 'none';
-    };
+    //   'none'       — no bundles in the window: reach out to confirm the
+    //                  pool's upgrade + digidollar-oracle GBT configuration.
+    const upgradeStateOf = (minerBlocks) => (
+      minerBlocks.some(b => b.hasOracleBundle) ? 'publishing' : 'none'
+    );
 
     // Track mining addresses and their block counts
     const multiAddresses = new Set();
@@ -580,13 +556,6 @@ const PoolsPage = () => {
                   ml: isMultiBlock ? 0 : 'auto',
                   '& .MuiChip-icon': { color: '#2e7d32' }
                 }}
-              />
-            )}
-            {item.upgradeState === 'upgraded' && (
-              <Chip
-                label="Upgraded — no bundles"
-                size="small"
-                sx={{ backgroundColor: '#fff3e0', color: '#e65100', fontWeight: 'medium', ml: isMultiBlock ? 0 : 'auto' }}
               />
             )}
             {item.upgradeState === 'none' && (

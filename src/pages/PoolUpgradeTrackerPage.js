@@ -14,66 +14,23 @@ import config from '../config';
 // ---------------------------------------------------------------------------
 // Post-activation pool readiness
 // ---------------------------------------------------------------------------
-// DigiDollar is ACTIVE. What matters now, per the mining integration guide:
+// BOTH BIP9 deployments (DigiDollar bit 23 and Algolock bit 0) are ACTIVE,
+// so version-bit signalling has ended network-wide — version bits prove
+// nothing any more. The chain offers exactly one provable positive, per the
+// mining integration guide:
 //   1. PUBLISHING — the pool's blocks carry a DigiDollar Bundle (the v0x03
 //      OP_RETURN OP_ORACLE coinbase output with the MuSig2-signed DGB/USD
 //      price). Definitive proof the pool runs an upgraded node, requests the
 //      `digidollar-oracle` GBT rule, and preserves
 //      `default_oracle_commitment` in its coinbase. Only these blocks can
 //      confirm DD mint/redeem transactions.
-//   2. UPGRADED, NOT PUBLISHING — v9.26 evidence exists in its block
-//      versions but no bundles: the pool needs the `digidollar-oracle` GBT
-//      rule and the commitment preserved (or its stratum stack drops it).
-//   3. NOT UPGRADED — no v9.26 evidence at all: needs the Core upgrade.
-const TOP_MASK = 0xf0000000;
-const TOP_BITS = 0x20000000;
-const STRUCTURAL_MASK = TOP_BITS | 0x00000f00 | 0x000000ff; // top marker + algo nibble + base-version byte
-const BIT_ALGOLOCK = 1 << 0;     // 0x00000001 (upgrade evidence only — not displayed)
-const BIT_DIGIDOLLAR = 1 << 23;  // 0x00800000
-
-function classifyVersion(version) {
-  const none = { top: false, ddRaw: false, ddClean: false, algolock: false, rolled: false };
-  if (typeof version !== 'number' || !Number.isFinite(version)) return none;
-  const top = (version & TOP_MASK) === TOP_BITS;
-  const bip9Era = (version & 0xe0000000) === TOP_BITS;
-  if (!bip9Era) return none;
-  const rolled = (version & ~STRUCTURAL_MASK & ~BIT_DIGIDOLLAR) !== 0;
-  const ddRaw = top && (version & BIT_DIGIDOLLAR) !== 0;
-  return {
-    top,
-    ddRaw,
-    ddClean: ddRaw && !rolled,
-    algolock: top && (version & BIT_ALGOLOCK) !== 0,
-    rolled,
-  };
-}
-
-// Prefer the server-computed flags (dgbstats-server ships digidollarSignaling /
-// algolockSignaling / versionRolled / hasOracleBundle on every block); fall
-// back to classifying the raw version locally for older servers.
-function classifyBlock(b) {
-  if (b && typeof b.digidollarSignaling === 'boolean') {
-    const rolled = !!b.versionRolled;
-    return {
-      top: true,
-      ddRaw: b.digidollarSignaling,
-      ddClean: b.digidollarSignaling && !rolled,
-      algolock: !!b.algolockSignaling,
-      rolled,
-    };
-  }
-  return classifyVersion(b && b.version);
-}
+//   2. NO BUNDLES — nothing provable: the pool either needs the v9.26
+//      upgrade or the GBT change; confirm which directly.
 
 function poolKey(block) {
   const id = (block.poolIdentifier || '').trim();
   if (id && id.toLowerCase() !== 'unknown') return id;
   return block.minerAddress || block.minedTo || 'Unknown';
-}
-
-function hex8(v) {
-  if (typeof v !== 'number' || !Number.isFinite(v)) return '—';
-  return '0x' + (v >>> 0).toString(16).padStart(8, '0');
 }
 
 const GREEN = '#2e7d32';
@@ -134,22 +91,21 @@ const PoolUpgradeTrackerPage = () => {
     return () => clearInterval(id);
   }, [fetchOfficial]);
 
-  // Aggregate DigiDollar Bundle production + upgrade evidence per pool.
+  // Aggregate DigiDollar Bundle production per pool.
   const {
     pools, totalBlocks, bundleCount, bundlePct,
-    publishingPools, upgradedPools, notUpgradedPools,
+    publishingPools, noBundlePools,
   } = useMemo(() => {
     const map = new Map();
     let total = 0, bundles = 0;
     for (const b of blocks) {
       total += 1;
-      const c = classifyBlock(b);
       const hasBundle = !!b.hasOracleBundle;
       if (hasBundle) bundles += 1;
       const key = poolKey(b);
       if (!map.has(key)) {
         map.set(key, {
-          key, name: key, total: 0, bundles: 0, evidence: false, rolled: 0,
+          key, name: key, total: 0, bundles: 0,
           lastSigners: null, lastBundleHeight: -1, lastPriceUsd: null,
           latestHeight: -1, algos: new Map(),
         });
@@ -164,42 +120,32 @@ const PoolUpgradeTrackerPage = () => {
           p.lastPriceUsd = b.oraclePriceUsd ?? null;
         }
       }
-      // v9.26 evidence from version bits (kept internal — not displayed).
-      if (c.algolock || c.ddClean) p.evidence = true;
-      if (c.rolled) p.rolled += 1;
       // per-algorithm breakdown (the drill-down)
       const algo = b.algo || 'unknown';
       if (!p.algos.has(algo)) {
-        p.algos.set(algo, { algo, n: 0, bundles: 0, rolled: 0, sampleVersion: b.version, sampleHeight: b.height || 0 });
+        p.algos.set(algo, { algo, n: 0, bundles: 0 });
       }
       const a = p.algos.get(algo);
       a.n += 1;
       if (hasBundle) a.bundles += 1;
-      if (c.rolled) a.rolled += 1;
-      if ((b.height || 0) > a.sampleHeight) { a.sampleHeight = b.height || 0; a.sampleVersion = b.version; }
       if ((b.height || 0) > p.latestHeight) p.latestHeight = b.height || 0;
     }
-    const list = Array.from(map.values()).map((p) => {
-      const status = p.bundles > 0 ? 'publishing' : (p.evidence ? 'upgraded' : 'none');
-      return {
-        ...p,
-        status,
-        bundlePct: p.total ? Math.round((p.bundles / p.total) * 100) : 0,
-        algoBreakdown: Array.from(p.algos.values()).sort((x, y) => y.n - x.n),
-        algoList: Array.from(p.algos.keys()),
-      };
-    });
-    // Publishing pools first, then upgraded, then the outreach list; big pools first within each.
-    const order = { publishing: 0, upgraded: 1, none: 2 };
-    list.sort((a, b) => order[a.status] - order[b.status] || b.total - a.total);
+    const list = Array.from(map.values()).map((p) => ({
+      ...p,
+      status: p.bundles > 0 ? 'publishing' : 'none',
+      bundlePct: p.total ? Math.round((p.bundles / p.total) * 100) : 0,
+      algoBreakdown: Array.from(p.algos.values()).sort((x, y) => y.n - x.n),
+      algoList: Array.from(p.algos.keys()),
+    }));
+    // Publishing pools first; big pools first within each bucket.
+    list.sort((a, b) => (a.status === b.status ? b.total - a.total : (a.status === 'publishing' ? -1 : 1)));
     return {
       pools: list,
       totalBlocks: total,
       bundleCount: bundles,
       bundlePct: total ? Math.round((bundles / total) * 100) : 0,
       publishingPools: list.filter((p) => p.status === 'publishing').length,
-      upgradedPools: list.filter((p) => p.status === 'upgraded').length,
-      notUpgradedPools: list.filter((p) => p.status === 'none').length,
+      noBundlePools: list.filter((p) => p.status === 'none').length,
     };
   }, [blocks]);
 
@@ -210,14 +156,7 @@ const PoolUpgradeTrackerPage = () => {
           sx={{ backgroundColor: GREEN_BG, color: GREEN, fontWeight: 'bold', border: `1px solid ${GREEN}55`, '& .MuiChip-icon': { color: GREEN } }} />
       );
     }
-    if (status === 'upgraded') {
-      return (
-        <Chip label="Upgraded — not publishing" size="small"
-          sx={{ backgroundColor: '#fff3e0', color: '#e65100', fontWeight: 'bold' }} />
-      );
-    }
-    // Both BIP9 deployments are ACTIVE, so version-bit signalling has ended —
-    // the chain can no longer prove "not upgraded", only "no bundles".
+    // Signalling has ended — the chain can only prove "no bundles".
     return (
       <Chip label="No bundles" size="small"
         sx={{ backgroundColor: '#ffebee', color: '#c62828', fontWeight: 'bold' }} />
@@ -258,9 +197,10 @@ const PoolUpgradeTrackerPage = () => {
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>
         ) : (
           <>
-            {/* Bucket KPIs */}
+            {/* Bucket KPIs — signalling has ended, so there are exactly two
+                provable states: publishing bundles, or not. */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
-              <Grid item xs={12} sm={4}>
+              <Grid item xs={12} sm={6}>
                 <Card elevation={3} sx={{ p: 3, borderRadius: '12px', textAlign: 'center', borderTop: `4px solid ${GREEN}`, backgroundColor: publishingPools > 0 ? 'rgba(46, 125, 50, 0.04)' : undefined, height: '100%' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
                     <CheckCircleIcon sx={{ color: GREEN, fontSize: '2rem' }} />
@@ -272,21 +212,12 @@ const PoolUpgradeTrackerPage = () => {
                   </Typography>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={4}>
-                <Card elevation={3} sx={{ p: 3, borderRadius: '12px', textAlign: 'center', borderTop: '4px solid #e65100', height: '100%' }}>
-                  <Typography variant="h3" fontWeight="800" sx={{ color: '#e65100' }}>{upgradedPools}</Typography>
-                  <Typography variant="subtitle1" fontWeight="bold">Upgraded, not publishing</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    On v9.26 but their blocks never include a bundle — reach out about the GBT rule
-                  </Typography>
-                </Card>
-              </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid item xs={12} sm={6}>
                 <Card elevation={3} sx={{ p: 3, borderRadius: '12px', textAlign: 'center', borderTop: '4px solid #c62828', height: '100%' }}>
-                  <Typography variant="h3" fontWeight="800" sx={{ color: '#c62828' }}>{notUpgradedPools}</Typography>
+                  <Typography variant="h3" fontWeight="800" sx={{ color: '#c62828' }}>{noBundlePools}</Typography>
                   <Typography variant="subtitle1" fontWeight="bold">No bundles</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    No bundles and no upgrade evidence — reach out to confirm their upgrade and GBT config
+                    Nothing provable on-chain — reach out to confirm their v9.26 upgrade and GBT config
                   </Typography>
                 </Card>
               </Grid>
@@ -392,8 +323,6 @@ const PoolUpgradeTrackerPage = () => {
                                         <TableCell><strong>Algorithm</strong></TableCell>
                                         <TableCell align="right"><strong>Blocks</strong></TableCell>
                                         <TableCell align="right"><strong>DigiDollar Bundles</strong></TableCell>
-                                        <TableCell align="right"><strong>Version-rolled</strong></TableCell>
-                                        <TableCell><strong>Latest version</strong></TableCell>
                                       </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -404,8 +333,6 @@ const PoolUpgradeTrackerPage = () => {
                                           <TableCell align="right" sx={{ color: a.bundles ? GREEN : '#999', fontWeight: a.bundles ? 'bold' : 'normal' }}>
                                             {a.bundles}/{a.n}
                                           </TableCell>
-                                          <TableCell align="right" sx={{ color: a.rolled ? '#e65100' : '#999' }}>{a.rolled}</TableCell>
-                                          <TableCell><code style={{ fontSize: '0.8rem' }}>{hex8(a.sampleVersion)}</code></TableCell>
                                         </TableRow>
                                       ))}
                                     </TableBody>
@@ -430,14 +357,12 @@ const PoolUpgradeTrackerPage = () => {
                 <Typography variant="caption" sx={{ display: 'block', mt: 2, color: '#888' }}>
                   <strong style={{ color: GREEN }}>Publishing DigiDollar Bundles</strong> is definitive
                   proof of full DigiDollar integration.
-                  <strong> Upgraded — not publishing</strong> means the node shows v9.26 evidence but its
-                  blocks never carry a bundle — the pool must request the <code>digidollar-oracle</code>{' '}
-                  rule in getblocktemplate and copy <code>default_oracle_commitment</code> into the
-                  coinbase as a zero-value output.
-                  <strong> No bundles</strong> means no bundles and no version-bit evidence in the
-                  window — signalling has ended network-wide, so this can include upgraded pools
-                  that simply aren&apos;t publishing; confirm directly. Pools are identified by
-                  coinbase tag or payout address.
+                  <strong> No bundles</strong> means nothing provable in the window — BIP9 signalling
+                  has ended network-wide, so this includes both non-upgraded pools and upgraded pools
+                  that aren&apos;t publishing. Either way the fix is the same conversation: v9.26, the{' '}
+                  <code>digidollar-oracle</code> rule in getblocktemplate, and{' '}
+                  <code>default_oracle_commitment</code> preserved as a zero-value coinbase output.
+                  Pools are identified by coinbase tag or payout address.
                 </Typography>
               </CardContent>
             </Card>

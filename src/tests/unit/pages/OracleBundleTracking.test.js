@@ -230,14 +230,15 @@ describe('Oracle bundle tracking', () => {
       expect(screen.getByText('PoolC')).toBeInTheDocument();
     });
 
-    it('categorises pools: publishing / upgraded without bundles / not upgraded', async () => {
+    it('categorises pools into publishing vs no bundles (signalling has ended)', async () => {
       await renderWithAdoptionData();
 
       await waitFor(() => {
         expect(screen.getByText('Publishing')).toBeInTheDocument();
       });
-      expect(screen.getByText('Upgraded — no bundles yet')).toBeInTheDocument();
-      expect(screen.getByText('No bundles')).toBeInTheDocument();
+      // PoolB's residual signal bits earn no 'upgraded' credit any more
+      expect(screen.getAllByText('No bundles')).toHaveLength(2);
+      expect(screen.queryByText('Upgraded — no bundles yet')).not.toBeInTheDocument();
     });
 
     it('reports bundle coverage over the observed blocks', async () => {
@@ -262,8 +263,9 @@ describe('Oracle bundle tracking', () => {
       await waitFor(() => {
         expect(screen.getByText(/3 of 9 blocks/i)).toBeInTheDocument();
       });
-      // PoolC just published its first bundle → no longer "Not upgraded"
-      expect(screen.queryByText('No bundles', { selector: '.MuiChip-label' })).not.toBeInTheDocument();
+      // PoolC just published its first bundle → moves to Publishing; only
+      // PoolB (still bundle-less) keeps the No bundles chip
+      expect(screen.getAllByText('No bundles', { selector: '.MuiChip-label' })).toHaveLength(1);
     });
   });
 });

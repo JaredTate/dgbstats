@@ -42,10 +42,6 @@ const STATE_ICONS = {
   failed: <ErrorOutlineIcon />
 };
 
-// Groestl unconditional-rejection backstop (nGroestlDeactivationHeight): from this
-// height, retired-algorithm blocks are rejected regardless of BIP9 signalling.
-const GROESTL_BACKSTOP = { mainnet: 23808000, testnet: null };
-
 // DigiByte targets one block every 15 seconds across all five algorithms.
 const BLOCK_SPACING_SECONDS = 15;
 
@@ -192,7 +188,7 @@ function ActivationCountdown({
  */
 const DDActivationPage = () => {
   const network = useNetwork();
-  const { wsBaseUrl, theme: networkTheme, digiDollarLabel, displayName, apiPrefix, name: networkName } = network;
+  const { wsBaseUrl, theme: networkTheme, digiDollarLabel, displayName, apiPrefix } = network;
   const params = network.activation;
   const primaryColor = networkTheme.primary;
   const secondaryColor = networkTheme.secondary;
@@ -214,11 +210,10 @@ const DDActivationPage = () => {
   // Recent blocks (WS recentBlocks + newBlock) for oracle-bundle adoption
   const [observedBlocks, setObservedBlocks] = useState([]);
   const [loading, setLoading] = useState(true);
-  // Authoritative BIP9 deployment objects from the node's getdeploymentinfo RPC
+  // Authoritative BIP9 deployment object from the node's getdeploymentinfo RPC
   // (statistics: period/threshold/elapsed/count/possible). The WebSocket
   // ddDeploymentData message remains the fallback for older servers.
   const [officialDD, setOfficialDD] = useState(null);
-  const [officialAlgolock, setOfficialAlgolock] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -303,7 +298,6 @@ const DDActivationPage = () => {
       if (res.ok) {
         const dep = await res.json();
         setOfficialDD(dep?.deployments?.digidollar || null);
-        setOfficialAlgolock(dep?.deployments?.algolock || null);
         if (dep?.height) setCurrentHeight((prev) => Math.max(prev, dep.height));
         setLoading(false);
       }
@@ -362,15 +356,6 @@ const DDActivationPage = () => {
     ?? deploymentInfo.activation_height
     ?? null;
 
-  // Algolock (bit 0) deployment state
-  const alStatus = officialAlgolock
-    ? (officialAlgolock.active ? 'active' : officialAlgolock.bip9?.status) : null;
-  const alStats = officialAlgolock?.bip9?.statistics;
-  const algolockLive = ['started', 'locked_in', 'active'].includes(alStatus);
-  const groestlBackstop = GROESTL_BACKSTOP[networkName] ?? null;
-  const backstopBlocks = groestlBackstop && currentHeight
-    ? Math.max(0, groestlBackstop - currentHeight) : null;
-
   // ---- Activation celebration (confetti / fireworks / balloons / rocket) --
   // DigiDollar is ACTIVE: the show fires for EVERY visitor, once per page
   // load, whenever the deployment reports active (or a LOCKED_IN countdown
@@ -396,13 +381,13 @@ const DDActivationPage = () => {
     }
   }, [status, activationBlocksLeft]);
 
-  // ---- Oracle bundle adoption (who is actually mining DigiDollar blocks) ---
-  // Groups observed blocks by pool and categorises each pool:
-  //   publishing — mined ≥1 block carrying an oracle price bundle (fully
+  // ---- DigiDollar Bundle adoption (who is actually mining DD blocks) ------
+  // Both BIP9 deployments are ACTIVE, so version-bit signalling has ended —
+  // version bits prove nothing any more. Two provable states per pool:
+  //   publishing — mined ≥1 block carrying a DigiDollar Bundle (fully
   //                upgraded node + live oracle session; nothing to do)
-  //   upgraded   — clean BIP9 upgrade evidence (algolock bit 0, or bit 23 on a
-  //                non-rolled block) but zero bundles yet → reach out
-  //   none       — no upgrade evidence at all → reach out first
+  //   none       — no bundles in the window → reach out to confirm the
+  //                upgrade + digidollar-oracle GBT configuration
   const oracleAdoption = useMemo(() => {
     if (!observedBlocks.length) return null;
     const total = observedBlocks.length;
@@ -412,7 +397,7 @@ const DDActivationPage = () => {
       const id = (b.poolIdentifier || '').trim();
       const key = id && id.toLowerCase() !== 'unknown' ? id : (b.minerAddress || b.minedTo || 'Unknown');
       if (!byPool.has(key)) {
-        byPool.set(key, { pool: key, blocks: 0, bundles: 0, upgraded: false, lastSigners: null });
+        byPool.set(key, { pool: key, blocks: 0, bundles: 0, lastSigners: null });
       }
       const p = byPool.get(key);
       p.blocks += 1;
@@ -420,12 +405,9 @@ const DDActivationPage = () => {
         p.bundles += 1;
         if (b.oracleSignerCount != null && p.lastSigners == null) p.lastSigners = b.oracleSignerCount;
       }
-      // Algolock bit 0 sits outside the ASIC version-rolling window, so it is
-      // trustworthy on every block; bit 23 only counts when not rolled.
-      if (b.algolockSignaling || (b.digidollarSignaling && !b.versionRolled)) p.upgraded = true;
     });
     const pools = Array.from(byPool.values())
-      .map(p => ({ ...p, status: p.bundles > 0 ? 'publishing' : (p.upgraded ? 'upgraded' : 'none') }))
+      .map(p => ({ ...p, status: p.bundles > 0 ? 'publishing' : 'none' }))
       .sort((a, b) => b.bundles - a.bundles || b.blocks - a.blocks);
     const latestBundle = bundleBlocks.reduce((max, b) => (!max || b.height > max.height ? b : max), null);
     return {
@@ -764,96 +746,12 @@ const DDActivationPage = () => {
     </Card>
   );
 
-  // Algolock (bit 0) — the second live BIP9 deployment: re-locks the retired
-  // Groestl algorithm. Tracked alongside DigiDollar because both ship in v9.26.x.
-  const AlgolockSection = () => {
-    if (!officialAlgolock && !groestlBackstop) return null;
-    return (
-      <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-          <Typography variant="h5" fontWeight="bold" sx={{ color: primaryColor }}>
-            Algolock — Groestl Removal (bit 0)
-          </Typography>
-          {alStatus && (
-            <Chip
-              icon={STATE_ICONS[alStatus]}
-              label={alStatus.toUpperCase().replace('_', ' ')}
-              size="small"
-              sx={{
-                backgroundColor: STATE_COLORS[alStatus] || '#757575', color: 'white',
-                fontWeight: 'bold', '& .MuiChip-icon': { color: 'white' },
-              }}
-            />
-          )}
-        </Box>
-        <Typography variant="body2" sx={{ mb: 2, color: '#555' }}>
-          v9.26.2+ nodes also signal a second deployment: <strong>algolock</strong> (bit&nbsp;0),
-          which re-enforces rejection of the retired Groestl mining algorithm. Unlike DigiDollar's
-          bit&nbsp;23, bit&nbsp;0 sits <strong>outside</strong> the SHA256D ASIC version-rolling window
-          (BIP320 bits 13–28), so it doubles as a reliable "this pool runs v9.26.x" indicator for
-          every pool once signalling opens.
-        </Typography>
-
-        {!algolockLive ? (
-          <Alert severity="info" sx={{ mb: 2 }}>
-            Algolock signalling has not opened yet (status:{' '}
-            <strong>{alStatus || 'defined'}</strong>). Miners begin setting bit&nbsp;0 when the next
-            BIP9 window starts
-            {nextWindowStart ? (
-              <> at block <strong>{nextWindowStart.toLocaleString()}</strong>{' '}
-                ({nextWindowBlocks?.toLocaleString()} blocks, {fmtEta(nextWindowBlocks)})</>
-            ) : null}.
-          </Alert>
-        ) : (
-          alStats && (
-            <Alert severity={alStatus === 'active' ? 'success' : 'info'} sx={{ mb: 2 }}>
-              {(alStats.count ?? 0).toLocaleString()} of {(alStats.elapsed ?? 0).toLocaleString()} elapsed
-              blocks signal algolock — lock-in needs{' '}
-              {(alStats.threshold ?? Math.round((alStats.period || 0) * 0.7)).toLocaleString()} of{' '}
-              {(alStats.period ?? 0).toLocaleString()}.
-            </Alert>
-          )
-        )}
-
-        {groestlBackstop && (
-          <>
-            <Grid container spacing={3}>
-              <Grid item xs={6} sm={3}>
-                <Typography variant="body2" color="#777">Backstop height</Typography>
-                <Typography variant="h6" fontWeight="bold">{groestlBackstop.toLocaleString()}</Typography>
-              </Grid>
-              <Grid item xs={6} sm={3}>
-                <Typography variant="body2" color="#777">Current height</Typography>
-                <Typography variant="h6" fontWeight="bold">{currentHeight ? currentHeight.toLocaleString() : '—'}</Typography>
-              </Grid>
-              <Grid item xs={6} sm={3}>
-                <Typography variant="body2" color="#777">Blocks remaining</Typography>
-                <Typography variant="h6" fontWeight="bold">{backstopBlocks != null ? backstopBlocks.toLocaleString() : '—'}</Typography>
-              </Grid>
-              <Grid item xs={6} sm={3}>
-                <Typography variant="body2" color="#777">Est. time (15s blocks)</Typography>
-                <Typography variant="h6" fontWeight="bold">{fmtEta(backstopBlocks)}</Typography>
-              </Grid>
-            </Grid>
-            <Typography variant="body2" sx={{ mt: 2, color: '#555' }}>
-              Independent of BIP9 signalling, blocks using the retired Groestl algorithm (or any
-              unknown algorithm) are rejected <strong>unconditionally</strong> from the backstop
-              height. Groestl blocks mined before then dilute the DigiDollar signalling window,
-              since BIP9 counts every block in the window regardless of algorithm.
-            </Typography>
-          </>
-        )}
-      </Card>
-    );
-  };
-
   // DigiDollar Bundle Adoption — which pools are mining DigiDollar blocks
   // with signed price bundles attached, and which still need outreach.
   const OracleAdoptionSection = () => {
     if (!oracleAdoption) return null;
     const STATUS_CHIP = {
       publishing: { label: 'Publishing', sx: { backgroundColor: '#e8f5e9', color: '#2e7d32', fontWeight: 'bold', border: '1px solid rgba(46, 125, 50, 0.35)', '& .MuiChip-icon': { color: '#2e7d32' } }, icon: <CheckCircleIcon sx={{ fontSize: '1rem' }} /> },
-      upgraded: { label: 'Upgraded — no bundles yet', sx: { backgroundColor: '#fff3e0', color: '#e65100', fontWeight: 'medium' } },
       none: { label: 'No bundles', sx: { backgroundColor: '#ffebee', color: '#c62828', fontWeight: 'medium' } },
     };
     return (
@@ -1029,9 +927,15 @@ const DDActivationPage = () => {
             {[
               { label: 'Status', value: status.toUpperCase().replace('_', ' ') },
               { label: 'Current Block', value: currentHeight > 0 ? currentHeight.toLocaleString() : 'Loading...' },
-              { label: 'Window Progress', value: currentHeight > 0 ? `${blocksIntoWindow.toLocaleString()} / ${periodBlocks.toLocaleString()}` : 'Loading...' },
-              { label: 'Signaling Blocks', value: signalingBlocks != null ? signalingBlocks.toLocaleString() : '--' },
-              { label: 'Lock-in Possible This Window', value: lockInPossible == null ? '--' : (lockInPossible ? 'Yes' : 'No') },
+              // Signalling-era live stats only make sense before ACTIVE; once
+              // active, show when it happened instead.
+              ...(isActive
+                ? [{ label: 'Activated At Block', value: activatedAtHeight != null ? activatedAtHeight.toLocaleString() : '—' }]
+                : [
+                  { label: 'Window Progress', value: currentHeight > 0 ? `${blocksIntoWindow.toLocaleString()} / ${periodBlocks.toLocaleString()}` : 'Loading...' },
+                  { label: 'Signaling Blocks', value: signalingBlocks != null ? signalingBlocks.toLocaleString() : '--' },
+                  { label: 'Lock-in Possible This Window', value: lockInPossible == null ? '--' : (lockInPossible ? 'Yes' : 'No') },
+                ]),
             ].map(({ label, value }) => (
               <Box key={label} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Typography variant="body2" color="text.secondary">{label}:</Typography>
@@ -1077,7 +981,6 @@ const DDActivationPage = () => {
         />
       )}
       <StageFlow />
-      <AlgolockSection />
       <OracleAdoptionSection />
       <BIP9Explanation />
       <TechnicalParameters />

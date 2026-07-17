@@ -1272,26 +1272,15 @@ describe('DDActivationPage', () => {
       expect(screen.getAllByText('23,788,800').length).toBeGreaterThan(0);
     });
 
-    it('should render the Algolock — Groestl Removal (bit 0) section', async () => {
+    it('should not render the retired Algolock section (both deployments are active)', async () => {
       renderWithProviders(<DDActivationPage />, { network: 'mainnet' });
       await waitForAsync();
 
       await waitFor(() => {
-        expect(screen.getByText('Algolock — Groestl Removal (bit 0)')).toBeInTheDocument();
+        expect(screen.getByText(/Lock-in is no longer possible in this window/)).toBeInTheDocument();
       });
-      // algolock deployment is status 'defined' -> window not open yet
-      expect(screen.getByText(/Algolock signalling has not opened yet/)).toBeInTheDocument();
-      const definedChips = screen.getAllByText('DEFINED');
-      expect(definedChips.length).toBeGreaterThan(0);
-    });
-
-    it('should render the algolock section on testnet via /api/testnet/getdeploymentinfo', async () => {
-      renderWithProviders(<DDActivationPage />, { network: 'testnet' });
-      await waitForAsync();
-
-      await waitFor(() => {
-        expect(screen.getByText('Algolock — Groestl Removal (bit 0)')).toBeInTheDocument();
-      });
+      expect(screen.queryByText(/Algolock — Groestl Removal/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Groestl/)).not.toBeInTheDocument();
     });
   });
 });

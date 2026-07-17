@@ -111,38 +111,22 @@ describe('PoolUpgradeTrackerPage', () => {
       expect(within(row).getByText('2/3 (67%)')).toBeInTheDocument();
     });
 
-    it('marks an upgraded pool without bundles as Upgraded — not publishing', async () => {
+    it('marks every pool without bundles as No bundles — version bits prove nothing now', async () => {
       await renderWithBlocks();
 
       await waitFor(() => {
         expect(screen.getByText('AlgolockPool')).toBeInTheDocument();
       });
-      const row = screen.getByText('AlgolockPool').closest('tr');
-      expect(within(row).getByText('Upgraded — not publishing')).toBeInTheDocument();
-      expect(within(row).queryByText('Publishing DigiDollar Bundles')).not.toBeInTheDocument();
-    });
+      // Signalling has ended: even a pool whose blocks carry residual bit-0
+      // gets no "upgraded" credit — the chain can only prove bundles.
+      const algolockRow = screen.getByText('AlgolockPool').closest('tr');
+      expect(within(algolockRow).getByText('No bundles')).toBeInTheDocument();
+      expect(within(algolockRow).queryByText('Publishing DigiDollar Bundles')).not.toBeInTheDocument();
 
-    it('marks a pool with no evidence at all as No bundles', async () => {
-      await renderWithBlocks();
+      const oldRow = screen.getByText('OldPool').closest('tr');
+      expect(within(oldRow).getByText('No bundles')).toBeInTheDocument();
 
-      await waitFor(() => {
-        expect(screen.getByText('OldPool')).toBeInTheDocument();
-      });
-      const row = screen.getByText('OldPool').closest('tr');
-      expect(within(row).getByText('No bundles')).toBeInTheDocument();
-    });
-
-    it('treats historical clean bit-23 signaling as upgrade evidence', async () => {
-      await renderWithBlocks([
-        makeBlock({ height: 23870110, hash: 'd1'.repeat(32), poolIdentifier: 'LegacySignal', minerAddress: 'DLeg1', digidollarSignaling: true }),
-        makeBlock({ height: 23870109, hash: 'd2'.repeat(32), poolIdentifier: 'LegacySignal', minerAddress: 'DLeg1' }),
-      ]);
-
-      await waitFor(() => {
-        expect(screen.getByText('LegacySignal')).toBeInTheDocument();
-      });
-      const row = screen.getByText('LegacySignal').closest('tr');
-      expect(within(row).getByText('Upgraded — not publishing')).toBeInTheDocument();
+      expect(screen.queryByText('Upgraded — not publishing')).not.toBeInTheDocument();
     });
   });
 
@@ -156,20 +140,18 @@ describe('PoolUpgradeTrackerPage', () => {
       });
     });
 
-    it('counts pools in each bucket', async () => {
+    it('counts pools in the two buckets (publishing / no bundles)', async () => {
       await renderWithBlocks();
 
-      // KPI tiles: 1 publishing / 1 upgraded-not-publishing / 1 not-upgraded
-      // (label appears on both the KPI tile and the status chip)
+      // KPI tiles: 1 publishing / 2 without bundles (labels appear on both
+      // the KPI tiles and the status chips)
       await waitFor(() => {
         expect(screen.getAllByText(/Publishing DigiDollar Bundles/i).length).toBeGreaterThan(0);
       });
-      expect(screen.getByText(/Upgraded, not publishing/i)).toBeInTheDocument();
-      // Signalling has ended network-wide, so the third bucket claims only
-      // what the chain proves: no bundles (tile + chip may both match).
       expect(screen.getAllByText(/No bundles/i).length).toBeGreaterThan(0);
-      // one pool in each bucket for this fixture
-      expect(screen.getAllByText('1').length).toBeGreaterThanOrEqual(3);
+      // The retired evidence-based bucket is gone entirely
+      expect(screen.queryByText(/Upgraded, not publishing/i)).not.toBeInTheDocument();
+      expect(screen.queryByText('Upgraded — not publishing')).not.toBeInTheDocument();
     });
 
     it('no longer shows the retired Algolock / Groestl sections', async () => {
