@@ -186,7 +186,7 @@ const BlockCard = ({ block, index, isMobile }) => (
             </Box>
           </Grid>
           
-          <Grid item xs={12} sm={6} md={2.5}>
+          <Grid item xs={12} sm={6} md={3}>
             <Box>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
                 Hash
@@ -203,7 +203,7 @@ const BlockCard = ({ block, index, isMobile }) => (
             </Box>
           </Grid>
           
-          <Grid item xs={6} sm={3} md={1.75}>
+          <Grid item xs={6} sm={3} md={2}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <SpeedIcon sx={{ fontSize: '1.2rem', mr: 1, color: getAlgoColor(block.algo) }} />
               <Box>
@@ -224,7 +224,7 @@ const BlockCard = ({ block, index, isMobile }) => (
             </Box>
           </Grid>
           
-          <Grid item xs={6} sm={3} md={1.75}>
+          <Grid item xs={6} sm={3} md={2}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <PoolIcon sx={{ fontSize: '1.2rem', mr: 1, color: '#0066cc' }} />
               <Box>
@@ -252,65 +252,16 @@ const BlockCard = ({ block, index, isMobile }) => (
             </Box>
           </Grid>
           
-          <Grid item xs={6} sm={3} md={1.25}>
-            {/* DigiDollar BIP9 signal (bit 23) — raw consensus semantics. Rolled
-                SHA256D blocks flip bit 23 randomly (ASICBoost), so they get their
-                own neutral state instead of reading as a "no" vote. Taproot is
-                active/buried, so its chip was retired in favour of this one. */}
-            {block.digidollarSignaling ? (
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <VerifiedIcon sx={{ fontSize: '1.2rem', mr: 1, color: '#4caf50' }} />
-                <Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                    DD Signal
-                  </Typography>
-                  <Chip
-                    label={block.versionRolled ? 'Bit 23 (rolled)' : 'DigiDollar'}
-                    size="small"
-                    sx={{
-                      bgcolor: block.versionRolled ? 'rgba(96, 125, 139, 0.12)' : 'rgba(76, 175, 80, 0.1)',
-                      color: block.versionRolled ? '#607d8b' : '#4caf50',
-                      fontWeight: 'medium',
-                      fontSize: '0.75rem'
-                    }}
-                  />
-                </Box>
-              </Box>
-            ) : (
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                    DD Signal
-                  </Typography>
-                  {block.versionRolled ? (
-                    <Chip
-                      label="Rolling"
-                      size="small"
-                      sx={{
-                        bgcolor: 'rgba(96, 125, 139, 0.12)',
-                        color: '#607d8b',
-                        fontWeight: 'medium',
-                        fontSize: '0.75rem'
-                      }}
-                    />
-                  ) : (
-                    <Typography variant="body2" fontWeight="medium">
-                      None
-                    </Typography>
-                  )}
-                </Box>
-              </Box>
-            )}
-          </Grid>
-
-          <Grid item xs={6} sm={3} md={1.5}>
-            {/* DigiDollar oracle price bundle (OP_RETURN OP_ORACLE coinbase
-                output). Present only when the mining pool runs a fully
-                upgraded node with a live oracle session — the strongest
-                possible "this pool is DigiDollar-ready" signal. */}
+          <Grid item xs={6} sm={3} md={1.75}>
+            {/* DigiDollar oracle price bundle (v0x03 OP_RETURN OP_ORACLE
+                coinbase output). DigiDollar is ACTIVE, so BIP9 bit-23
+                signaling is over — the retired DD Signal chip is folded into
+                this single column. A bundle is present only when the mining
+                pool runs a fully upgraded node with a live oracle session —
+                the strongest possible "this pool is DigiDollar-ready" proof. */}
             <Box>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                Oracle Bundle
+                DD Oracle Bundle
               </Typography>
               {block.hasOracleBundle ? (
                 <Chip

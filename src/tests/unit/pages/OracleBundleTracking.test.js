@@ -108,7 +108,7 @@ describe('Oracle bundle tracking', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getAllByText('Oracle Bundle')[0]).toBeInTheDocument();
+        expect(screen.getAllByText('DD Oracle Bundle')[0]).toBeInTheDocument();
       });
       expect(screen.queryByTestId('oracle-bundle-chip')).not.toBeInTheDocument();
     });

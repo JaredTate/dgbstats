@@ -203,32 +203,34 @@ describe('BlocksPage', () => {
       });
     });
 
-    it('should display DD Signal states based on per-block signal fields', async () => {
+    it('shows one DD Oracle Bundle cell per block and no legacy DD Signal chips', async () => {
       renderWithProviders(<BlocksPage />);
 
       await waitForAsync();
       const ws = webSocketInstances[0];
 
-      // Fixture mapping (see mockData.js): skein = clean bit-23 signal,
-      // sha256d = version-rolled with bit 23, others = non-signaling.
-      // First page shows 20 blocks: 4 sha256d, 4 skein, 12 others.
+      // DigiDollar is ACTIVE: BIP9 bit-23 signaling is over, so the old
+      // DD Signal column is gone — replaced by the combined DD Oracle Bundle
+      // column. The fixture mixes signaling/rolled/non-signaling blocks; none
+      // of that matters any more, and none of them carry bundles.
       ws.receiveMessage({
         type: 'recentBlocks',
         data: mockApiResponses.blocksData.blocks
       });
 
       await waitFor(() => {
-        expect(screen.getAllByText('DD Signal').length).toBe(20);
+        expect(screen.getAllByText('DD Oracle Bundle').length).toBe(20);
       });
-      // Clean bit-23 signal (digidollarSignaling && !versionRolled) -> green chip
-      expect(screen.getAllByText('DigiDollar').length).toBe(4);
-      // Bit 23 present on a rolled block (digidollarSignaling && versionRolled)
-      expect(screen.getAllByText('Bit 23 (rolled)').length).toBe(4);
-      // No signal, not rolled -> plain 'None'
-      expect(screen.getAllByText('None').length).toBe(12);
+      // No bundle -> muted dash in every cell
+      expect(screen.getAllByText('—').length).toBe(20);
+      // Legacy signaling UI must be gone entirely
+      expect(screen.queryByText('DD Signal')).not.toBeInTheDocument();
+      expect(screen.queryByText('DigiDollar')).not.toBeInTheDocument();
+      expect(screen.queryByText('Bit 23 (rolled)')).not.toBeInTheDocument();
+      expect(screen.queryByText('Rolling')).not.toBeInTheDocument();
     });
 
-    it('should show a Rolling chip for version-rolled blocks without bit 23', async () => {
+    it('shows the gold signer chip in the DD Oracle Bundle cell for bundle blocks', async () => {
       renderWithProviders(<BlocksPage />);
 
       await waitForAsync();
@@ -242,21 +244,26 @@ describe('BlocksPage', () => {
           time: Date.now(),
           size: 1234,
           txCount: 10,
-          poolIdentifier: 'ViaBTC',
+          poolIdentifier: 'DigiHash',
           algo: 'sha256d',
           difficulty: 12345678.90,
           version: 0x20010202,
           digidollarSignaling: false,
           algolockSignaling: false,
           versionRolled: true,
-          taprootSignaling: true
+          taprootSignaling: true,
+          hasOracleBundle: true,
+          oracleSignerCount: 7,
+          oraclePriceUsd: 0.00913
         }]
       });
 
       await waitFor(() => {
-        expect(screen.getByText('Rolling')).toBeInTheDocument();
+        expect(screen.getByText('7 signers')).toBeInTheDocument();
       });
-      expect(screen.queryByText('DigiDollar')).not.toBeInTheDocument();
+      expect(screen.getByText('DD Oracle Bundle')).toBeInTheDocument();
+      // Rolled/signaling state renders nothing now
+      expect(screen.queryByText('Rolling')).not.toBeInTheDocument();
       expect(screen.queryByText('None')).not.toBeInTheDocument();
     });
 

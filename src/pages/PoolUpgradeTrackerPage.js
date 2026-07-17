@@ -6,32 +6,27 @@ import {
 } from '@mui/material';
 import SystemUpdateAltIcon from '@mui/icons-material/SystemUpdateAlt';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import HourglassTopIcon from '@mui/icons-material/HourglassTop';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { useNetwork } from '../context/NetworkContext';
 import config from '../config';
 
 // ---------------------------------------------------------------------------
-// Signal detection
+// Post-activation pool readiness
 // ---------------------------------------------------------------------------
-// DigiByte block versions pack the mining algo into bits 8-11 and the base
-// version into the low byte; BIP9 deployment signals occupy the remaining bits.
-// We track two deployments in the rolling window:
-//   * DigiDollar (bit 23) — the node is running v9.26.x. LIVE now.
-//   * Algolock   (bit 0)  — the node is running v9.26.2+ and will reject the
-//     retired Groestl algorithm. Appears once the algolock BIP9 window starts.
-// Bit 23 sits INSIDE the BIP310/BIP320 ASIC version-rolling window (bits 13-28,
-// mask 0x1fffe000), so on version-rolled SHA256D blocks it is a coin flip:
-//   * ddRaw   — the raw bit, exactly what BIP9 consensus counts for activation
-//               (versionbits Condition() ignores rolling), so a rolled block
-//               that carries bit 23 IS counted by the network and counted here.
-//   * ddClean — bit 23 on a non-rolled version: hard proof the pool's node is
-//               v9.26.x. Absence of ddClean on a rolling pool proves nothing.
-// Bit 0 sits OUTSIDE the roll window, so once its window opens it is the
-// definitive upgrade indicator for every pool, including SHA256D.
-// DigiByte's consensus top-mask is 0xF0000000 (versionbits.h) — stricter than
-// Bitcoin's 0xE0000000: a block with rolled bit 28 set signals NOTHING.
+// DigiDollar is ACTIVE, so BIP9 bit-23 signaling is over. What matters now,
+// per DIGIDOLLAR_MINING_INTEGRATION_GUIDE.md:
+//   1. PUBLISHING — the pool's blocks carry a v0x03 oracle price bundle
+//      (OP_RETURN OP_ORACLE coinbase output). Definitive proof the pool runs
+//      an upgraded node, requests the `digidollar-oracle` GBT rule, and
+//      preserves `default_oracle_commitment` in its coinbase. These blocks
+//      can confirm DD mint/redeem transactions.
+//   2. UPGRADED, NOT PUBLISHING — v9.26 evidence exists (algolock bit 0,
+//      which sits OUTSIDE the ASIC version-rolling window, or a historical
+//      clean bit-23 signal) but no bundles: the pool needs to request the
+//      `digidollar-oracle` GBT rule and copy `default_oracle_commitment`
+//      into the coinbase (or its stratum stack is dropping it).
+//   3. NOT UPGRADED — no v9.26 evidence at all: needs the Core upgrade.
 const TOP_MASK = 0xf0000000;
 const TOP_BITS = 0x20000000;
 const STRUCTURAL_MASK = TOP_BITS | 0x00000f00 | 0x000000ff; // top marker + algo nibble + base-version byte
@@ -42,9 +37,6 @@ function classifyVersion(version) {
   const none = { top: false, ddRaw: false, ddClean: false, algolock: false, rolled: false };
   if (typeof version !== 'number' || !Number.isFinite(version)) return none;
   const top = (version & TOP_MASK) === TOP_BITS;
-  // Rolled detection uses the looser 001x shape: a rolled block whose bit 28
-  // landed on 1 fails the consensus top-mask (signals nothing) but is still a
-  // version-rolled block and must show up as one.
   const bip9Era = (version & 0xe0000000) === TOP_BITS;
   if (!bip9Era) return none;
   const rolled = (version & ~STRUCTURAL_MASK & ~BIT_DIGIDOLLAR) !== 0;
@@ -59,8 +51,8 @@ function classifyVersion(version) {
 }
 
 // Prefer the server-computed flags (dgbstats-server ships digidollarSignaling /
-// algolockSignaling / versionRolled on every block, like taprootSignaling);
-// fall back to classifying the raw version locally for older servers.
+// algolockSignaling / versionRolled / hasOracleBundle on every block); fall
+// back to classifying the raw version locally for older servers.
 function classifyBlock(b) {
   if (b && typeof b.digidollarSignaling === 'boolean') {
     const rolled = !!b.versionRolled;
@@ -75,10 +67,7 @@ function classifyBlock(b) {
   return classifyVersion(b && b.version);
 }
 
-// Per-network BIP9 window (fallback if live deployment stats are unavailable).
-const DEFAULT_PERIOD = { mainnet: 40320, testnet: 200 };
-
-// Groestl unconditional-rejection backstop height (enforcement floor, independent of signalling).
+// Groestl unconditional-rejection backstop height (enforcement floor).
 const ACTIVATION_HEIGHT = { mainnet: 23808000, testnet: null };
 
 function poolKey(block) {
@@ -111,7 +100,6 @@ const PoolUpgradeTrackerPage = () => {
 
   const [blocks, setBlocks] = useState([]);
   const [currentHeight, setCurrentHeight] = useState(0);
-  const [ddDeployment, setDdDeployment] = useState(null);
   const [algolockDeployment, setAlgolockDeployment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState({}); // pool key -> bool
@@ -149,7 +137,7 @@ const PoolUpgradeTrackerPage = () => {
     return () => socket.close();
   }, [wsBaseUrl]);
 
-  // Authoritative BIP9 stats (digidollar + algolock) and current height (polled).
+  // Authoritative deployment stats (algolock) and current height (polled).
   const fetchOfficial = useCallback(async () => {
     try {
       const base = `${config.apiBaseUrl}/api${apiPrefix || ''}`;
@@ -159,7 +147,6 @@ const PoolUpgradeTrackerPage = () => {
       ]);
       if (depRes.ok) {
         const dep = await depRes.json();
-        setDdDeployment(dep?.deployments?.digidollar || null);
         setAlgolockDeployment(dep?.deployments?.algolock || null);
       }
       if (chainRes.ok) {
@@ -177,131 +164,121 @@ const PoolUpgradeTrackerPage = () => {
     return () => clearInterval(id);
   }, [fetchOfficial]);
 
-  // Aggregate both signals per pool (with a per-algorithm drill-down) over the window.
+  // Aggregate oracle-bundle production + upgrade evidence per pool.
   const {
-    pools, totalBlocks, ddRawCount, ddCleanCount, alCount, ddRawPct, alPct, rolledCount,
+    pools, totalBlocks, bundleCount, bundlePct, alCount, alPct,
+    publishingPools, upgradedPools, notUpgradedPools,
   } = useMemo(() => {
     const map = new Map();
-    let total = 0, ddRaw = 0, ddClean = 0, al = 0, rolled = 0;
+    let total = 0, bundles = 0, al = 0;
     for (const b of blocks) {
       total += 1;
       const c = classifyBlock(b);
-      if (c.ddRaw) ddRaw += 1;
-      if (c.ddClean) ddClean += 1;
+      const hasBundle = !!b.hasOracleBundle;
+      if (hasBundle) bundles += 1;
       if (c.algolock) al += 1;
-      if (c.rolled) rolled += 1;
       const key = poolKey(b);
       if (!map.has(key)) {
         map.set(key, {
-          key, name: key, total: 0, ddRaw: 0, ddClean: 0, al: 0, rolled: 0,
-          latestHeight: -1, latest: null, latestAlgo: '',
-          latestCleanHeight: -1, latestClean: null, algos: new Map(),
+          key, name: key, total: 0, bundles: 0, al: 0, ddClean: 0, rolled: 0,
+          lastSigners: null, lastBundleHeight: -1, lastPriceUsd: null,
+          latestHeight: -1, algos: new Map(),
         });
       }
       const p = map.get(key);
       p.total += 1;
-      if (c.ddRaw) p.ddRaw += 1;
-      if (c.ddClean) p.ddClean += 1;
+      if (hasBundle) {
+        p.bundles += 1;
+        if ((b.height || 0) > p.lastBundleHeight) {
+          p.lastBundleHeight = b.height || 0;
+          p.lastSigners = b.oracleSignerCount ?? null;
+          p.lastPriceUsd = b.oraclePriceUsd ?? null;
+        }
+      }
       if (c.algolock) p.al += 1;
+      if (c.ddClean) p.ddClean += 1;
       if (c.rolled) p.rolled += 1;
       // per-algorithm breakdown (the drill-down)
       const algo = b.algo || 'unknown';
       if (!p.algos.has(algo)) {
-        p.algos.set(algo, { algo, n: 0, ddRaw: 0, ddClean: 0, al: 0, rolled: 0, sampleVersion: b.version, sampleHeight: b.height || 0 });
+        p.algos.set(algo, { algo, n: 0, bundles: 0, al: 0, rolled: 0, sampleVersion: b.version, sampleHeight: b.height || 0 });
       }
       const a = p.algos.get(algo);
       a.n += 1;
-      if (c.ddRaw) a.ddRaw += 1;
-      if (c.ddClean) a.ddClean += 1;
+      if (hasBundle) a.bundles += 1;
       if (c.algolock) a.al += 1;
       if (c.rolled) a.rolled += 1;
       if ((b.height || 0) > a.sampleHeight) { a.sampleHeight = b.height || 0; a.sampleVersion = b.version; }
-      if ((b.height || 0) > p.latestHeight) { p.latestHeight = b.height || 0; p.latest = c; p.latestAlgo = algo; }
-      if (!c.rolled && (b.height || 0) > p.latestCleanHeight) { p.latestCleanHeight = b.height || 0; p.latestClean = c; }
+      if ((b.height || 0) > p.latestHeight) p.latestHeight = b.height || 0;
     }
     const list = Array.from(map.values()).map((p) => {
-      // Upgrade inference:
-      //  * any bit-0 signal, or bit 23 on the pool's most recent clean block => upgraded
-      //  * clean signals exist but the newest clean block lacks one => partial (mixed backend)
-      //  * clean blocks exist and NONE signal => not upgraded (clean absence is real evidence)
-      //  * only version-rolled blocks => coin-flip territory, EXCEPT a consistent run:
-      //    >=4 rolled blocks all carrying bit 23 means the pool's stack preserves the bit
-      //    through rolling (2^-n odds of chance) => upgraded; all missing it => not upgraded.
-      let ddState;
-      if (p.al > 0 || p.latestClean?.ddClean) ddState = 'upgraded';
-      else if (p.ddClean > 0) ddState = 'partial';
-      else if (p.latestClean) ddState = 'none';
-      else if (p.rolled > 0 && p.total >= 4 && p.ddRaw === p.total) ddState = 'upgraded';
-      else if (p.rolled > 0 && p.total >= 4 && p.ddRaw === 0) ddState = 'none';
-      else ddState = p.rolled > 0 ? 'rolling' : 'none';
+      // Bucket per the integration contract:
+      //   bundles > 0                          -> publishing (proof)
+      //   algolock or clean bit-23 evidence    -> upgraded (needs GBT fix)
+      //   nothing                              -> none (needs Core upgrade)
+      const status = p.bundles > 0 ? 'publishing' : (p.al > 0 || p.ddClean > 0 ? 'upgraded' : 'none');
       return {
         ...p,
-        ddPct: p.total ? Math.round((p.ddRaw / p.total) * 100) : 0,
+        status,
+        bundlePct: p.total ? Math.round((p.bundles / p.total) * 100) : 0,
         alPct: p.total ? Math.round((p.al / p.total) * 100) : 0,
-        ddState,
-        alState: p.latest?.algolock ? 'ready' : (p.al > 0 ? 'partial' : 'none'),
         algoBreakdown: Array.from(p.algos.values()).sort((x, y) => y.n - x.n),
         algoList: Array.from(p.algos.keys()),
       };
     });
-    list.sort((a, b) => b.total - a.total);
+    // Publishing pools first, then upgraded, then the outreach list; big pools first within each.
+    const order = { publishing: 0, upgraded: 1, none: 2 };
+    list.sort((a, b) => order[a.status] - order[b.status] || b.total - a.total);
     return {
       pools: list,
       totalBlocks: total,
-      ddRawCount: ddRaw,
-      ddCleanCount: ddClean,
+      bundleCount: bundles,
+      bundlePct: total ? Math.round((bundles / total) * 100) : 0,
       alCount: al,
-      rolledCount: rolled,
-      ddRawPct: total ? Math.round((ddRaw / total) * 100) : 0,
       alPct: total ? Math.round((al / total) * 100) : 0,
+      publishingPools: list.filter((p) => p.status === 'publishing').length,
+      upgradedPools: list.filter((p) => p.status === 'upgraded').length,
+      notUpgradedPools: list.filter((p) => p.status === 'none').length,
     };
   }, [blocks]);
 
-  // --- BIP9 window boundaries (shared by the DigiDollar reset and algolock opening) ---
-  const period = ddDeployment?.bip9?.statistics?.period || DEFAULT_PERIOD[networkName] || 40320;
-  const nextWindowStart = currentHeight ? (Math.floor(currentHeight / period) + 1) * period : null;
-  const nextWindowBlocks = nextWindowStart ? Math.max(0, nextWindowStart - currentHeight) : null;
-
-  // --- Algolock signalling window (bit 0 only appears once the BIP9 window starts) ---
-  const algolockStatus = algolockDeployment?.bip9?.status;
+  // --- Algolock deployment context (bit 0 is the reliable v9.26 indicator) ---
+  const algolockStatus = algolockDeployment?.bip9?.status || (algolockDeployment?.active ? 'active' : null);
   const algolockLive = ['started', 'locked_in', 'active'].includes(algolockStatus);
-  const nextAlgolockWindow = !algolockLive ? nextWindowStart : null;
-  const algolockWindowBlocks = nextAlgolockWindow ? nextWindowBlocks : null;
 
   // --- Groestl retirement (unconditional rejection height) ---
   const backstopBlocks = activationHeight && currentHeight ? Math.max(0, activationHeight - currentHeight) : null;
-  // Pending only while we have a live height that is still below the enforcement height.
   const backstopPending = !!(activationHeight && currentHeight > 0 && currentHeight < activationHeight);
 
-  // --- Official BIP9 window context ---
-  const ddStats = ddDeployment?.bip9?.statistics;
-  const ddThreshold = ddStats?.threshold || (ddStats?.period ? Math.round(ddStats.period * 0.7) : null);
-  const alStats = algolockDeployment?.bip9?.statistics;
-  const alOfficialPct = alStats && alStats.period ? Math.round((alStats.count / alStats.period) * 100) : null;
-
-  const ddChip = (state) => {
-    if (state === 'upgraded') return <Chip icon={<CheckCircleIcon />} label="v9.26.x" sx={{ backgroundColor: '#4caf50', color: 'white', fontWeight: 'bold' }} size="small" />;
-    if (state === 'partial') return <Chip label="Partial" sx={{ backgroundColor: '#ff9800', color: 'white', fontWeight: 'bold' }} size="small" />;
-    if (state === 'rolling') return <Chip label="Rolling — bit 23 n/a" sx={{ backgroundColor: '#607d8b', color: 'white', fontWeight: 'bold' }} size="small" />;
-    return <Chip icon={<HourglassTopIcon />} label="No" sx={{ backgroundColor: '#9e9e9e', color: 'white', fontWeight: 'bold' }} size="small" />;
+  const statusChip = (status) => {
+    if (status === 'publishing') {
+      return (
+        <Chip icon={<CheckCircleIcon />} label="Publishing bundles" size="small"
+          sx={{ backgroundColor: 'rgba(255, 179, 0, 0.18)', color: '#9a6a00', fontWeight: 'bold', '& .MuiChip-icon': { color: '#b8860b' } }} />
+      );
+    }
+    if (status === 'upgraded') {
+      return (
+        <Chip label="Upgraded — not publishing" size="small"
+          sx={{ backgroundColor: '#fff3e0', color: '#e65100', fontWeight: 'bold' }} />
+      );
+    }
+    return (
+      <Chip label="Not upgraded" size="small"
+        sx={{ backgroundColor: '#ffebee', color: '#c62828', fontWeight: 'bold' }} />
+    );
   };
-  const alChip = (state) => {
-    if (state === 'ready') return <Chip icon={<CheckCircleIcon />} label="v9.26.2" sx={{ backgroundColor: '#2e7d32', color: 'white', fontWeight: 'bold' }} size="small" />;
-    if (state === 'partial') return <Chip label="Partial" sx={{ backgroundColor: '#ff9800', color: 'white', fontWeight: 'bold' }} size="small" />;
-    return <Chip label="—" sx={{ backgroundColor: '#e0e0e0', color: '#555' }} size="small" />;
-  };
 
-  const ReadinessBar = ({ pct }) => (
+  const ReadinessBar = ({ pct, color = '#b8860b' }) => (
     <Box sx={{ position: 'relative', mb: 1 }}>
       <LinearProgress
         variant="determinate"
         value={Math.min(pct, 100)}
         sx={{
           height: 24, borderRadius: '12px', backgroundColor: '#e0e0e0',
-          '& .MuiLinearProgress-bar': { backgroundColor: pct >= 70 ? '#4caf50' : '#ff9800', borderRadius: '12px' },
+          '& .MuiLinearProgress-bar': { backgroundColor: color, borderRadius: '12px' },
         }}
       />
-      <Box sx={{ position: 'absolute', top: 0, left: '70%', height: 24, borderLeft: '2px dashed #002352' }} />
     </Box>
   );
 
@@ -319,16 +296,16 @@ const PoolUpgradeTrackerPage = () => {
             </Box>
             <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 3, borderColor: secondaryColor, borderWidth: 2 }} />
             <Typography variant="subtitle1" sx={{ maxWidth: 820, mx: 'auto' }}>
-              Live pool readiness across the last <strong>{totalBlocks || 240}</strong> blocks, tracking two
-              BIP9 upgrade signals: <strong>DigiDollar</strong> (bit&nbsp;23) and <strong>Algolock</strong> (bit&nbsp;0).
+              <strong>DigiDollar is ACTIVE</strong> — signalling is over. This page tracks the last{' '}
+              <strong>{totalBlocks || 240}</strong> blocks for the thing that matters now:{' '}
+              which pools attach <strong>oracle price bundles</strong> to their coinbase, proving they can
+              mine DigiDollar mint/redeem blocks.
             </Typography>
             <Typography variant="body2" sx={{ maxWidth: 820, mx: 'auto', mt: 1.5, color: '#555' }}>
-              The algolock height has been reached, retiring the Groestl algorithm.
-              <strong> Algolock</strong> (bit&nbsp;0) is the reliable indicator of true v9.26 adoption because it sits
-              outside the ASIC version-rolling window, so every pool — including SHA256D — signals it
-              deterministically.
-              <strong> DigiDollar</strong> (bit&nbsp;23) sits inside that window, so older v8.26 ASICBoost miners can
-              set it by chance while version-rolling and overstate real adoption. Click any pool for its
+              A bundle-carrying block proves the whole pipeline: an upgraded v9.26 node, a
+              getblocktemplate request with the <code>digidollar-oracle</code> rule, and a coinbase that
+              preserves <code>default_oracle_commitment</code>. Pools without bundles either need that
+              GBT change (if already upgraded) or the Core upgrade itself. Click any pool for its
               per-algorithm breakdown.
             </Typography>
           </CardContent>
@@ -338,42 +315,59 @@ const PoolUpgradeTrackerPage = () => {
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>
         ) : (
           <>
-            {/* Overall readiness — two signals side by side */}
+            {/* Bucket KPIs */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid item xs={12} sm={4}>
+                <Card elevation={3} sx={{ p: 3, borderRadius: '12px', textAlign: 'center', borderTop: '4px solid #b8860b', height: '100%' }}>
+                  <Typography variant="h3" fontWeight="800" sx={{ color: '#9a6a00' }}>{publishingPools}</Typography>
+                  <Typography variant="subtitle1" fontWeight="bold">Publishing pools</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Mining blocks with oracle bundles — fully DigiDollar-ready
+                  </Typography>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <Card elevation={3} sx={{ p: 3, borderRadius: '12px', textAlign: 'center', borderTop: '4px solid #e65100', height: '100%' }}>
+                  <Typography variant="h3" fontWeight="800" sx={{ color: '#e65100' }}>{upgradedPools}</Typography>
+                  <Typography variant="subtitle1" fontWeight="bold">Upgraded, not publishing</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    On v9.26 but their blocks never include a bundle — reach out about the GBT rule
+                  </Typography>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <Card elevation={3} sx={{ p: 3, borderRadius: '12px', textAlign: 'center', borderTop: '4px solid #c62828', height: '100%' }}>
+                  <Typography variant="h3" fontWeight="800" sx={{ color: '#c62828' }}>{notUpgradedPools}</Typography>
+                  <Typography variant="subtitle1" fontWeight="bold">Not upgraded yet</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    No v9.26 evidence — reach out about the Core upgrade first
+                  </Typography>
+                </Card>
+              </Grid>
+            </Grid>
+
+            {/* Coverage cards */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
               <Grid item xs={12} md={6}>
                 <Card elevation={3} sx={{ p: 3, borderRadius: '12px', height: '100%' }}>
                   <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5, color: primaryColor }}>
-                    DigiDollar — BIP9 signalling (bit&nbsp;23)
+                    Oracle bundle production
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 2, color: '#555' }}>
-                    {ddRawCount} of {totalBlocks} recent blocks carry bit&nbsp;23 — the raw count BIP9
-                    consensus uses ({ddCleanCount} clean, hard proof of v9.26.x, plus{' '}
-                    {ddRawCount - ddCleanCount} riding on rolled blocks). Separately, {rolledCount} of
-                    the {totalBlocks} are version-rolled SHA256D blocks, where bit&nbsp;23 is a coin flip.
+                    {bundleCount} of {totalBlocks} recent blocks carry an oracle price bundle
+                    (v0x03 OP_RETURN OP_ORACLE coinbase output). Only these blocks can confirm
+                    DigiDollar mint/redeem transactions.
                   </Typography>
-                  <ReadinessBar pct={ddRawPct} />
-                  <Typography variant="h6" fontWeight="bold" color={ddRawPct >= 70 ? '#2e7d32' : '#e65100'}>
-                    {ddRawPct}% of recent blocks signalling (70% needed)
+                  <ReadinessBar pct={bundlePct} />
+                  <Typography variant="h6" fontWeight="bold" sx={{ color: '#9a6a00' }}>
+                    {bundlePct}% bundle coverage
                   </Typography>
-                  {ddStats && (
-                    <Alert severity={ddStats.possible === false ? 'warning' : 'info'} sx={{ mt: 2 }}>
-                      Official window: <strong>{(ddStats.count ?? 0).toLocaleString()}</strong> of{' '}
-                      <strong>{(ddStats.elapsed ?? 0).toLocaleString()}</strong> elapsed blocks signalled —
-                      lock-in needs <strong>{(ddThreshold ?? 0).toLocaleString()}</strong> of{' '}
-                      {(ddStats.period ?? 0).toLocaleString()} ({ddDeployment?.bip9?.status}).
-                      {ddStats.possible === false && nextWindowStart ? (
-                        <>
-                          {' '}Lock-in is <strong>no longer possible in this window</strong> — the count
-                          resets at block <strong>{nextWindowStart.toLocaleString()}</strong>{' '}
-                          ({fmtEta(nextWindowBlocks)}).
-                        </>
-                      ) : null}
-                    </Alert>
-                  )}
-                  <Alert severity="warning" sx={{ mt: 2 }}>
-                    Bit 23 can overstate adoption — it rides inside the ASIC version-rolling window, so a
-                    version-rolling v8.26 miner can carry it without running v9.26. Use algolock (bit 0),
-                    which sits outside that window, for the definitive count.
+                  <Alert severity="info" sx={{ mt: 2 }}>
+                    Even a fully integrated pool mines bundle-less blocks when no fresh MuSig2
+                    bundle is ready — coverage measures readiness, and 100% is not expected.
+                    A pool with <strong>zero</strong> bundles across many blocks is the signal to act on:
+                    its stack must request the <code>digidollar-oracle</code> GBT rule and preserve{' '}
+                    <code>default_oracle_commitment</code> as a zero-value coinbase output.
                   </Alert>
                 </Card>
               </Grid>
@@ -381,33 +375,26 @@ const PoolUpgradeTrackerPage = () => {
               <Grid item xs={12} md={6}>
                 <Card elevation={3} sx={{ p: 3, borderRadius: '12px', height: '100%' }}>
                   <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5, color: primaryColor }}>
-                    Algolock — the reliable v9.26 signal (bit&nbsp;0)
+                    v9.26 adoption — Algolock (bit&nbsp;0)
                   </Typography>
-                  {algolockLive ? (
+                  {algolockLive || alCount > 0 ? (
                     <>
                       <Typography variant="body2" sx={{ mb: 2, color: '#555' }}>
-                        {alCount} of {totalBlocks} recent blocks signal algolock (bit&nbsp;0)
-                        {alOfficialPct != null ? ` · official window ${alOfficialPct}% (${algolockStatus})` : ''}.
-                        Bit&nbsp;0 sits outside the ASIC version-rolling window, so it is reliable for
-                        every pool — including version-rolling SHA256D pools where bit&nbsp;23 is noise.
+                        {alCount} of {totalBlocks} recent blocks signal algolock (bit&nbsp;0), the
+                        reliable "this node runs v9.26.2+" indicator — it sits outside the ASIC
+                        version-rolling window, so it is deterministic for every pool including
+                        SHA256D.
                       </Typography>
-                      <ReadinessBar pct={alPct} />
+                      <ReadinessBar pct={alPct} color={alPct >= 70 ? '#4caf50' : '#ff9800'} />
                       <Typography variant="h6" fontWeight="bold" color={alPct >= 70 ? '#2e7d32' : '#e65100'}>
                         {alPct}% of recent hashpower on v9.26.2+
                       </Typography>
                     </>
                   ) : (
                     <Alert severity="info" sx={{ mt: 1 }}>
-                      Algolock BIP9 signalling has not opened yet (status:{' '}
-                      <strong>{algolockStatus || 'defined'}</strong>). Bit&nbsp;0 is not set by any miner
-                      until the window starts
-                      {nextAlgolockWindow ? (
-                        <> at block <strong>{nextAlgolockWindow.toLocaleString()}</strong>{' '}
-                          (~{algolockWindowBlocks?.toLocaleString()} blocks, {fmtEta(algolockWindowBlocks)})</>
-                      ) : null}
-                      . Once it opens, bit&nbsp;0 becomes the definitive "running v9.26.x" indicator:
-                      unlike bit&nbsp;23 it sits <strong>outside</strong> the ASIC version-rolling window
-                      (BIP320 bits 13–28), so SHA256D pools signal it deterministically.
+                      Algolock signalling data is not available (status:{' '}
+                      <strong>{algolockStatus || 'unknown'}</strong>). Upgrade evidence falls back to
+                      historical clean bit-23 signals and, above all, oracle bundle production.
                     </Alert>
                   )}
                 </Card>
@@ -451,13 +438,6 @@ const PoolUpgradeTrackerPage = () => {
               ) : (
                 <Alert severity="info">Algolock enforcement is not scheduled on this network.</Alert>
               )}
-              <Typography variant="body2" sx={{ mt: 2, color: '#555' }}>
-                The algolock height has been reached, so the retired Myriad-Groestl algorithm is now rejected by
-                consensus from block {activationHeight ? activationHeight.toLocaleString() : '23,808,000'}. Any
-                block using Groestl (or an unknown algorithm) is rejected unconditionally, independent of BIP9
-                signalling. Because bit&nbsp;0 only rides on blocks from upgraded nodes, algolock is the dependable
-                measure of genuine v9.26 mining — where bit&nbsp;23 alone can mislead.
-              </Typography>
             </Card>
 
             {/* Per-pool table with drill-down */}
@@ -472,8 +452,9 @@ const PoolUpgradeTrackerPage = () => {
                       <TableRow>
                         <TableCell sx={{ width: 40 }} />
                         <TableCell><strong>Pool / Miner</strong></TableCell>
-                        <TableCell align="center"><strong>DigiDollar (v9.26.x)</strong></TableCell>
-                        <TableCell align="center"><strong>Algolock (v9.26.2+)</strong></TableCell>
+                        <TableCell align="center"><strong>Status</strong></TableCell>
+                        <TableCell align="center"><strong>Oracle bundles</strong></TableCell>
+                        <TableCell align="center"><strong>Algolock (bit 0)</strong></TableCell>
                         <TableCell align="right"><strong>Blocks</strong></TableCell>
                         <TableCell align="right"><strong>Last block</strong></TableCell>
                       </TableRow>
@@ -484,7 +465,11 @@ const PoolUpgradeTrackerPage = () => {
                           <TableRow
                             hover
                             onClick={() => toggle(p.key)}
-                            sx={{ cursor: 'pointer', '& > *': { borderBottom: expanded[p.key] ? 'unset' : undefined } }}
+                            sx={{
+                              cursor: 'pointer',
+                              backgroundColor: p.status === 'publishing' ? 'rgba(255, 215, 0, 0.06)' : undefined,
+                              '& > *': { borderBottom: expanded[p.key] ? 'unset' : undefined },
+                            }}
                           >
                             <TableCell>
                               <IconButton size="small" aria-label="expand row">
@@ -494,21 +479,25 @@ const PoolUpgradeTrackerPage = () => {
                             <TableCell sx={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               <span title={p.algoList.length ? `${p.name} — ${p.algoList.join(', ')}` : p.name}>{p.name}</span>
                             </TableCell>
+                            <TableCell align="center">{statusChip(p.status)}</TableCell>
                             <TableCell align="center">
-                              <span title={`${p.ddRaw}/${p.total} blocks carry bit 23 (${p.ddClean} clean, ${p.rolled} version-rolled) · latest block: ${p.latestAlgo || '—'}`}>
-                                {ddChip(p.ddState)}{' '}
-                                <Typography component="span" variant="caption" color="#666">{p.ddRaw}/{p.total} ({p.ddPct}%)</Typography>
+                              <span title={p.bundles > 0
+                                ? `Latest bundle at block ${p.lastBundleHeight.toLocaleString()}${p.lastSigners != null ? ` · ${p.lastSigners} signers` : ''}${p.lastPriceUsd != null ? ` · $${p.lastPriceUsd.toFixed(6)}` : ''}`
+                                : 'No oracle bundles in the window'}>
+                                <Typography component="span" variant="body2" fontWeight={p.bundles > 0 ? 'bold' : 'normal'}
+                                  sx={{ color: p.bundles > 0 ? '#9a6a00' : '#999' }}>
+                                  {p.bundles}/{p.total} ({p.bundlePct}%)
+                                </Typography>
                               </span>
                             </TableCell>
                             <TableCell align="center">
-                              {alChip(p.alState)}{' '}
                               <Typography component="span" variant="caption" color="#666">{p.al}/{p.total} ({p.alPct}%)</Typography>
                             </TableCell>
                             <TableCell align="right">{p.total}</TableCell>
                             <TableCell align="right">{p.latestHeight >= 0 ? p.latestHeight.toLocaleString() : '—'}</TableCell>
                           </TableRow>
                           <TableRow>
-                            <TableCell sx={{ py: 0, borderBottom: expanded[p.key] ? undefined : 'none' }} colSpan={6}>
+                            <TableCell sx={{ py: 0, borderBottom: expanded[p.key] ? undefined : 'none' }} colSpan={7}>
                               <Collapse in={!!expanded[p.key]} timeout="auto" unmountOnExit>
                                 <Box sx={{ my: 2, mx: 1 }}>
                                   <Typography variant="subtitle2" sx={{ mb: 1, color: primaryColor }}>
@@ -519,8 +508,7 @@ const PoolUpgradeTrackerPage = () => {
                                       <TableRow>
                                         <TableCell><strong>Algorithm</strong></TableCell>
                                         <TableCell align="right"><strong>Blocks</strong></TableCell>
-                                        <TableCell align="right"><strong>Bit 23 (raw)</strong></TableCell>
-                                        <TableCell align="right"><strong>Bit 23 (clean)</strong></TableCell>
+                                        <TableCell align="right"><strong>Oracle bundles</strong></TableCell>
                                         <TableCell align="right"><strong>Algolock (bit 0)</strong></TableCell>
                                         <TableCell align="right"><strong>Version-rolled</strong></TableCell>
                                         <TableCell><strong>Latest version</strong></TableCell>
@@ -537,11 +525,8 @@ const PoolUpgradeTrackerPage = () => {
                                             )}
                                           </TableCell>
                                           <TableCell align="right">{a.n}</TableCell>
-                                          <TableCell align="right" sx={{ color: a.ddRaw ? '#2e7d32' : '#999', fontWeight: a.ddRaw ? 'bold' : 'normal' }}>
-                                            {a.ddRaw}/{a.n}
-                                          </TableCell>
-                                          <TableCell align="right" sx={{ color: a.ddClean ? '#2e7d32' : '#999', fontWeight: a.ddClean ? 'bold' : 'normal' }}>
-                                            {a.ddClean}/{a.n}
+                                          <TableCell align="right" sx={{ color: a.bundles ? '#9a6a00' : '#999', fontWeight: a.bundles ? 'bold' : 'normal' }}>
+                                            {a.bundles}/{a.n}
                                           </TableCell>
                                           <TableCell align="right" sx={{ color: a.al ? '#2e7d32' : '#999', fontWeight: a.al ? 'bold' : 'normal' }}>
                                             {a.al}/{a.n}
@@ -553,11 +538,9 @@ const PoolUpgradeTrackerPage = () => {
                                     </TableBody>
                                   </Table>
                                   <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#888' }}>
-                                    "Raw" is what BIP9 consensus counts; "clean" excludes version-rolled SHA256D
-                                    blocks, where bit&nbsp;23 is a coin flip and proves nothing about the pool's
-                                    node. A pool signalling on some algorithms but not others runs a mixed
-                                    backend — upgrade the nodes behind the non-signalling algorithms (especially
-                                    Groestl, which is rejected outright at the backstop height).
+                                    A pool publishing bundles on some algorithms but not others runs a mixed
+                                    backend — the daemons behind the bundle-less algorithms need the{' '}
+                                    <code>digidollar-oracle</code> GBT rule or the v9.26 upgrade.
                                   </Typography>
                                 </Box>
                               </Collapse>
@@ -566,20 +549,19 @@ const PoolUpgradeTrackerPage = () => {
                         </React.Fragment>
                       ))}
                       {pools.length === 0 && (
-                        <TableRow><TableCell colSpan={6} align="center">No recent blocks available.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={7} align="center">No recent blocks available.</TableCell></TableRow>
                       )}
                     </TableBody>
                   </Table>
                 </TableContainer>
                 <Typography variant="caption" sx={{ display: 'block', mt: 2, color: '#888' }}>
-                  Counts show the raw bit&nbsp;23 — exactly what BIP9 consensus counts toward activation.
-                  Upgrade status is inferred from clean (non-rolled) blocks and bit&nbsp;0: "Partial" means
-                  some but not the newest clean block signalled (a multi-node pool mid-rollout — click to see
-                  which algos); "Rolling — bit&nbsp;23 n/a" means every block from this pool is version-rolled
-                  SHA256D (ASICBoost, {rolledCount} of the last {totalBlocks} blocks network-wide), where
-                  bit&nbsp;23 is a coin flip that can neither prove nor disprove an upgrade — bit&nbsp;0
-                  resolves these pools once algolock signalling opens. Pools are identified by coinbase tag or
-                  payout address.
+                  <strong>Publishing bundles</strong> is definitive proof of full DigiDollar integration.
+                  <strong> Upgraded — not publishing</strong> means the node is v9.26 (algolock bit&nbsp;0 or a
+                  historical clean bit-23 signal) but its blocks never carry a bundle — the pool must request
+                  the <code>digidollar-oracle</code> rule in getblocktemplate and copy{' '}
+                  <code>default_oracle_commitment</code> into the coinbase as a zero-value output.
+                  <strong> Not upgraded</strong> means no v9.26 evidence in the window. Pools are identified by
+                  coinbase tag or payout address.
                 </Typography>
               </CardContent>
             </Card>

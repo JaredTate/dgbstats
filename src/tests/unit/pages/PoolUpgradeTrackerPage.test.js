@@ -13,53 +13,43 @@ vi.mock('../../../config', () => ({
 
 // -----------------------------------------------------------------------------
 // Block fixtures — shape matches what dgbstats-server ships on every block.
-// Realistic versions:
-//   skein, clean bit-23 signal:            0x20800602
-//   sha256d, version-rolled with bit 23:   0x20810202
-//   sha256d, version-rolled without bit 23: 0x20010202
+// DigiDollar is ACTIVE: BIP9 bit-23 signaling is over. The post-activation
+// questions are (1) which pools attach v0x03 oracle bundles to their coinbase
+// (fully integrated), (2) which are on v9.26.x but not publishing bundles
+// (needs the digidollar-oracle GBT rule / commitment preservation), and
+// (3) which show no v9.26 evidence at all (needs the Core upgrade).
 // -----------------------------------------------------------------------------
 const makeBlock = (overrides = {}) => ({
-  height: 23784900,
+  height: 23870100,
   hash: '000000000000000000abcdef1234567890abcdef1234567890abcdef12345678',
   algo: 'skein',
-  poolIdentifier: 'SkeinPool',
-  minerAddress: 'DSkeinAddr111111111111111111111111',
+  poolIdentifier: 'SomePool',
+  minerAddress: 'DSomeAddr1111111111111111111111111',
   timestamp: Math.floor(Date.now() / 1000),
   txCount: 10,
   difficulty: 345678.9,
-  version: 0x20800602,
-  digidollarSignaling: true,
+  version: 0x20000602,
+  digidollarSignaling: false,
   algolockSignaling: false,
   versionRolled: false,
   taprootSignaling: true,
+  hasOracleBundle: false,
+  oracleSignerCount: null,
+  oraclePriceUsd: null,
   ...overrides
 });
 
-// (a) Pool with 3 clean skein signaling blocks -> upgraded (v9.26.x)
-const cleanSkeinBlocks = [
-  makeBlock({ height: 23784900, hash: 'a1'.repeat(32) }),
-  makeBlock({ height: 23784897, hash: 'a2'.repeat(32) }),
-  makeBlock({ height: 23784894, hash: 'a3'.repeat(32) }),
-];
-
-// (b) Pool with ONLY version-rolled sha256d blocks (bit 23 is a coin flip
-// inside the BIP310 roll window) -> indeterminate: 'Rolling — bit 23 n/a'
-const rolledSha256dBlocks = [
-  makeBlock({
-    height: 23784899, hash: 'b1'.repeat(32), algo: 'sha256d',
-    poolIdentifier: 'RolledPool', minerAddress: 'DRolledAddr2222222222222222222222',
-    version: 0x20810202, digidollarSignaling: true, versionRolled: true
-  }),
-  makeBlock({
-    height: 23784898, hash: 'b2'.repeat(32), algo: 'sha256d',
-    poolIdentifier: 'RolledPool', minerAddress: 'DRolledAddr2222222222222222222222',
-    version: 0x20010202, digidollarSignaling: false, versionRolled: true
-  }),
-  makeBlock({
-    height: 23784896, hash: 'b3'.repeat(32), algo: 'sha256d',
-    poolIdentifier: 'RolledPool', minerAddress: 'DRolledAddr2222222222222222222222',
-    version: 0x20810202, digidollarSignaling: true, versionRolled: true
-  }),
+// BundlePool: 3 blocks, 2 carrying oracle bundles -> Publishing bundles
+// AlgolockPool: 2 blocks with algolock bit 0, no bundles -> Upgraded — not publishing
+// OldPool: 2 blocks with no evidence at all -> Not upgraded
+const adoptionBlocks = [
+  makeBlock({ height: 23870107, hash: 'a1'.repeat(32), poolIdentifier: 'BundlePool', minerAddress: 'DBundle1', hasOracleBundle: true, oracleSignerCount: 7, oraclePriceUsd: 0.00913 }),
+  makeBlock({ height: 23870106, hash: 'b1'.repeat(32), poolIdentifier: 'AlgolockPool', minerAddress: 'DAlgo1', algolockSignaling: true }),
+  makeBlock({ height: 23870105, hash: 'c1'.repeat(32), poolIdentifier: 'OldPool', minerAddress: 'DOld1' }),
+  makeBlock({ height: 23870104, hash: 'a2'.repeat(32), poolIdentifier: 'BundlePool', minerAddress: 'DBundle1', hasOracleBundle: true, oracleSignerCount: 9, oraclePriceUsd: 0.00914 }),
+  makeBlock({ height: 23870103, hash: 'b2'.repeat(32), poolIdentifier: 'AlgolockPool', minerAddress: 'DAlgo1', algolockSignaling: true }),
+  makeBlock({ height: 23870102, hash: 'c2'.repeat(32), poolIdentifier: 'OldPool', minerAddress: 'DOld1' }),
+  makeBlock({ height: 23870101, hash: 'a3'.repeat(32), poolIdentifier: 'BundlePool', minerAddress: 'DBundle1' }),
 ];
 
 describe('PoolUpgradeTrackerPage', () => {
@@ -80,319 +70,142 @@ describe('PoolUpgradeTrackerPage', () => {
     vi.clearAllMocks();
   });
 
+  async function renderWithBlocks(blocks = adoptionBlocks) {
+    renderWithProviders(<PoolUpgradeTrackerPage />);
+    await waitForAsync();
+    const ws = webSocketInstances[0];
+    ws.receiveMessage({ type: 'recentBlocks', data: blocks });
+    return ws;
+  }
+
   describe('Rendering', () => {
-    it('should render the hero section with title and BIP9 description', () => {
+    it('should render the hero with the post-activation framing', async () => {
       renderWithProviders(<PoolUpgradeTrackerPage />);
 
       expect(screen.getByText('Pool Upgrade Tracker')).toBeInTheDocument();
-      expect(screen.getByText(/Live pool readiness across the last/)).toBeInTheDocument();
+      expect(screen.getByText(/DigiDollar is ACTIVE/i)).toBeInTheDocument();
     });
 
     it('should show a loading spinner until blocks arrive', () => {
       renderWithProviders(<PoolUpgradeTrackerPage />);
-
       expect(screen.getByRole('progressbar')).toBeInTheDocument();
     });
 
     it('should establish a WebSocket connection on mount', async () => {
       renderWithProviders(<PoolUpgradeTrackerPage />);
-
       await waitForAsync();
-
       expect(mockWebSocket).toHaveBeenCalledWith('ws://localhost:5002');
-      expect(webSocketInstances.length).toBe(1);
     });
   });
 
-  describe('Pool classification', () => {
-    it('should show a v9.26.x chip and 3/3 for a pool with 3 clean skein signaling blocks', async () => {
-      renderWithProviders(<PoolUpgradeTrackerPage />);
-
-      await waitForAsync();
-      const ws = webSocketInstances[0];
-
-      ws.receiveMessage({ type: 'recentBlocks', data: cleanSkeinBlocks });
+  describe('Per-pool status classification', () => {
+    it('marks a pool mining bundle blocks as Publishing bundles', async () => {
+      await renderWithBlocks();
 
       await waitFor(() => {
-        expect(screen.getByText('SkeinPool')).toBeInTheDocument();
+        expect(screen.getByText('BundlePool')).toBeInTheDocument();
       });
-
-      const row = screen.getByText('SkeinPool').closest('tr');
-      expect(row).not.toBeNull();
-      // Upgraded chip (clean, non-rolled bit-23 signal on every block)
-      expect(within(row).getByText('v9.26.x')).toBeInTheDocument();
-      // Raw bit-23 count over the pool's blocks: 3 of 3 (100%)
-      expect(within(row).getByText('3/3 (100%)')).toBeInTheDocument();
+      const row = screen.getByText('BundlePool').closest('tr');
+      expect(within(row).getByText('Publishing bundles')).toBeInTheDocument();
+      // 2 of its 3 blocks carried bundles
+      expect(within(row).getByText('2/3 (67%)')).toBeInTheDocument();
     });
 
-    it('should show a Rolling — bit 23 n/a chip for a pool with only rolled sha256d blocks', async () => {
-      renderWithProviders(<PoolUpgradeTrackerPage />);
-
-      await waitForAsync();
-      const ws = webSocketInstances[0];
-
-      ws.receiveMessage({ type: 'recentBlocks', data: rolledSha256dBlocks });
+    it('marks an upgraded pool without bundles as Upgraded — not publishing', async () => {
+      await renderWithBlocks();
 
       await waitFor(() => {
-        expect(screen.getByText('RolledPool')).toBeInTheDocument();
+        expect(screen.getByText('AlgolockPool')).toBeInTheDocument();
       });
-
-      const row = screen.getByText('RolledPool').closest('tr');
-      expect(row).not.toBeNull();
-      // Every block is version-rolled SHA256D: bit 23 is a coin flip there, so
-      // the pool is indeterminate rather than upgraded or non-signaling.
-      expect(within(row).getByText('Rolling — bit 23 n/a')).toBeInTheDocument();
-      expect(within(row).queryByText('v9.26.x')).not.toBeInTheDocument();
+      const row = screen.getByText('AlgolockPool').closest('tr');
+      expect(within(row).getByText('Upgraded — not publishing')).toBeInTheDocument();
+      expect(within(row).queryByText('Publishing bundles')).not.toBeInTheDocument();
     });
 
-    it('should show a No chip for a scrypt pool on an old non-signaling node', async () => {
-      renderWithProviders(<PoolUpgradeTrackerPage />);
-
-      await waitForAsync();
-      const ws = webSocketInstances[0];
-
-      // scrypt old node: version 0x20000002 — no bit 23, no bit 0, not rolled
-      ws.receiveMessage({
-        type: 'recentBlocks',
-        data: [
-          makeBlock({
-            height: 23784895, hash: 'c1'.repeat(32), algo: 'scrypt',
-            poolIdentifier: 'ScryptPool', minerAddress: 'DScryptAddr3333333333333333333333',
-            version: 0x20000002, digidollarSignaling: false, versionRolled: false
-          }),
-          makeBlock({
-            height: 23784893, hash: 'c2'.repeat(32), algo: 'scrypt',
-            poolIdentifier: 'ScryptPool', minerAddress: 'DScryptAddr3333333333333333333333',
-            version: 0x20000002, digidollarSignaling: false, versionRolled: false
-          }),
-        ]
-      });
+    it('marks a pool with no v9.26 evidence as Not upgraded', async () => {
+      await renderWithBlocks();
 
       await waitFor(() => {
-        expect(screen.getByText('ScryptPool')).toBeInTheDocument();
+        expect(screen.getByText('OldPool')).toBeInTheDocument();
       });
-
-      const row = screen.getByText('ScryptPool').closest('tr');
-      expect(row).not.toBeNull();
-      expect(within(row).getByText('No')).toBeInTheDocument();
-      // Scope to the DigiDollar column: the Algolock column shows the same
-      // "0/2 (0%)" caption for a non-signaling pool.
-      const ddCell = row.querySelectorAll('td')[2];
-      expect(within(ddCell).getByText('0/2 (0%)')).toBeInTheDocument();
-      expect(within(row).queryByText('v9.26.x')).not.toBeInTheDocument();
-      expect(within(row).queryByText('Rolling — bit 23 n/a')).not.toBeInTheDocument();
+      const row = screen.getByText('OldPool').closest('tr');
+      expect(within(row).getByText('Not upgraded')).toBeInTheDocument();
     });
 
-    it('should classify both pools independently in the same window', async () => {
-      renderWithProviders(<PoolUpgradeTrackerPage />);
-
-      await waitForAsync();
-      const ws = webSocketInstances[0];
-
-      ws.receiveMessage({
-        type: 'recentBlocks',
-        data: [...cleanSkeinBlocks, ...rolledSha256dBlocks]
-      });
+    it('treats historical clean bit-23 signaling as upgrade evidence', async () => {
+      await renderWithBlocks([
+        makeBlock({ height: 23870110, hash: 'd1'.repeat(32), poolIdentifier: 'LegacySignal', minerAddress: 'DLeg1', digidollarSignaling: true }),
+        makeBlock({ height: 23870109, hash: 'd2'.repeat(32), poolIdentifier: 'LegacySignal', minerAddress: 'DLeg1' }),
+      ]);
 
       await waitFor(() => {
-        expect(screen.getByText('SkeinPool')).toBeInTheDocument();
-        expect(screen.getByText('RolledPool')).toBeInTheDocument();
+        expect(screen.getByText('LegacySignal')).toBeInTheDocument();
       });
-
-      const skeinRow = screen.getByText('SkeinPool').closest('tr');
-      const rolledRow = screen.getByText('RolledPool').closest('tr');
-      expect(within(skeinRow).getByText('v9.26.x')).toBeInTheDocument();
-      expect(within(rolledRow).getByText('Rolling — bit 23 n/a')).toBeInTheDocument();
-      expect(screen.getByText(/Pools \(last 6 blocks\)/)).toBeInTheDocument();
+      const row = screen.getByText('LegacySignal').closest('tr');
+      expect(within(row).getByText('Upgraded — not publishing')).toBeInTheDocument();
     });
   });
 
-  describe('Raw version-bit classification (fallback for older servers)', () => {
-    // Blocks WITHOUT the server-computed boolean flags: the page must fall
-    // back to classifying the raw block version locally. One block per pool,
-    // one for each real-world version example:
-    //   0x20800602 skein, clean bit-23 signal        -> ddRaw + ddClean
-    //   0x20800e02 odocrypt, clean bit-23 signal     -> ddRaw + ddClean
-    //   0x20000002 scrypt, old node                  -> no signal
-    //   0x33fcc202 sha256d rolled, bit 28 set        -> rolled, signals NOTHING
-    //                                                   (0xF0000000 top-mask)
-    //   0x20810202 sha256d rolled carrying bit 23    -> ddRaw (BIP9 counts it), rolled
-    //   0x20800202 sha256d, clean bit-23 signal      -> ddRaw + ddClean
-    const rawBlock = (height, hash, algo, pool, version) => ({
-      height,
-      hash: hash.repeat(32),
-      algo,
-      poolIdentifier: pool,
-      minerAddress: `D${pool}Addr00000000000000000000000000`,
-      timestamp: Math.floor(Date.now() / 1000),
-      txCount: 5,
-      difficulty: 12345.6,
-      version
+  describe('Network-wide summaries', () => {
+    it('reports oracle bundle coverage over the window', async () => {
+      await renderWithBlocks();
+
+      // 2 bundles across 7 observed blocks
+      await waitFor(() => {
+        expect(screen.getByText(/2 of 7 recent blocks carry an oracle price bundle/i)).toBeInTheDocument();
+      });
     });
 
-    const rawVersionBlocks = [
-      rawBlock(23784906, 'd1', 'skein', 'SkeinRaw', 0x20800602),
-      rawBlock(23784905, 'd2', 'odocrypt', 'OdoRaw', 0x20800e02),
-      rawBlock(23784904, 'd3', 'scrypt', 'ScryptRaw', 0x20000002),
-      rawBlock(23784903, 'd4', 'sha256d', 'RolledNoBitRaw', 0x33fcc202),
-      rawBlock(23784902, 'd5', 'sha256d', 'RolledBit23Raw', 0x20810202),
-      rawBlock(23784901, 'd6', 'sha256d', 'CleanShaRaw', 0x20800202),
-    ];
+    it('counts pools in each bucket', async () => {
+      await renderWithBlocks();
 
-    it('should classify all real-world version examples from raw version bits', async () => {
-      renderWithProviders(<PoolUpgradeTrackerPage />);
-
-      await waitForAsync();
-      const ws = webSocketInstances[0];
-
-      ws.receiveMessage({ type: 'recentBlocks', data: rawVersionBlocks });
-
+      // KPI tiles: 1 publishing / 1 upgraded-not-publishing / 1 not-upgraded
       await waitFor(() => {
-        expect(screen.getByText('SkeinRaw')).toBeInTheDocument();
+        expect(screen.getByText(/Publishing pools/i)).toBeInTheDocument();
       });
-
-      // Network-wide aggregates: raw bit 23 on 4 of 6 blocks (BIP9 consensus
-      // count) = 3 clean proofs + 1 riding on a rolled block; 2 of the 6 are
-      // version-rolled. The rolled 0x33fcc202 block has bit 28 set, so it
-      // signals nothing.
-      expect(screen.getByText(/4 of 6 recent blocks carry bit 23/)).toBeInTheDocument();
-      expect(
-        screen.getByText(/3 clean, hard proof of v9\.26\.x, plus 1 riding on rolled blocks/)
-      ).toBeInTheDocument();
-      expect(screen.getByText(/2 of the 6 are version-rolled SHA256D blocks/)).toBeInTheDocument();
-      expect(screen.getByText(/67% of recent blocks signalling \(70% needed\)/)).toBeInTheDocument();
-
-      // Per-pool upgrade states inferred from the version bits alone
-      const chipFor = (pool) => screen.getByText(pool).closest('tr');
-      expect(within(chipFor('SkeinRaw')).getByText('v9.26.x')).toBeInTheDocument();
-      expect(within(chipFor('OdoRaw')).getByText('v9.26.x')).toBeInTheDocument();
-      expect(within(chipFor('CleanShaRaw')).getByText('v9.26.x')).toBeInTheDocument();
-      expect(within(chipFor('ScryptRaw')).getByText('No')).toBeInTheDocument();
-      expect(within(chipFor('RolledNoBitRaw')).getByText('Rolling — bit 23 n/a')).toBeInTheDocument();
-      expect(within(chipFor('RolledBit23Raw')).getByText('Rolling — bit 23 n/a')).toBeInTheDocument();
-
-      // The rolled block carrying bit 23 is still counted raw (1/1), while the
-      // bit-28 rolled block is not (0/1) — DigiByte's 0xF0000000 top-mask.
-      // Scope to the DigiDollar column (index 2): the Algolock column repeats
-      // the same "0/1 (0%)" caption for non-signaling pools.
-      const ddCellFor = (pool) => chipFor(pool).querySelectorAll('td')[2];
-      expect(within(ddCellFor('RolledBit23Raw')).getByText('1/1 (100%)')).toBeInTheDocument();
-      expect(within(ddCellFor('RolledNoBitRaw')).getByText('0/1 (0%)')).toBeInTheDocument();
+      expect(screen.getByText(/Upgraded, not publishing/i)).toBeInTheDocument();
+      expect(screen.getByText(/Not upgraded yet/i)).toBeInTheDocument();
+      // one pool in each bucket for this fixture
+      expect(screen.getAllByText('1').length).toBeGreaterThanOrEqual(3);
     });
 
-    it('should prefer server-computed flags over the raw version when both exist', async () => {
-      renderWithProviders(<PoolUpgradeTrackerPage />);
-
-      await waitForAsync();
-      const ws = webSocketInstances[0];
-
-      // The raw version (0x20000002) alone would classify as "no signal", but
-      // the server flags mark it as a clean DigiDollar signal — flags win.
-      ws.receiveMessage({
-        type: 'recentBlocks',
-        data: [{
-          ...rawBlock(23784910, 'e1', 'sha256d', 'FlaggedPool', 0x20000002),
-          digidollarSignaling: true,
-          algolockSignaling: false,
-          versionRolled: false
-        }]
-      });
+    it('explains the GBT fix for upgraded-but-not-publishing pools', async () => {
+      await renderWithBlocks();
 
       await waitFor(() => {
-        expect(screen.getByText('FlaggedPool')).toBeInTheDocument();
+        expect(screen.getAllByText(/digidollar-oracle/).length).toBeGreaterThan(0);
       });
-
-      const row = screen.getByText('FlaggedPool').closest('tr');
-      expect(within(row).getByText('v9.26.x')).toBeInTheDocument();
-      expect(within(row).getByText('1/1 (100%)')).toBeInTheDocument();
+      expect(screen.getAllByText(/default_oracle_commitment/).length).toBeGreaterThan(0);
     });
   });
 
-  describe('Official BIP9 window (getdeploymentinfo via MSW)', () => {
-    it('should render the official-window Alert with the no-longer-possible warning', async () => {
-      renderWithProviders(<PoolUpgradeTrackerPage />);
+  describe('Live updates', () => {
+    it('reclassifies a pool when its first bundle block arrives via newBlock', async () => {
+      const ws = await renderWithBlocks();
+      await waitFor(() => expect(screen.getByText('OldPool')).toBeInTheDocument());
 
-      await waitForAsync();
-      const ws = webSocketInstances[0];
-
-      // Blocks must arrive for the summary cards (and their Alert) to render
-      ws.receiveMessage({ type: 'recentBlocks', data: cleanSkeinBlocks });
-
-      // MSW getdeploymentinfo statistics: {period: 40320, threshold: 28224,
-      // elapsed: 36377, count: 10808, possible: false} -> warning Alert
-      await waitFor(() => {
-        expect(screen.getByText(/no longer possible in this window/)).toBeInTheDocument();
+      ws.receiveMessage({
+        type: 'newBlock',
+        data: makeBlock({ height: 23870108, hash: 'c9'.repeat(32), poolIdentifier: 'OldPool', minerAddress: 'DOld1', hasOracleBundle: true, oracleSignerCount: 8, oraclePriceUsd: 0.00915 }),
       });
-      expect(screen.getByText(/Official window:/)).toBeInTheDocument();
-      expect(screen.getByText('10,808')).toBeInTheDocument();
-      expect(screen.getByText('28,224')).toBeInTheDocument();
-      expect(screen.getByText('36,377')).toBeInTheDocument();
-    });
-
-    it('should show the algolock window as not yet open (status defined)', async () => {
-      renderWithProviders(<PoolUpgradeTrackerPage />);
-
-      await waitForAsync();
-      const ws = webSocketInstances[0];
-
-      ws.receiveMessage({ type: 'recentBlocks', data: cleanSkeinBlocks });
 
       await waitFor(() => {
-        expect(
-          screen.getByText(/Algolock BIP9 signalling has not opened yet/)
-        ).toBeInTheDocument();
+        const row = screen.getByText('OldPool').closest('tr');
+        expect(within(row).getByText('Publishing bundles')).toBeInTheDocument();
       });
+      // No pool row carries the Not upgraded chip any more (the footer legend
+      // still mentions the term, so scope to chips).
+      expect(screen.queryByText('Not upgraded', { selector: '.MuiChip-label' })).not.toBeInTheDocument();
     });
   });
 
   describe('Empty state', () => {
     it('should show an empty-table message when no blocks are received', async () => {
-      renderWithProviders(<PoolUpgradeTrackerPage />);
-
-      await waitForAsync();
-      const ws = webSocketInstances[0];
-
-      ws.receiveMessage({ type: 'recentBlocks', data: [] });
+      await renderWithBlocks([]);
 
       await waitFor(() => {
         expect(screen.getByText('No recent blocks available.')).toBeInTheDocument();
       });
-    });
-  });
-
-  describe('v9.26 adoption messaging (algolock bit 0 vs DigiDollar bit 23)', () => {
-    it('hero explains algolock bit 0 is the reliable true-v9.26 signal, bit 23 spoofable by v8.26 ASICBoost rolling', () => {
-      renderWithProviders(<PoolUpgradeTrackerPage />);
-
-      // Bit 0 is the trustworthy adoption signal...
-      expect(screen.getByText(/reliable indicator of true v9\.26 adoption/i)).toBeInTheDocument();
-      // ...and bit 23 can be a false positive from older ASICBoost version-rolling miners.
-      expect(screen.getByText(/older v8\.26 ASICBoost miners can set it by chance/i)).toBeInTheDocument();
-    });
-
-    it('DigiDollar card warns that bit 23 can overstate adoption', async () => {
-      renderWithProviders(<PoolUpgradeTrackerPage />);
-      await waitForAsync();
-      const ws = webSocketInstances[0];
-
-      ws.receiveMessage({ type: 'recentBlocks', data: cleanSkeinBlocks });
-
-      await waitFor(() => {
-        expect(screen.getByText(/Bit 23 can overstate adoption/i)).toBeInTheDocument();
-      });
-    });
-
-    it('shows a Groestl retirement card explaining Groestl is now rejected', async () => {
-      renderWithProviders(<PoolUpgradeTrackerPage />);
-      await waitForAsync();
-      const ws = webSocketInstances[0];
-
-      ws.receiveMessage({ type: 'recentBlocks', data: cleanSkeinBlocks });
-
-      await waitFor(() => {
-        expect(screen.getByText('Groestl Retirement')).toBeInTheDocument();
-      });
-      expect(screen.getByText(/retired Myriad-Groestl algorithm is now rejected/i)).toBeInTheDocument();
     });
   });
 });
