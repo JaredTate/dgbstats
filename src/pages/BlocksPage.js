@@ -131,12 +131,13 @@ const formatNumber = (num) => {
  */
 const BlockCard = ({ block, index, isMobile }) => (
   <Grid item xs={12}>
-    <Card 
+    <Card
       component="a"
       href={`https://digiexplorer.info/block/${block.hash}`}
       target="_blank"
       rel="noopener noreferrer"
       elevation={2}
+      data-oracle={block.hasOracleBundle ? 'true' : 'false'}
       sx={{
         display: 'block',
         textDecoration: 'none',
@@ -148,6 +149,16 @@ const BlockCard = ({ block, index, isMobile }) => (
         },
         overflow: 'hidden',
         borderLeft: `5px solid ${getAlgoColor(block.algo)}`,
+        // Blocks carrying a DigiDollar oracle price bundle (mined by a fully
+        // upgraded, oracle-publishing pool) get a gold glow so they stand out.
+        ...(block.hasOracleBundle && {
+          boxShadow: 'inset 0 0 0 2px rgba(255, 179, 0, 0.55), 0 2px 8px rgba(255, 179, 0, 0.25)',
+          backgroundImage: 'linear-gradient(90deg, rgba(255, 215, 0, 0.10) 0%, rgba(255, 215, 0, 0.03) 45%, transparent 100%)',
+          '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: 'inset 0 0 0 2px rgba(255, 179, 0, 0.55), 0 8px 16px rgba(255, 179, 0, 0.3)',
+          },
+        }),
       }}
     >
       <CardContent sx={{ p: { xs: 2, md: 3 } }}>
@@ -175,7 +186,7 @@ const BlockCard = ({ block, index, isMobile }) => (
             </Box>
           </Grid>
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={2.5}>
             <Box>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
                 Hash
@@ -192,7 +203,7 @@ const BlockCard = ({ block, index, isMobile }) => (
             </Box>
           </Grid>
           
-          <Grid item xs={6} sm={3} md={2}>
+          <Grid item xs={6} sm={3} md={1.75}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <SpeedIcon sx={{ fontSize: '1.2rem', mr: 1, color: getAlgoColor(block.algo) }} />
               <Box>
@@ -213,7 +224,7 @@ const BlockCard = ({ block, index, isMobile }) => (
             </Box>
           </Grid>
           
-          <Grid item xs={6} sm={3} md={2}>
+          <Grid item xs={6} sm={3} md={1.75}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <PoolIcon sx={{ fontSize: '1.2rem', mr: 1, color: '#0066cc' }} />
               <Box>
@@ -227,7 +238,7 @@ const BlockCard = ({ block, index, isMobile }) => (
             </Box>
           </Grid>
           
-          <Grid item xs={6} sm={3} md={1.5}>
+          <Grid item xs={6} sm={3} md={1.25}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <TransactionsIcon sx={{ fontSize: '1.2rem', mr: 1, color: '#0066cc' }} />
               <Box>
@@ -241,7 +252,7 @@ const BlockCard = ({ block, index, isMobile }) => (
             </Box>
           </Grid>
           
-          <Grid item xs={6} sm={3} md={1.5}>
+          <Grid item xs={6} sm={3} md={1.25}>
             {/* DigiDollar BIP9 signal (bit 23) — raw consensus semantics. Rolled
                 SHA256D blocks flip bit 23 randomly (ASICBoost), so they get their
                 own neutral state instead of reading as a "no" vote. Taproot is
@@ -290,6 +301,37 @@ const BlockCard = ({ block, index, isMobile }) => (
                 </Box>
               </Box>
             )}
+          </Grid>
+
+          <Grid item xs={6} sm={3} md={1.5}>
+            {/* DigiDollar oracle price bundle (OP_RETURN OP_ORACLE coinbase
+                output). Present only when the mining pool runs a fully
+                upgraded node with a live oracle session — the strongest
+                possible "this pool is DigiDollar-ready" signal. */}
+            <Box>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                Oracle Bundle
+              </Typography>
+              {block.hasOracleBundle ? (
+                <Chip
+                  data-testid="oracle-bundle-chip"
+                  icon={<VerifiedIcon sx={{ fontSize: '1rem' }} />}
+                  label={block.oracleSignerCount != null ? `${block.oracleSignerCount} signers` : 'Attached'}
+                  size="small"
+                  sx={{
+                    bgcolor: 'rgba(255, 179, 0, 0.18)',
+                    color: '#9a6a00',
+                    fontWeight: 'bold',
+                    fontSize: '0.75rem',
+                    '& .MuiChip-icon': { color: '#b8860b' }
+                  }}
+                />
+              ) : (
+                <Typography variant="body2" fontWeight="medium" sx={{ color: '#9e9e9e' }}>
+                  —
+                </Typography>
+              )}
+            </Box>
           </Grid>
         </Grid>
       </CardContent>

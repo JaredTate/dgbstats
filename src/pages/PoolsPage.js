@@ -106,7 +106,10 @@ const PoolsPage = () => {
           address,
           count: addressCounts[address],
           poolIdentifier: minerBlocks[0].poolIdentifier || 'Unknown',
-          upgradeState: upgradeStateOf(minerBlocks)
+          upgradeState: upgradeStateOf(minerBlocks),
+          // Blocks that carried a DigiDollar oracle price bundle — proof the
+          // pool runs a fully upgraded node with a live oracle session.
+          oracleBlocks: minerBlocks.filter(b => b.hasOracleBundle).length
         };
       })
       .sort((a, b) => b.count - a.count) // Sort by block count descending
@@ -127,6 +130,7 @@ const PoolsPage = () => {
         timestamp: block.timestamp,
         height: block.height,
         upgradeState: upgradeStateOf([block]),
+        oracleBlocks: block.hasOracleBundle ? 1 : 0,
         rank: index + 1
       }));
 
@@ -559,6 +563,22 @@ const PoolsPage = () => {
               />
             )}
 
+            {/* Oracle bundle production — the definitive "fully upgraded and
+                publishing price data" badge (stronger than version signaling) */}
+            {item.oracleBlocks > 0 && (
+              <Chip
+                icon={<CheckCircleIcon sx={{ fontSize: '1rem' }} />}
+                label={`Oracle ${item.oracleBlocks}/${item.count}`}
+                size="small"
+                sx={{
+                  backgroundColor: 'rgba(255, 179, 0, 0.18)',
+                  color: '#9a6a00',
+                  fontWeight: 'bold',
+                  '& .MuiChip-icon': { color: '#b8860b' }
+                }}
+              />
+            )}
+
             {/* DigiDollar upgrade signal (mirrors the retired Taproot chip) */}
             {item.upgradeState === 'upgraded' && (
               <Chip
@@ -694,6 +714,11 @@ const PoolsPage = () => {
         <Typography variant="h5" fontWeight="bold" color="#002352">
           Total Blocks Analyzed: {blocks.length}
         </Typography>
+        {blocks.length > 0 && (
+          <Typography variant="body1" fontWeight="medium" sx={{ mt: 1, color: '#9a6a00' }}>
+            {blocks.filter(b => b.hasOracleBundle).length} of {blocks.length} blocks carry an oracle price bundle
+          </Typography>
+        )}
         <Typography variant="body1" color="#666" sx={{ mt: 1 }}>
           Data refreshes in real-time as new blocks are mined on the DigiByte network
         </Typography>

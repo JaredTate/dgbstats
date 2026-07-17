@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Container, Typography, Box, Paper, LinearProgress, Card, CardContent,
   Divider, Grid, Chip, Alert, CircularProgress
@@ -211,6 +211,8 @@ const DDActivationPage = () => {
   }));
 
   const [currentHeight, setCurrentHeight] = useState(0);
+  // Recent blocks (WS recentBlocks + newBlock) for oracle-bundle adoption
+  const [observedBlocks, setObservedBlocks] = useState([]);
   const [loading, setLoading] = useState(true);
   // Authoritative BIP9 deployment objects from the node's getdeploymentinfo RPC
   // (statistics: period/threshold/elapsed/count/possible). The WebSocket
@@ -252,8 +254,19 @@ const DDActivationPage = () => {
           }
         }
 
+        if (message.type === 'recentBlocks' && Array.isArray(message.data)) {
+          // Full block objects feed the Oracle Bundle Adoption section
+          setObservedBlocks(message.data.filter((b) => b && b.hash));
+        }
+
         if (message.type === 'newBlock') {
           setCurrentHeight(prev => Math.max(prev, message.data.height || prev + 1));
+          const block = message.data;
+          if (block && block.hash) {
+            setObservedBlocks(prev => (
+              prev.some(b => b.hash === block.hash) ? prev : [block, ...prev].slice(0, 240)
+            ));
+          }
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
@@ -382,6 +395,48 @@ const DDActivationPage = () => {
       setCelebrate(true);
     }
   }, [status, activationBlocksLeft]);
+
+  // ---- Oracle bundle adoption (who is actually mining DigiDollar blocks) ---
+  // Groups observed blocks by pool and categorises each pool:
+  //   publishing — mined ≥1 block carrying an oracle price bundle (fully
+  //                upgraded node + live oracle session; nothing to do)
+  //   upgraded   — clean BIP9 upgrade evidence (algolock bit 0, or bit 23 on a
+  //                non-rolled block) but zero bundles yet → reach out
+  //   none       — no upgrade evidence at all → reach out first
+  const oracleAdoption = useMemo(() => {
+    if (!observedBlocks.length) return null;
+    const total = observedBlocks.length;
+    const bundleBlocks = observedBlocks.filter(b => b.hasOracleBundle);
+    const byPool = new Map();
+    observedBlocks.forEach((b) => {
+      const id = (b.poolIdentifier || '').trim();
+      const key = id && id.toLowerCase() !== 'unknown' ? id : (b.minerAddress || b.minedTo || 'Unknown');
+      if (!byPool.has(key)) {
+        byPool.set(key, { pool: key, blocks: 0, bundles: 0, upgraded: false, lastSigners: null });
+      }
+      const p = byPool.get(key);
+      p.blocks += 1;
+      if (b.hasOracleBundle) {
+        p.bundles += 1;
+        if (b.oracleSignerCount != null && p.lastSigners == null) p.lastSigners = b.oracleSignerCount;
+      }
+      // Algolock bit 0 sits outside the ASIC version-rolling window, so it is
+      // trustworthy on every block; bit 23 only counts when not rolled.
+      if (b.algolockSignaling || (b.digidollarSignaling && !b.versionRolled)) p.upgraded = true;
+    });
+    const pools = Array.from(byPool.values())
+      .map(p => ({ ...p, status: p.bundles > 0 ? 'publishing' : (p.upgraded ? 'upgraded' : 'none') }))
+      .sort((a, b) => b.bundles - a.bundles || b.blocks - a.blocks);
+    const latestBundle = bundleBlocks.reduce((max, b) => (!max || b.height > max.height ? b : max), null);
+    return {
+      total,
+      bundleCount: bundleBlocks.length,
+      pct: (bundleBlocks.length / total) * 100,
+      pools,
+      publishingCount: pools.filter(p => p.status === 'publishing').length,
+      latestBundle,
+    };
+  }, [observedBlocks]);
 
   const stages = [
     { key: 'defined', label: 'DEFINED', blocks: params.stages.defined, description: 'Code exists but is dormant' },
@@ -792,6 +847,92 @@ const DDActivationPage = () => {
     );
   };
 
+  // Oracle Bundle Adoption — which pools are mining DigiDollar blocks with
+  // oracle price bundles attached, and which still need outreach.
+  const OracleAdoptionSection = () => {
+    if (!oracleAdoption) return null;
+    const STATUS_CHIP = {
+      publishing: { label: 'Publishing', sx: { backgroundColor: 'rgba(255, 179, 0, 0.18)', color: '#9a6a00', fontWeight: 'bold', '& .MuiChip-icon': { color: '#b8860b' } }, icon: <CheckCircleIcon sx={{ fontSize: '1rem' }} /> },
+      upgraded: { label: 'Upgraded — no bundles yet', sx: { backgroundColor: '#fff3e0', color: '#e65100', fontWeight: 'medium' } },
+      none: { label: 'Not upgraded', sx: { backgroundColor: '#ffebee', color: '#c62828', fontWeight: 'medium' } },
+    };
+    return (
+      <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+          <Typography variant="h5" fontWeight="bold" sx={{ color: primaryColor }}>
+            Oracle Bundle Adoption
+          </Typography>
+          <Chip
+            label={`${oracleAdoption.publishingCount} pool${oracleAdoption.publishingCount === 1 ? '' : 's'} publishing`}
+            size="small"
+            sx={{ backgroundColor: 'rgba(255, 179, 0, 0.18)', color: '#9a6a00', fontWeight: 'bold' }}
+          />
+        </Box>
+        <Typography variant="body2" sx={{ mb: 2, color: '#555' }}>
+          A block carrying an <strong>oracle price bundle</strong> (the OP_RETURN OP_ORACLE coinbase
+          output) is definitive proof its pool runs a fully upgraded node with a live oracle
+          session. Pools below without bundles are the outreach list — they either need the
+          v9.26.x upgrade or an oracle-enabled configuration.
+        </Typography>
+
+        <Grid container spacing={3} sx={{ mb: 2 }}>
+          <Grid item xs={6} sm={3}>
+            <Typography variant="body2" color="#777">Bundle coverage</Typography>
+            <Typography variant="h6" fontWeight="bold" sx={{ color: '#9a6a00' }}>
+              {oracleAdoption.pct.toFixed(1)}%
+            </Typography>
+          </Grid>
+          <Grid item xs={6} sm={3}>
+            <Typography variant="body2" color="#777">Blocks observed</Typography>
+            <Typography variant="h6" fontWeight="bold">
+              {oracleAdoption.bundleCount} of {oracleAdoption.total} blocks
+            </Typography>
+          </Grid>
+          <Grid item xs={6} sm={3}>
+            <Typography variant="body2" color="#777">Latest bundle height</Typography>
+            <Typography variant="h6" fontWeight="bold">
+              {oracleAdoption.latestBundle ? oracleAdoption.latestBundle.height.toLocaleString() : '—'}
+            </Typography>
+          </Grid>
+          <Grid item xs={6} sm={3}>
+            <Typography variant="body2" color="#777">Latest bundle price</Typography>
+            <Typography variant="h6" fontWeight="bold">
+              {oracleAdoption.latestBundle?.oraclePriceUsd != null
+                ? `$${oracleAdoption.latestBundle.oraclePriceUsd.toFixed(6)}`
+                : '—'}
+            </Typography>
+          </Grid>
+        </Grid>
+
+        <Divider sx={{ mb: 2 }} />
+
+        {oracleAdoption.pools.map((pool) => {
+          const chip = STATUS_CHIP[pool.status];
+          return (
+            <Box
+              key={pool.pool}
+              sx={{
+                display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1,
+                py: 1, px: 1.5, mb: 0.75, borderRadius: '8px',
+                backgroundColor: pool.status === 'publishing' ? 'rgba(255, 215, 0, 0.08)' : '#fafafa',
+                border: pool.status === 'publishing' ? '1px solid rgba(255, 179, 0, 0.35)' : '1px solid #eee',
+              }}
+            >
+              <Typography variant="body1" fontWeight="bold" sx={{ mr: 1 }}>
+                {pool.pool}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {pool.bundles}/{pool.blocks} bundle blocks
+                {pool.lastSigners != null ? ` · ${pool.lastSigners} signers` : ''}
+              </Typography>
+              <Chip label={chip.label} icon={chip.icon} size="small" sx={{ ml: 'auto', ...chip.sx }} />
+            </Box>
+          );
+        })}
+      </Card>
+    );
+  };
+
   // BIP9 Explanation Section
   const BIP9Explanation = () => (
     <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px' }}>
@@ -936,6 +1077,7 @@ const DDActivationPage = () => {
       )}
       <StageFlow />
       <AlgolockSection />
+      <OracleAdoptionSection />
       <BIP9Explanation />
       <TechnicalParameters />
       <IntegrationGuides />

@@ -280,6 +280,13 @@ export const generateMockBlock = (overrides = {}) => ({
   algolockSignaling: false,
   versionRolled: false,
   taprootSignaling: true,
+  // Per-block DigiDollar oracle bundle fields (shipped by dgbstats-server;
+  // detected from the OP_RETURN OP_ORACLE coinbase output). Override with
+  // e.g. { hasOracleBundle: true, oracleSignerCount: 7, oraclePriceUsd: 0.00913 }
+  // for a bundle-carrying block mined by an upgraded, oracle-publishing pool.
+  hasOracleBundle: false,
+  oracleSignerCount: null,
+  oraclePriceUsd: null,
   ...overrides
 });
 
