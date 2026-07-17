@@ -10,6 +10,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { useNetwork } from '../context/NetworkContext';
 import config from '../config';
+import MiningGuideCallout from '../components/MiningGuideCallout';
 
 // ---------------------------------------------------------------------------
 // Post-activation pool readiness
@@ -192,6 +193,9 @@ const PoolUpgradeTrackerPage = () => {
             </Typography>
           </CardContent>
         </Card>
+
+        {/* Mining pool operator CTA — how to add DigiDollar support */}
+        <MiningGuideCallout />
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>

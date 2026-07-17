@@ -79,8 +79,14 @@ describe('PoolsPage', () => {
 
     it('should render the loading state initially', () => {
       renderWithProviders(<PoolsPage />);
-      
+
       expect(screen.getByText('Loading block data...')).toBeInTheDocument();
+    });
+
+    it('shows the Mining Integration Guide call-to-action for pool operators', () => {
+      renderWithProviders(<PoolsPage />);
+      const link = screen.getByRole('link', { name: /Mining Integration Guide/i });
+      expect(link).toHaveAttribute('href', expect.stringContaining('DIGIDOLLAR_MINING_INTEGRATION_GUIDE.md'));
     });
 
     it('should render summary statistics section', async () => {

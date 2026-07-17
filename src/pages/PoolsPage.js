@@ -8,6 +8,7 @@ import PoolIcon from '@mui/icons-material/LocationCity';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import * as d3 from 'd3';
 import config from '../config';
+import MiningGuideCallout from '../components/MiningGuideCallout';
 
 /**
  * PoolsPage Component - Mining Pool Distribution Analysis
@@ -695,6 +696,9 @@ const PoolsPage = () => {
       <Container maxWidth="lg">
         {/* Page header with title and description */}
         <HeroSection />
+
+        {/* Mining pool operator CTA — how to add DigiDollar support */}
+        <MiningGuideCallout />
 
         {/* Interactive pie chart visualization */}
         <PieChartSection />

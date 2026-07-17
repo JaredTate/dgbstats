@@ -91,6 +91,12 @@ describe('PoolUpgradeTrackerPage', () => {
       expect(screen.getByRole('progressbar')).toBeInTheDocument();
     });
 
+    it('shows the Mining Integration Guide call-to-action for pool operators', () => {
+      renderWithProviders(<PoolUpgradeTrackerPage />);
+      const link = screen.getByRole('link', { name: /Mining Integration Guide/i });
+      expect(link).toHaveAttribute('href', expect.stringContaining('DIGIDOLLAR_MINING_INTEGRATION_GUIDE.md'));
+    });
+
     it('should establish a WebSocket connection on mount', async () => {
       renderWithProviders(<PoolUpgradeTrackerPage />);
       await waitForAsync();
