@@ -117,12 +117,70 @@ describe('PoolsPage', () => {
 
     it('should handle WebSocket connection', async () => {
       renderWithProviders(<PoolsPage />);
-      
+
       await waitForAsync();
       const ws = webSocketInstances[0];
-      
+
       // Component doesn't send any message on open, it just waits for recentBlocks
       expect(ws.readyState).toBe(WebSocket.OPEN);
+    });
+  });
+
+  describe('Cache warm-up resilience (slow pie chart fix)', () => {
+    // A server whose block cache is still warming sends an EMPTY recentBlocks
+    // snapshot on connect. The page previously dropped its spinner and showed
+    // a blank chart card, then rebuilt one block per ~15s from newBlock —
+    // which is exactly the "pie chart takes forever to load" symptom.
+
+    it('keeps the loading spinner when the recentBlocks snapshot is empty', async () => {
+      renderWithProviders(<PoolsPage />);
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      ws.receiveMessage({ type: 'recentBlocks', data: [] });
+      await waitForAsync();
+
+      // Still warming — spinner must stay, no blank chart card
+      expect(screen.getByText('Loading block data...')).toBeInTheDocument();
+    });
+
+    it('recovers when a later non-empty recentBlocks rebroadcast arrives', async () => {
+      renderWithProviders(<PoolsPage />);
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      ws.receiveMessage({ type: 'recentBlocks', data: [] });
+      await waitForAsync();
+      ws.receiveMessage({
+        type: 'recentBlocks',
+        data: [
+          { minerAddress: 'DAddr1', poolIdentifier: 'Pool A', height: 2, taprootSignaling: true },
+          { minerAddress: 'DAddr1', poolIdentifier: 'Pool A', height: 1, taprootSignaling: true },
+        ],
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText(/Total Blocks Analyzed: 2/)).toBeInTheDocument();
+      });
+      expect(screen.queryByText('Loading block data...')).not.toBeInTheDocument();
+    });
+
+    it('exits loading as soon as the first newBlock arrives (progressive fill)', async () => {
+      renderWithProviders(<PoolsPage />);
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      ws.receiveMessage({ type: 'recentBlocks', data: [] });
+      await waitForAsync();
+      ws.receiveMessage({
+        type: 'newBlock',
+        data: { minerAddress: 'DAddr9', poolIdentifier: 'Pool Z', height: 99, taprootSignaling: true },
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText(/Total Blocks Analyzed: 1/)).toBeInTheDocument();
+      });
+      expect(screen.queryByText('Loading block data...')).not.toBeInTheDocument();
     });
   });
 
@@ -156,30 +214,39 @@ describe('PoolsPage', () => {
       });
     });
 
-    it('should show the correct upgrade chip per miner from block signal fields', async () => {
+    it('should show post-activation status chips per miner (bundles > upgrade evidence > nothing)', async () => {
       renderWithProviders(<PoolsPage />);
 
       await waitForAsync();
       const ws = webSocketInstances[0];
 
+      // DigiDollar is ACTIVE: bit-23 signalling chips are retired. Buckets:
+      //   Pool A: mined a bundle block           -> gold 'Oracle n/m' chip
+      //   Pool B: algolock bit 0, no bundles     -> 'Upgraded — no bundles'
+      //   Pool C: historical clean bit 23 only   -> 'Upgraded — no bundles'
+      //   Pool D: nothing                        -> 'Not upgraded'
       const blocks = [
-        // Pool A: clean bit-23 signals on every block -> upgraded (v9.26.x)
-        { minerAddress: 'DAddr1', poolIdentifier: 'Pool A', height: 1, version: 0x20800602, digidollarSignaling: true, algolockSignaling: false, versionRolled: false, taprootSignaling: true },
-        { minerAddress: 'DAddr1', poolIdentifier: 'Pool A', height: 2, version: 0x20800602, digidollarSignaling: true, algolockSignaling: false, versionRolled: false, taprootSignaling: true },
-        // Pool B: only version-rolled SHA256D blocks, bit 23 a coin flip -> rolling
-        { minerAddress: 'DAddr2', poolIdentifier: 'Pool B', height: 3, version: 0x20810202, digidollarSignaling: true, algolockSignaling: false, versionRolled: true, taprootSignaling: true },
-        { minerAddress: 'DAddr2', poolIdentifier: 'Pool B', height: 4, version: 0x20010202, digidollarSignaling: false, algolockSignaling: false, versionRolled: true, taprootSignaling: true },
-        // Pool C: clean blocks without bit 23 -> not upgraded (No signal)
-        { minerAddress: 'DAddr3', poolIdentifier: 'Pool C', height: 5, version: 0x20000002, digidollarSignaling: false, algolockSignaling: false, versionRolled: false, taprootSignaling: true },
-        { minerAddress: 'DAddr3', poolIdentifier: 'Pool C', height: 6, version: 0x20000002, digidollarSignaling: false, algolockSignaling: false, versionRolled: false, taprootSignaling: true },
+        { minerAddress: 'DAddr1', poolIdentifier: 'Pool A', height: 8, version: 0x20000202, digidollarSignaling: false, algolockSignaling: false, versionRolled: false, taprootSignaling: true, hasOracleBundle: true, oracleSignerCount: 7, oraclePriceUsd: 0.00913 },
+        { minerAddress: 'DAddr1', poolIdentifier: 'Pool A', height: 7, version: 0x20000202, digidollarSignaling: false, algolockSignaling: false, versionRolled: false, taprootSignaling: true },
+        { minerAddress: 'DAddr2', poolIdentifier: 'Pool B', height: 6, version: 0x20000203, digidollarSignaling: false, algolockSignaling: true, versionRolled: false, taprootSignaling: true },
+        { minerAddress: 'DAddr2', poolIdentifier: 'Pool B', height: 5, version: 0x20000203, digidollarSignaling: false, algolockSignaling: true, versionRolled: false, taprootSignaling: true },
+        { minerAddress: 'DAddr3', poolIdentifier: 'Pool C', height: 4, version: 0x20800602, digidollarSignaling: true, algolockSignaling: false, versionRolled: false, taprootSignaling: true },
+        { minerAddress: 'DAddr3', poolIdentifier: 'Pool C', height: 3, version: 0x20000602, digidollarSignaling: false, algolockSignaling: false, versionRolled: false, taprootSignaling: true },
+        { minerAddress: 'DAddr4', poolIdentifier: 'Pool D', height: 2, version: 0x20000002, digidollarSignaling: false, algolockSignaling: false, versionRolled: false, taprootSignaling: true },
+        { minerAddress: 'DAddr4', poolIdentifier: 'Pool D', height: 1, version: 0x20000002, digidollarSignaling: false, algolockSignaling: false, versionRolled: false, taprootSignaling: true },
       ];
       ws.receiveMessage({ type: 'recentBlocks', data: blocks });
 
       await waitFor(() => {
-        expect(screen.getByText('v9.26.x')).toBeInTheDocument();
+        expect(screen.getByText('Oracle 1/2')).toBeInTheDocument();
       });
-      expect(screen.getByText('Rolling')).toBeInTheDocument();
-      expect(screen.getByText('No signal')).toBeInTheDocument();
+      expect(screen.getAllByText('Upgraded — no bundles')).toHaveLength(2);
+      expect(screen.getByText('Not upgraded')).toBeInTheDocument();
+      // Retired signalling-era chips must be gone
+      expect(screen.queryByText('v9.26.x')).not.toBeInTheDocument();
+      expect(screen.queryByText('Rolling')).not.toBeInTheDocument();
+      expect(screen.queryByText('No signal')).not.toBeInTheDocument();
+      expect(screen.queryByText('Partial')).not.toBeInTheDocument();
     });
 
     it('should display miner statistics correctly', async () => {

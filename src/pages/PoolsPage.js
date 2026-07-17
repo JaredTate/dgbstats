@@ -42,10 +42,16 @@ const PoolsPage = () => {
   const { sortedAddresses, singleBlockAddresses } = useMemo(() => {
     if (!blocks.length) return { sortedAddresses: [], singleBlockAddresses: [] };
 
-    // DigiDollar upgrade signal per block. Server-computed flags preferred;
-    // falls back to raw version bits for older servers. Bit 23 on a
-    // version-rolled SHA256D block is a coin flip (ASICBoost rolls bits 13-28),
-    // so rolled-only miners are 'rolling' (indeterminate), not 'none'.
+    // Post-activation status per miner. DigiDollar is ACTIVE, so BIP9 bit-23
+    // signalling chips are retired. Buckets (per the mining integration guide):
+    //   'publishing' — mined >=1 block carrying a v0x03 oracle bundle:
+    //                  definitive proof of full DigiDollar integration.
+    //   'upgraded'   — v9.26 evidence (algolock bit 0, which sits outside the
+    //                  ASIC version-rolling window, or a historical clean
+    //                  bit-23 signal) but no bundles: the pool needs the
+    //                  digidollar-oracle GBT rule / commitment preservation.
+    //   'none'       — no evidence at all: needs the Core upgrade.
+    // Server-computed flags preferred; raw version bits as fallback.
     const signalsOf = (block) => {
       if (block && typeof block.digidollarSignaling === 'boolean') {
         return { ddRaw: block.digidollarSignaling, rolled: !!block.versionRolled, algolock: !!block.algolockSignaling };
@@ -64,24 +70,12 @@ const PoolsPage = () => {
       };
     };
     const upgradeStateOf = (minerBlocks) => {
-      let ddClean = 0, ddRaw = 0, rolled = 0, algolock = 0;
-      minerBlocks.forEach(b => {
+      if (minerBlocks.some(b => b.hasOracleBundle)) return 'publishing';
+      const upgraded = minerBlocks.some(b => {
         const c = signalsOf(b);
-        if (c.ddRaw) ddRaw += 1;
-        if (c.ddRaw && !c.rolled) ddClean += 1;
-        if (c.rolled) rolled += 1;
-        if (c.algolock) algolock += 1;
+        return c.algolock || (c.ddRaw && !c.rolled);
       });
-      if (algolock > 0 || ddClean > 0) return 'upgraded';
-      // Clean (non-rolled) blocks without a single bit 23 outweigh any rolled
-      // blocks the same miner produced.
-      if (minerBlocks.length > rolled) return 'none';
-      // All blocks rolled: >=4 all carrying bit 23 means the stack preserves
-      // the bit through rolling (2^-n odds by chance) => upgraded; all missing
-      // it => not upgraded; anything else is a genuine coin flip.
-      if (rolled >= 4 && ddRaw === rolled) return 'upgraded';
-      if (rolled >= 4 && ddRaw === 0) return 'none';
-      return rolled > 0 ? 'rolling' : 'none';
+      return upgraded ? 'upgraded' : 'none';
     };
 
     // Track mining addresses and their block counts
@@ -171,22 +165,29 @@ const PoolsPage = () => {
           // Handle initial batch of recent blocks
           if (message.type === 'recentBlocks' && Array.isArray(message.data)) {
             console.log('Setting blocks data, count:', message.data.length);
-            
+
             // Validate blocks have required mining address data
             const validBlocks = message.data.filter(block => block && (block.minerAddress || block.minedTo));
-            
+
             if (validBlocks.length > 0) {
               setBlocks(validBlocks);
+              setLoading(false);
             } else {
-              console.error('No valid blocks in received data');
+              // Empty snapshot = the server's block cache is still warming up.
+              // KEEP the spinner: dropping it here rendered a blank chart that
+              // then filled one block per ~15s — the "pie chart takes forever"
+              // symptom. The server rebroadcasts the full list on the next tip
+              // change, and newBlock messages stream in meanwhile.
+              console.warn('Empty recentBlocks snapshot — server cache warming, awaiting rebroadcast');
             }
-            setLoading(false);
-          } 
+          }
           // Handle new blocks mined in real-time
           else if (message.type === 'newBlock' && message.data) {
             console.log('New block received:', message.data);
             if (message.data.minerAddress || message.data.minedTo) {
               setBlocks((prevBlocks) => [message.data, ...prevBlocks]);
+              // First data is data — leave the spinner even if the snapshot missed us.
+              setLoading(false);
             }
           }
         } catch (err) {
@@ -563,9 +564,10 @@ const PoolsPage = () => {
               />
             )}
 
-            {/* Oracle bundle production — the definitive "fully upgraded and
-                publishing price data" badge (stronger than version signaling) */}
-            {item.oracleBlocks > 0 && (
+            {/* Post-activation DigiDollar status. A gold Oracle n/m chip is the
+                definitive "fully integrated and publishing price data" badge;
+                the amber/red chips are the outreach list. */}
+            {item.upgradeState === 'publishing' && (
               <Chip
                 icon={<CheckCircleIcon sx={{ fontSize: '1rem' }} />}
                 label={`Oracle ${item.oracleBlocks}/${item.count}`}
@@ -574,39 +576,23 @@ const PoolsPage = () => {
                   backgroundColor: 'rgba(255, 179, 0, 0.18)',
                   color: '#9a6a00',
                   fontWeight: 'bold',
+                  ml: isMultiBlock ? 0 : 'auto',
                   '& .MuiChip-icon': { color: '#b8860b' }
                 }}
               />
             )}
-
-            {/* DigiDollar upgrade signal (mirrors the retired Taproot chip) */}
             {item.upgradeState === 'upgraded' && (
               <Chip
-                icon={<CheckCircleIcon sx={{ fontSize: '1rem' }} />}
-                label="v9.26.x"
-                size="small"
-                sx={{ backgroundColor: '#e8f5e9', color: '#2e7d32', fontWeight: 'medium', ml: isMultiBlock ? 0 : 'auto' }}
-              />
-            )}
-            {item.upgradeState === 'partial' && (
-              <Chip
-                label="Partial"
+                label="Upgraded — no bundles"
                 size="small"
                 sx={{ backgroundColor: '#fff3e0', color: '#e65100', fontWeight: 'medium', ml: isMultiBlock ? 0 : 'auto' }}
               />
             )}
-            {item.upgradeState === 'rolling' && (
-              <Chip
-                label="Rolling"
-                size="small"
-                sx={{ backgroundColor: '#eceff1', color: '#607d8b', fontWeight: 'medium', ml: isMultiBlock ? 0 : 'auto' }}
-              />
-            )}
             {item.upgradeState === 'none' && (
               <Chip
-                label="No signal"
+                label="Not upgraded"
                 size="small"
-                sx={{ backgroundColor: '#f5f5f5', color: '#9e9e9e', fontWeight: 'medium', ml: isMultiBlock ? 0 : 'auto' }}
+                sx={{ backgroundColor: '#ffebee', color: '#c62828', fontWeight: 'medium', ml: isMultiBlock ? 0 : 'auto' }}
               />
             )}
           </Box>
