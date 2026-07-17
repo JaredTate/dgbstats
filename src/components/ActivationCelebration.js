@@ -30,7 +30,16 @@ function ensureAudio(ref) {
   }
 }
 
-/** Rocket lift-off: long low engine rumble (filtered noise) + rising whoosh. */
+/**
+ * Rocket lift-off: a proper roaring engine, layered like the real thing —
+ *  1. brown-noise thunder (deep rumble, most of the energy below ~250 Hz)
+ *  2. distorted mid-band roar (white noise → bandpass → tanh waveshaper)
+ *  3. combustion crackle (sparse impulse train, the F-1-style pop/crackle)
+ *  4. sub-bass thump (~42 Hz sine with slow wobble, drops as it departs)
+ * All layers ride one master envelope: ignition slam over ~0.35s, full
+ * throttle through lift-off, then a long receding fade (lowpass closing +
+ * pitch dropping) as the rocket climbs away. Runs the whole 10s flight.
+ */
 function playLaunchSound(ref) {
   const ctx = ensureAudio(ref);
   // A suspended context freezes currentTime — sounds scheduled on it would all
@@ -38,70 +47,110 @@ function playLaunchSound(ref) {
   if (!ctx || ctx.state !== 'running') return;
   try {
     const t = ctx.currentTime;
-    const dur = 4.5;
-    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    const noise = ctx.createBufferSource();
-    noise.buffer = buf;
-    const lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.setValueAtTime(300, t);
-    lp.frequency.exponentialRampToValueAtTime(1500, t + 1.2);
-    lp.frequency.exponentialRampToValueAtTime(140, t + dur);
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.6, t + 0.3);
-    g.gain.setValueAtTime(0.6, t + 2.2);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    noise.connect(lp); lp.connect(g); g.connect(ctx.destination);
-    noise.start(t); noise.stop(t + dur);
+    const DUR = 11;
+    const sr = ctx.sampleRate;
 
-    const osc = ctx.createOscillator();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(60, t);
-    osc.frequency.exponentialRampToValueAtTime(480, t + 3.2);
-    const og = ctx.createGain();
-    og.gain.setValueAtTime(0.0001, t);
-    og.gain.exponentialRampToValueAtTime(0.11, t + 0.4);
-    og.gain.exponentialRampToValueAtTime(0.0001, t + 3.6);
-    osc.connect(og); og.connect(ctx.destination);
-    osc.start(t); osc.stop(t + 3.6);
+    // Master: envelope -> compressor (glues layers, stops clipping) -> out
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -18;
+    comp.knee.value = 12;
+    comp.ratio.value = 6;
+    comp.attack.value = 0.005;
+    comp.release.value = 0.2;
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(0.0001, t);
+    master.gain.exponentialRampToValueAtTime(0.9, t + 0.35); // ignition slam
+    master.gain.setValueAtTime(0.9, t + 6.5);                // full throttle
+    master.gain.exponentialRampToValueAtTime(0.0001, t + DUR); // climbs away
+    master.connect(comp);
+    comp.connect(ctx.destination);
+
+    // Soft-clip waveshaper — turns noise into a saturated ROAR
+    const shaper = ctx.createWaveShaper();
+    const curve = new Float32Array(1024);
+    for (let i = 0; i < 1024; i++) {
+      const x = (i / 511.5) - 1;
+      curve[i] = Math.tanh(2.5 * x);
+    }
+    shaper.curve = curve;
+    shaper.connect(master);
+
+    // 1. Brown-noise thunder — integrated white noise, huge low end
+    const brownBuf = ctx.createBuffer(1, Math.floor(sr * DUR), sr);
+    const bd = brownBuf.getChannelData(0);
+    let lastB = 0;
+    for (let i = 0; i < bd.length; i++) {
+      const w = Math.random() * 2 - 1;
+      lastB = (lastB + 0.02 * w) / 1.02;
+      bd[i] = lastB * 3.5;
+    }
+    const brown = ctx.createBufferSource();
+    brown.buffer = brownBuf;
+    const rumbleLp = ctx.createBiquadFilter();
+    rumbleLp.type = 'lowpass';
+    rumbleLp.frequency.setValueAtTime(420, t);
+    rumbleLp.frequency.linearRampToValueAtTime(260, t + 7);
+    rumbleLp.frequency.linearRampToValueAtTime(90, t + DUR); // receding
+    const rumbleGain = ctx.createGain();
+    rumbleGain.gain.value = 1.0;
+    brown.connect(rumbleLp); rumbleLp.connect(rumbleGain); rumbleGain.connect(shaper);
+    brown.start(t); brown.stop(t + DUR);
+
+    // 2. Mid-band roar — white noise, bandpassed, into the same distortion
+    const whiteBuf = ctx.createBuffer(1, Math.floor(sr * DUR), sr);
+    const wd = whiteBuf.getChannelData(0);
+    for (let i = 0; i < wd.length; i++) wd[i] = Math.random() * 2 - 1;
+    const white = ctx.createBufferSource();
+    white.buffer = whiteBuf;
+    const roarBp = ctx.createBiquadFilter();
+    roarBp.type = 'bandpass';
+    roarBp.frequency.setValueAtTime(520, t);
+    roarBp.frequency.linearRampToValueAtTime(300, t + DUR);
+    roarBp.Q.value = 0.55;
+    const roarGain = ctx.createGain();
+    roarGain.gain.value = 0.5;
+    white.connect(roarBp); roarBp.connect(roarGain); roarGain.connect(shaper);
+    white.start(t); white.stop(t + DUR);
+
+    // 3. Combustion crackle — sparse impulses with fast decays, bandpassed
+    const crackBuf = ctx.createBuffer(1, Math.floor(sr * DUR), sr);
+    const cd = crackBuf.getChannelData(0);
+    let env = 0;
+    for (let i = 0; i < cd.length; i++) {
+      if (Math.random() < 0.0011) env = Math.random() * 1.6;
+      env *= 0.994;
+      cd[i] = (Math.random() * 2 - 1) * env;
+    }
+    const crackle = ctx.createBufferSource();
+    crackle.buffer = crackBuf;
+    const crackBp = ctx.createBiquadFilter();
+    crackBp.type = 'bandpass';
+    crackBp.frequency.value = 2400;
+    crackBp.Q.value = 0.7;
+    const crackGain = ctx.createGain();
+    crackGain.gain.setValueAtTime(0.55, t);
+    crackGain.gain.linearRampToValueAtTime(0.2, t + DUR); // crackle recedes too
+    crackle.connect(crackBp); crackBp.connect(crackGain); crackGain.connect(master);
+    crackle.start(t); crackle.stop(t + DUR);
+
+    // 4. Sub-bass thump — chest hit, slow wobble, pitch drops as it departs
+    const sub = ctx.createOscillator();
+    sub.type = 'sine';
+    sub.frequency.setValueAtTime(45, t);
+    sub.frequency.linearRampToValueAtTime(42, t + 7);
+    sub.frequency.linearRampToValueAtTime(28, t + DUR);
+    const wob = ctx.createOscillator();
+    wob.type = 'sine';
+    wob.frequency.value = 9;
+    const wobGain = ctx.createGain();
+    wobGain.gain.value = 5;
+    wob.connect(wobGain); wobGain.connect(sub.frequency);
+    const subGain = ctx.createGain();
+    subGain.gain.value = 0.35;
+    sub.connect(subGain); subGain.connect(master);
+    sub.start(t); sub.stop(t + DUR);
+    wob.start(t); wob.stop(t + DUR);
   } catch (e) { /* audio unavailable — visuals carry on */ }
-}
-
-/** Firework burst: bandpassed crack + falling sine boom. */
-function playPopSound(ref) {
-  const ctx = ensureAudio(ref);
-  if (!ctx || ctx.state !== 'running') return;
-  try {
-    const t = ctx.currentTime;
-    const dur = 0.3;
-    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
-    const noise = ctx.createBufferSource();
-    noise.buffer = buf;
-    const bp = ctx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.value = 1600;
-    bp.Q.value = 0.7;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.25, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    noise.connect(bp); bp.connect(g); g.connect(ctx.destination);
-    noise.start(t); noise.stop(t + dur);
-
-    const osc = ctx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(320, t);
-    osc.frequency.exponentialRampToValueAtTime(70, t + 0.35);
-    const og = ctx.createGain();
-    og.gain.setValueAtTime(0.18, t);
-    og.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
-    osc.connect(og); og.connect(ctx.destination);
-    osc.start(t); osc.stop(t + 0.35);
-  } catch (e) { /* ignore */ }
 }
 
 /**
@@ -226,7 +275,6 @@ export default function ActivationCelebration({ run, onDone, message = 'DIGIDOLL
       const confetti = [];
       const sparks = [];
       const rockets = [];
-      let lastPop = 0;
 
       const burstConfetti = (cx, cy, n) => {
         for (let i = 0; i < n; i++) {
@@ -273,12 +321,6 @@ export default function ActivationCelebration({ run, onDone, message = 'DIGIDOLL
             x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
             color, life: rand(55, 90), decay: rand(0.9, 1.5),
           });
-        }
-        // Firework pop, throttled so volleys don't stack into noise.
-        const nowMs = performance.now();
-        if (nowMs - lastPop > 450) {
-          lastPop = nowMs;
-          playPopSound(audioCtxRef);
         }
       };
 
