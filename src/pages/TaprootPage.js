@@ -35,6 +35,39 @@ const getStateColor = (status) => {
 };
 
 /**
+ * Readable labels for BIP9 states
+ */
+const STATE_LABELS = {
+  defined: 'Defined',
+  started: 'Started',
+  locked_in: 'Locked In',
+  active: 'Active',
+  failed: 'Failed'
+};
+
+/**
+ * Normalize a deployment entry (buried or bip9) into the fields the page shows.
+ * A buried deployment has no `bip9` block, only `active` and `height`.
+ * Fields the data does not provide stay undefined so their rows are hidden.
+ * @param {Object|null} taproot - Deployment entry from getdeploymentinfo / softforks
+ * @returns {{status?: string, activationHeight?: number, minActivationHeight?: number, since?: number}}
+ */
+export const getTaprootView = (taproot) => {
+  const bip9 = taproot?.bip9;
+  const status = bip9?.status || (taproot?.active ? 'active' : undefined);
+  const activationHeight = Number.isFinite(taproot?.height)
+    ? taproot.height
+    : (status === 'active' && Number.isFinite(bip9?.since) ? bip9.since : undefined);
+  return {
+    status,
+    activationHeight,
+    minActivationHeight: Number.isFinite(bip9?.min_activation_height) ? bip9.min_activation_height : undefined,
+    // For an active deployment `since` equals the activation height, so only show it before activation
+    since: status !== 'active' && Number.isFinite(bip9?.since) && bip9.since > 0 ? bip9.since : undefined
+  };
+};
+
+/**
  * Header section component showing main Taproot activation question
  * @returns {JSX.Element} Page title component
  */
@@ -60,16 +93,16 @@ const HeaderSection = () => (
  * @param {boolean} props.isActive - Whether Taproot is currently active
  * @returns {JSX.Element} Activation status card
  */
-const ActivationStatusCard = ({ isActive }) => (
+const ActivationStatusCard = ({ isActive, loaded }) => (
   <Paper className={styles.paper} sx={{ flex: 1, textAlign: 'center' }}>
     <Typography variant="h5" gutterBottom sx={{ color: '#002456', fontSize: '1.5rem' }}>
       Is Taproot Active?
     </Typography>
     <Typography variant="h3" sx={{ 
-      color: isActive ? '#4caf50' : '#ff0000',
+      color: !loaded ? '#757575' : isActive ? '#4caf50' : '#ff0000',
       fontSize: '2.5rem'
     }}>
-      {isActive ? 'YES' : 'NO'}
+      {!loaded ? '…' : isActive ? 'YES' : 'NO'}
     </Typography>
   </Paper>
 );
@@ -80,13 +113,15 @@ const ActivationStatusCard = ({ isActive }) => (
  * percentage no longer measures anything meaningful post-activation.
  * @returns {JSX.Element} Static Taproot activation summary card
  */
-const RecentSupportCard = () => (
+const RecentSupportCard = ({ view }) => (
   <Paper className={styles.paper} sx={{ flex: 1, textAlign: 'center' }}>
     <Typography variant="h5" gutterBottom sx={{ color: '#002456', fontSize: '1.5rem' }}>
       Recent Taproot Support
     </Typography>
     <Typography variant="body1" sx={{ fontSize: '1.1rem', mt: 2 }}>
-      Taproot has been active since block 21,168,000 — miner signaling ended at lock-in.
+      {view.status === 'active'
+        ? `Taproot has been active${view.activationHeight !== undefined ? ` since block ${view.activationHeight.toLocaleString()}` : ''} — miner signaling ended at lock-in.`
+        : 'Taproot is not active yet.'}
     </Typography>
   </Paper>
 );
@@ -97,24 +132,32 @@ const RecentSupportCard = () => (
  * @param {Object} props.taprootStatus - Complete Taproot status object
  * @returns {JSX.Element} Activation details card
  */
-const ActivationDetailsCard = ({ taprootStatus }) => (
-  <Paper className={styles.paper} sx={{ flex: 2 }}>
-    <Typography variant="h5" gutterBottom align="center" sx={{ color: '#002456', fontSize: '1.5rem' }}>
-      Activation Details
-    </Typography>
-    <Box sx={{ width: '80%', margin: '0 auto' }}>
-      <Typography variant="body1" paragraph sx={{ textAlign: 'left', fontSize: '1.2rem' }}>
-        <strong>Status:</strong> {taprootStatus.bip9?.status || 'Unknown'}
-        <br />
-        <strong>Activation Height:</strong> {taprootStatus.height}
-        <br />
-        <strong>Minimum Activation Height:</strong> {taprootStatus.bip9?.min_activation_height}
-        <br />
-        <strong>Active Since Block:</strong> {taprootStatus.bip9?.since || 'N/A'}
+const ActivationDetailsCard = ({ view }) => {
+  const rows = [
+    ['Status', view.status && (STATE_LABELS[view.status] || view.status)],
+    ['Activation Height', view.activationHeight?.toLocaleString()],
+    ['Minimum Activation Height', view.minActivationHeight?.toLocaleString()],
+    ['In This State Since Block', view.since?.toLocaleString()]
+  ].filter(([, value]) => value !== undefined && value !== '');
+
+  return (
+    <Paper className={styles.paper} sx={{ flex: 2 }}>
+      <Typography variant="h5" gutterBottom align="center" sx={{ color: '#002456', fontSize: '1.5rem' }}>
+        Activation Details
       </Typography>
-    </Box>
-  </Paper>
-);
+      <Box sx={{ width: '80%', margin: '0 auto' }}>
+        <Typography data-testid="taproot-details" variant="body1" paragraph sx={{ textAlign: 'left', fontSize: '1.2rem' }}>
+          {rows.map(([label, value], i) => (
+            <React.Fragment key={label}>
+              {i > 0 && <br />}
+              <strong>{label}:</strong> {value}
+            </React.Fragment>
+          ))}
+        </Typography>
+      </Box>
+    </Paper>
+  );
+};
 
 /**
  * Progress visualization showing current activation state and progress
@@ -125,26 +168,26 @@ const ActivationDetailsCard = ({ taprootStatus }) => (
  * @param {number} props.activationBlock - Block number when Taproot will activate (if locked in)
  * @returns {JSX.Element} Progress visualization component
  */
-const ProgressSection = ({ taprootStatus, progress, statusMessage, activationBlock }) => (
+const ProgressSection = ({ taprootStatus, status, progress, statusMessage, activationBlock }) => (
   <Paper className={styles.paper} sx={{ mb: 3 }}>
     <Typography variant="h5" gutterBottom align="center" sx={{ color: '#002456', fontSize: '1.5rem' }}>
       Current State
     </Typography>
-    <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+    <Box data-testid="taproot-stages" sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', mb: 3 }}>
       {['defined', 'started', 'locked_in', 'active'].map((state, index) => (
         <Box
           key={state}
           sx={{
             display: 'flex',
             alignItems: 'center',
-            opacity: taprootStatus.bip9?.status === state ? 1 : 0.5,
+            opacity: status === state ? 1 : 0.5,
           }}
         >
           <Typography
             variant="h6"
             sx={{
-              color: getStateColor(taprootStatus.bip9?.status === state ? state : 'default'),
-              fontWeight: taprootStatus.bip9?.status === state ? 'bold' : 'normal',
+              color: getStateColor(status === state ? state : 'default'),
+              fontWeight: status === state ? 'bold' : 'normal',
             }}
           >
             {state}
@@ -158,7 +201,7 @@ const ProgressSection = ({ taprootStatus, progress, statusMessage, activationBlo
       ))}
     </Box>
     
-    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
       <Typography variant="h6" sx={{ color: '#002456', fontSize: '1.3rem' }}>
         Activation Progress
       </Typography>
@@ -186,9 +229,7 @@ const ProgressSection = ({ taprootStatus, progress, statusMessage, activationBlo
           borderRadius: 2,
           backgroundColor: '#e0e0e0',
           '& .MuiLinearProgress-bar': {
-            backgroundColor: taprootStatus.bip9?.status === 'locked_in' ? '#2196f3' : 
-              taprootStatus.bip9?.status === 'started' ? '#0066cc' : 
-              getStateColor(taprootStatus.bip9?.status || 'defined')
+            backgroundColor: getStateColor(status)
           }
         }}
       />
@@ -207,7 +248,7 @@ const ProgressSection = ({ taprootStatus, progress, statusMessage, activationBlo
       <Typography variant="body1" align="center" sx={{ mt: 1, fontSize: '1.2rem' }}>
         Progress: {progress.toFixed(2)}% (Need 70% for activation)
       </Typography>
-      {taprootStatus.bip9?.status === 'locked_in' && activationBlock && (
+      {status === 'locked_in' && activationBlock && (
         <Typography 
           variant="body1" 
           align="center" 
@@ -269,7 +310,7 @@ const BIP9ExplanationSection = () => (
  * @param {Object} props.taprootStatus - Complete Taproot status object
  * @returns {JSX.Element} Technical parameters component
  */
-const TechnicalParametersSection = ({ taprootStatus }) => (
+const TechnicalParametersSection = ({ taprootStatus, view }) => (
   <Paper className={styles.paper}>
     <Typography variant="h5" gutterBottom align="center" sx={{ color: '#002456', fontSize: '1.5rem' }}>
       DigiByte Taproot Activation Parameters
@@ -280,9 +321,10 @@ const TechnicalParametersSection = ({ taprootStatus }) => (
         <br />
         <strong>Required Threshold:</strong> {Math.floor(ACTIVATION_WINDOW * 0.7).toLocaleString()} blocks (70% of activation window)
         <br />
-        {taprootStatus.active || taprootStatus.bip9?.status === 'active' ? (
+        {view.status === 'active' ? (
           <>
-            <strong>Current Progress:</strong> Signaling complete — Taproot activated at block 21,168,000
+            <strong>Current Progress:</strong> Signaling complete — Taproot is active
+            {view.activationHeight !== undefined && ` (activated at block ${view.activationHeight.toLocaleString()})`}
           </>
         ) : (
           <>
@@ -317,24 +359,10 @@ const TaprootPage = () => {
   const { wsBaseUrl, isTestnet } = useNetwork();
 
   // Taproot activation status from blockchain
-  const [taprootStatus, setTaprootStatus] = useState({
-    type: 'bip9',
-    bip9: {
-      status: '',
-      bit: 0,
-      start_time: 0,
-      timeout: 0,
-      since: 0,
-      statistics: {
-        period: 0,
-        threshold: 0,
-        elapsed: 0,
-        count: 0,
-        possible: true
-      },
-      min_activation_height: 0
-    }
-  });
+  // Empty until the first initialData message arrives
+  const [taprootStatus, setTaprootStatus] = useState({});
+  const view = getTaprootView(taprootStatus);
+  const loaded = view.status !== undefined;
   
   // Recent blocks for support percentage calculation
   const [recentBlocks, setRecentBlocks] = useState([]);
@@ -368,20 +396,6 @@ const TaprootPage = () => {
     }
     
     return 0;
-  };
-
-  /**
-   * Calculate recent Taproot support percentage from last hour of blocks
-   * @returns {number} Support percentage from recent blocks (0-100)
-   */
-  const calculateRecentSupport = () => {
-    if (!recentBlocks || recentBlocks.length === 0) return 0;
-    
-    const supportingBlocks = recentBlocks.filter(block => block.taprootSignaling).length;
-    const percentage = (supportingBlocks / recentBlocks.length) * 100;
-    
-    console.log(`Supporting blocks: ${supportingBlocks}/${recentBlocks.length} = ${percentage}%`);
-    return percentage;
   };
 
   /**
@@ -474,7 +488,6 @@ const TaprootPage = () => {
 
   // Calculate derived values
   const progress = calculateProgress();
-  const recentSupport = calculateRecentSupport();
   const statusMessage = getStatusMessage();
   const activationBlock = getActivationBlock();
 
@@ -482,17 +495,18 @@ const TaprootPage = () => {
     <Container maxWidth="lg" className={styles.container}>
       <HeaderSection />
 
-      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-        <ActivationStatusCard isActive={taprootStatus.active} />
-        <RecentSupportCard 
-          recentBlocks={recentBlocks} 
-          supportPercentage={recentSupport} 
-        />
-        <ActivationDetailsCard taprootStatus={taprootStatus} />
+      <Box
+        data-testid="taproot-cards"
+        sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 0, md: 2 }, mb: 3 }}
+      >
+        <ActivationStatusCard isActive={view.status === 'active'} loaded={loaded} />
+        <RecentSupportCard view={view} />
+        <ActivationDetailsCard view={view} />
       </Box>
 
       <ProgressSection 
         taprootStatus={taprootStatus}
+        status={view.status}
         progress={progress}
         statusMessage={statusMessage}
         activationBlock={activationBlock}
@@ -500,7 +514,7 @@ const TaprootPage = () => {
 
       <BIP9ExplanationSection />
 
-      <TechnicalParametersSection taprootStatus={taprootStatus} />
+      <TechnicalParametersSection taprootStatus={taprootStatus} view={view} />
     </Container>
   );
 };

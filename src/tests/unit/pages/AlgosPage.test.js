@@ -112,7 +112,18 @@ describe('AlgosPage', () => {
       expect(screen.getByText('Realtime DigiByte Blocks By Algo')).toBeInTheDocument();
       expect(screen.getByText(/This page preloads the last 240 DGB blocks/)).toBeInTheDocument();
       expect(screen.getByText(/DGB has 5 active mining algorithms/)).toBeInTheDocument();
-      expect(screen.getByText(/retired Myriad-Groestl algorithm currently appear as a sixth slice/)).toBeInTheDocument();
+      // N2: the chain is past the Groestl cutoff, so the text must say it stopped.
+      expect(screen.getByText(/Myriad-Groestl stopped at mainnet block 23,808,000/)).toBeInTheDocument();
+      expect(screen.getByText(/DigiByte now mines with 5 algorithms/)).toBeInTheDocument();
+    });
+
+    it('does not describe Myriad-Groestl as still being mined (N2)', () => {
+      renderWithProviders(<AlgosPage />);
+
+      const text = document.body.textContent;
+      expect(text).not.toMatch(/sixth slice/);
+      expect(text).not.toMatch(/temporarily being mined again/);
+      expect(text).not.toMatch(/will be rejected/);
     });
 
     it('should render the pie chart container', () => {
