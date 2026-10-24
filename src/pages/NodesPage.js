@@ -25,6 +25,7 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import UpdateIcon from '@mui/icons-material/Update';
 import StorageIcon from '@mui/icons-material/Storage';
 import { openNetworkSocket } from '../utils/networkSocket';
+import { CORE_RELEASE } from '../coreRelease';
 
 /**
  * Custom hook for fetching node geolocation data via WebSocket
@@ -1234,7 +1235,7 @@ const NodesPage = () => {
         >
           This page displays unique nodes seen in the peers.dat file of the DigiHash mining pool
           wallet since the wallet node was upgraded to a v8.26 pre-release build on Aug 29th, 2025
-          (the node now runs DigiByte Core v9.26.4).
+          (the node now runs DigiByte Core {CORE_RELEASE}).
         </Typography>
         
         {/* Important disclaimers about the data */}

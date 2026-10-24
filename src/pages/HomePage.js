@@ -14,9 +14,10 @@ import UpdateIcon from '@mui/icons-material/Update';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { useNetwork } from '../context/NetworkContext';
 import { openNetworkSocket } from '../utils/networkSocket';
+import { CORE_RELEASE } from '../coreRelease';
 
 const TESTNET_RELEASE = {
-  version: 'v9.26.4',
+  version: CORE_RELEASE,
   network: 'testnet26',
   p2pPort: '12033',
   rpcPort: '14026',
@@ -336,7 +337,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
                   Testnet26 DigiDollar Status
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Current {TESTNET_RELEASE.network} network where DigiDollar has been active since block 600. DigiDollar shipped on mainnet in v9.26.2; mainnet activation now awaits 70% miner BIP9 signaling.
+                  Current {TESTNET_RELEASE.network} network where DigiDollar has been active since block 600. DigiDollar shipped on mainnet in v9.26.2 and has been active on mainnet since block 23,869,440 (July 17, 2026).
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -536,7 +537,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
           <Grid item xs={12} sm={6} md={4}>
             <StatCard
               title="Latest Version"
-              value={isTestnet ? TESTNET_RELEASE.version : "v9.26.4 DigiDollar"}
+              value={isTestnet ? TESTNET_RELEASE.version : `${CORE_RELEASE} DigiDollar`}
               icon={<UpdateIcon />}
               description="Latest DGB core version."
               loading={false}

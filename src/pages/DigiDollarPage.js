@@ -30,6 +30,7 @@ import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import HomeIcon from '@mui/icons-material/Home';
 import SendIcon from '@mui/icons-material/Send';
 import IntegrationGuides from '../components/IntegrationGuides';
+import { CORE_RELEASE } from '../coreRelease';
 
 /**
  * DigiDollarPage Component - Explainer for the DigiDollar Decentralized Stablecoin
@@ -136,9 +137,8 @@ const DigiDollarPage = () => {
         >
           <Typography variant="body2">
             <strong>Status:</strong> <strong>Shipped — released on mainnet</strong> in DigiByte v9.26.2
-            (June 29, 2026); current release <strong>v9.26.4</strong> adds pruned-node support.
-            Mainnet activation is now in miners&apos; hands via BIP9 signaling (bit&nbsp;23) — track it
-            live on the Activation page. Fully operational on testnet26, where the oracle network runs
+            (June 29, 2026) and active on mainnet since block 23,869,440 (July 17, 2026). Current release:
+            <strong>{CORE_RELEASE}</strong>. Fully operational on testnet26, where the oracle network runs
             a 7-signature MuSig2 quorum across 35 oracle slots, backed by an extensive automated test suite.
           </Typography>
         </Alert>
@@ -1168,7 +1168,7 @@ const DigiDollarPage = () => {
                 DigiDollar Implementation Specs
               </Typography>
               <Chip
-                label="SHIPPED — v9.26.4"
+                label={`SHIPPED — ${CORE_RELEASE}`}
                 size="small"
                 sx={{
                   backgroundColor: '#4caf50',
@@ -1179,7 +1179,7 @@ const DigiDollarPage = () => {
             </Box>
 
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              All milestones complete — shipped in v9.26.2, current release v9.26.4
+              All milestones complete — shipped in v9.26.2, current release {CORE_RELEASE}
             </Typography>
 
             <Box sx={{ mb: 3, maxHeight: '400px', overflowY: 'auto' }}>
@@ -1347,7 +1347,7 @@ const DigiDollarPage = () => {
                 <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
                   primary="DigiByte v9.26.2 Mainnet Release"
-                  secondary="Complete - Released June 29, 2026; DigiDollar activation pending via BIP9 signaling"
+                  secondary="Complete - Released June 29, 2026; DigiDollar active on mainnet since block 23,869,440 (July 17, 2026)"
                 />
               </ListItem>
             </List>

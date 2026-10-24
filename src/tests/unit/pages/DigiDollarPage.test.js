@@ -19,11 +19,14 @@ describe('DigiDollarPage', () => {
       // Check for alert content - look for the status text (may appear multiple times)
       const statusTexts = screen.getAllByText(/Status:/);
       expect(statusTexts.length).toBeGreaterThan(0);
-      // Shipped on mainnet in v9.26.2; current release v9.26.4 (pruned-node support)
+      // Shipped on mainnet in v9.26.2, active since block 23,869,440; current release v9.26.7
       const shippedTexts = screen.getAllByText(/Shipped — released on mainnet/);
       expect(shippedTexts.length).toBeGreaterThan(0);
-      const currentRelease = screen.getAllByText(/v9\.26\.4/);
+      const currentRelease = screen.getAllByText(/v9\.26\.7/);
       expect(currentRelease.length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/23,869,440/).length).toBeGreaterThan(0);
+      expect(screen.queryByText(/in miners. hands/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/activation pending/)).not.toBeInTheDocument();
     });
 
     it('should render all main sections', () => {

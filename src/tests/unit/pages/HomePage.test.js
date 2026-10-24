@@ -78,7 +78,7 @@ describe('HomePage', () => {
       expect(loadingIndicators.length).toBeGreaterThan(0);
     });
 
-    it('should show v9.26.4 as the latest testnet release', () => {
+    it('should show v9.26.7 as the latest testnet release', () => {
       renderWithProviders(
         <HomePage
           numberWithCommas={(x) => x ? x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "0"}
@@ -88,15 +88,16 @@ describe('HomePage', () => {
       );
 
       expect(screen.getByText('Latest Version')).toBeInTheDocument();
-      expect(screen.getAllByText('v9.26.4').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('v9.26.7').length).toBeGreaterThan(0);
+      expect(screen.queryByText(/awaits 70% miner/)).not.toBeInTheDocument();
     });
 
-    it('should show v9.26.4 as the latest mainnet release', () => {
+    it('should show v9.26.7 as the latest mainnet release', () => {
       renderHomePage();
 
       expect(screen.getByText('Latest Version')).toBeInTheDocument();
-      // Mainnet renders "v9.26.4 DigiDollar"; testnet renders the bare version.
-      expect(screen.getAllByText(/v9\.26\.4/).length).toBeGreaterThan(0);
+      // Mainnet renders "v9.26.7 DigiDollar"; testnet renders the bare version.
+      expect(screen.getAllByText(/v9\.26\.7/).length).toBeGreaterThan(0);
     });
 
     it('should render algorithm difficulties card', async () => {

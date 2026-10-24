@@ -353,7 +353,7 @@ describe('WalletConvertPage — component', () => {
 
   it('describes testnet26 as the current network with fresh magic bytes', () => {
     renderWithProviders(<WalletConvertPage />, { network: 'testnet', route: '/testnet/convert' });
-    expect(screen.getByText(/Testnet26 \(introduced in RC44 and current through v9\.26\.4\) uses a fresh genesis/i)).toBeInTheDocument();
+    expect(screen.getByText(/Testnet26 \(introduced in RC44 and current through v9\.26\.7\) uses a fresh genesis/i)).toBeInTheDocument();
     expect(screen.getAllByText(/0xFEC6B9E7/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/RC41 uses the fresh testnet25 genesis/i)).not.toBeInTheDocument();
   });

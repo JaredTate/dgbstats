@@ -10,6 +10,7 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import DownloadIcon from '@mui/icons-material/Download';
 import BackupIcon from '@mui/icons-material/Backup';
 import SettingsIcon from '@mui/icons-material/Settings';
+import { CORE_RELEASE } from '../coreRelease';
 
 // ─── Application ID map ────────────────────────────────────────────
 // Application ID = big-endian of pchMessageStart for that network
@@ -192,7 +193,7 @@ const WalletConvertPage = () => {
           <Typography variant="body1" sx={{ maxWidth: '800px', mx: 'auto', color: '#555' }}>
             Patch the SQLite <code>application_id</code> bytes in a wallet.dat file to migrate between testnet versions.
             Use this when copying an oracle wallet from one testnet to another —
-            Testnet26 (introduced in RC44 and current through v9.26.4) uses a fresh genesis, P2P port 12033, and network magic bytes <code>0xFEC6B9E7</code>,
+            Testnet26 (introduced in RC44 and current through {CORE_RELEASE}) uses a fresh genesis, P2P port 12033, and network magic bytes <code>0xFEC6B9E7</code>,
             so oracle wallets from older testnets will be rejected until their SQLite application_id is converted.
           </Typography>
         </CardContent>

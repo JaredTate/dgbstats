@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useMemo } from 'react';
+import { CORE_RELEASE } from '../coreRelease';
 
 const NetworkContext = createContext(null);
 
@@ -36,7 +37,7 @@ const NETWORK_CONFIG = {
       explainer: 'BIP9 ensures network consensus before activating new features. By requiring 70% miner support, the upgrade proceeds only when the network is ready.'
     },
     digiDollarRelease: {
-      version: 'v9.26.4',
+      version: CORE_RELEASE,
       network: 'mainnet',
       p2pPort: '12024',
       activationSummary: 'BIP9 bit 23 — needs 28,224 of 40,320 blocks (70%) signaling; min activation height 23,627,520 already passed',
@@ -86,7 +87,7 @@ const NETWORK_CONFIG = {
       explainer: 'This testnet deployment tests the full activation lifecycle with accelerated parameters. On mainnet, the timeline is longer but the mechanism is identical.'
     },
     digiDollarRelease: {
-      version: 'v9.26.4',
+      version: CORE_RELEASE,
       network: 'testnet26',
       p2pPort: '12033',
       activationSummary: 'block 600 activation',

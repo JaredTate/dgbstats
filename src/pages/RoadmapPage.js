@@ -20,6 +20,7 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import { format } from 'date-fns';
 import config from '../config';
+import { CORE_RELEASE } from '../coreRelease';
 import { keyframes } from '@mui/material';
 import { openNetworkSocket } from '../utils/networkSocket';
 
@@ -417,7 +418,7 @@ const RoadmapPage = () => {
             title: 'Mining Pool & Exchange Outreach',
             date: '2026-06-29',
             status: 'completed',
-            description: 'Coordinated with mining pools, wallets, and exchanges to upgrade to the latest release (currently v9.26.4)',
+            description: `Coordinated with mining pools, wallets, and exchanges to upgrade to the latest release (currently ${CORE_RELEASE})`,
             completionDate: DD_ACTIVATION_DATE
           },
           {
@@ -425,7 +426,7 @@ const RoadmapPage = () => {
             title: 'Node Upgrade Campaign',
             date: '2026-06-29',
             status: 'completed',
-            description: 'Community outreach for node operators to upgrade to the latest release (currently v9.26.4)',
+            description: `Community outreach for node operators to upgrade to the latest release (currently ${CORE_RELEASE})`,
             completionDate: DD_ACTIVATION_DATE
           },
           {
@@ -1021,7 +1022,7 @@ const RoadmapPage = () => {
             mx: 'auto'
           }}
         >
-          DigiDollar activated on mainnet at block {DD_ACTIVATION_HEIGHT.toLocaleString()} on July 17, 2026 (shipped in v9.26.2; current release v9.26.4). Minting, sending, and redeeming are fully live — mining pools, wallets & exchanges should upgrade to v9.26.4 to publish oracle bundles.
+          DigiDollar activated on mainnet at block {DD_ACTIVATION_HEIGHT.toLocaleString()} on July 17, 2026 (shipped in v9.26.2; current release {CORE_RELEASE}). Minting, sending, and redeeming are fully live — mining pools, wallets & exchanges should upgrade to {CORE_RELEASE} to publish oracle bundles.
         </Typography>
       </CardContent>
     </Card>
