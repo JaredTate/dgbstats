@@ -14,6 +14,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { execFileSync } from 'child_process';
+import { findPage } from '../../seo/pages';
 
 const ROOT = path.resolve(__dirname, '../../..');
 const PROD_ENV = {
@@ -64,13 +65,28 @@ describe('production build (deploy contract)', () => {
   });
 
   it('keeps the SEO meta tags and resolves %PUBLIC_URL%', () => {
-    expect(indexHtml).toContain(
-      '<title>DigiByte Blockchain Stats | Real-time DGB Network Analytics</title>'
-    );
+    expect(indexHtml).toContain(`<title>${findPage('/').title}</title>`);
+    expect(indexHtml).toContain('<link rel="canonical" href="https://digibyte.io/"');
     expect(indexHtml).toContain('property="og:image" content="https://digibyte.io/og-image.png"');
     expect(indexHtml).toContain('<link rel="manifest" href="/manifest.json"');
     expect(indexHtml).not.toContain('%PUBLIC_URL%');
-    expect(indexHtml).toContain('<div id="root"></div>');
+    expect(indexHtml).toMatch(/<div id="root"><!--seo-shell-->[\s\S]*<h1>/);
+  });
+
+  // The prerender step runs inside `npm run build`, so the deploy gets it.
+  it('prerenders every route with its own canonical (slow: real build)', () => {
+    const blocks = fs.readFileSync(path.join(outDir, 'blocks.html'), 'utf8');
+    expect(blocks).toContain('<link rel="canonical" href="https://digibyte.io/blocks"');
+    expect(blocks).toContain(`<title>${findPage('/blocks').title}</title>`);
+    expect(blocks).toMatch(/main\.[a-f0-9]{8}\.js/);
+    expect(fs.readFileSync(path.join(outDir, 'testnet/blocks.html'), 'utf8')).toContain(
+      '<link rel="canonical" href="https://digibyte.io/testnet/blocks"'
+    );
+    expect(fs.readFileSync(path.join(outDir, '404.html'), 'utf8')).toContain('content="noindex, follow"');
+    for (const f of ['llms.txt', 'llms-full.txt', '261e39d143d43afd6f4680a984cb1e39.txt']) {
+      expect(fs.existsSync(path.join(outDir, f)), f).toBe(true);
+    }
+    expect(fs.readFileSync(path.join(outDir, 'sitemap.xml'), 'utf8')).toContain('<loc>https://digibyte.io/blocks</loc>');
   });
 
   it('copies public/ assets to the output root', () => {

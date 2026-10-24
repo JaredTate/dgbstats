@@ -25,6 +25,7 @@ import DDActivationPage from './pages/DDActivationPage';
 import WalletConvertPage from './pages/WalletConvertPage';
 import PoolUpgradeTrackerPage from './pages/PoolUpgradeTrackerPage';
 import ChainTipsPage from './pages/ChainTipsPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 export const parseBlockRewardResponse = (data) => {
   const rewardValue = data?.blockReward?.blockreward ?? data?.blockreward ?? data?.blockReward;
@@ -175,6 +176,8 @@ const App = () => {
               <Route path="/difficulties" element={<DifficultiesPage difficultiesData={blockchainInfo?.difficulties} />} />
               <Route path="/hashrate" element={<HashratePage difficultiesData={blockchainInfo?.difficulties} />} />
               <Route path="/taproot" element={<TaprootPage />} />
+              {/* Unknown routes: "Page not found" (usePageSeo sets noindex) */}
+              <Route path="*" element={<NotFoundPage />} />
             </Route>
 
             {/* Testnet routes */}
@@ -203,6 +206,7 @@ const App = () => {
               <Route path="digidollar" element={<DigiDollarPage />} />
               <Route path="convert" element={<WalletConvertPage />} />
               <Route path="taproot" element={<TaprootPage />} />
+              <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>
         </div>

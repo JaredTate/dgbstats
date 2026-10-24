@@ -5,6 +5,7 @@ import { NetworkProvider } from '../context/NetworkContext';
 import Header from './Header';
 import Footer from './Footer';
 import ForkAlertBanner from './ForkAlertBanner';
+import usePageSeo from '../seo/usePageSeo';
 
 const testnetTheme = createTheme({
   palette: {
@@ -52,6 +53,7 @@ const testnetTheme = createTheme({
 });
 
 const TestnetLayout = () => {
+  usePageSeo();
   return (
     <NetworkProvider network="testnet">
       <ThemeProvider theme={testnetTheme}>

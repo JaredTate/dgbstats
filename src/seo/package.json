@@ -1,0 +1,4 @@
+{
+  "//": "Lets plain Node (scripts/prerender.mjs) import these ES modules without warnings.",
+  "type": "module"
+}

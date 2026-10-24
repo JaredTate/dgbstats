@@ -251,7 +251,7 @@ npm run build         # Production build
 3. Follow existing page structure (Hero → Content → Stats)
 4. Add the page to `src/navigation.js` in the right group (`mainnetOnly`/`testnetOnly` flags); `tests/unit/navigation.test.js` fails if a route is missing
 5. Add tests in `src/tests/unit/pages/`
-6. Add the route(s) to `public/sitemap.xml`
+6. Add the route(s) to `src/seo/pages.js` (title, description, h1, intro); `tests/unit/seo/pages.test.js` fails if a route is missing. The build generates the sitemap, prerendered HTML and llms.txt from it
 
 ### Modifying Charts
 1. Check if using D3.js, @visx, hand-rolled SVG, or Chart.js
@@ -285,4 +285,4 @@ npm run build         # Production build
 - **Accessibility**: Maintain WCAG 2.1 AA compliance
 - **Performance**: Keep Lighthouse scores above 90
 - **Browser Support**: Chrome, Firefox, Safari, Edge (latest 2 versions)
-- **Sitemap**: `public/sitemap.xml` lists all current mainnet and testnet routes; keep it in sync when adding pages.
+- **SEO (2026-10-24)**: `src/seo/pages.js` is the one source for every route's title, description, h1, intro and breadcrumb. `usePageSeo` (both layouts) updates head tags on each route change; unknown routes render `NotFoundPage` with noindex. `npm run build` = `vite build` + `scripts/prerender.mjs`, which writes `<out>/<route>.html` (e.g. `blocks.html`, `testnet/blocks.html`), `404.html`, `sitemap.xml`, `robots.txt`, `llms.txt`, `llms-full.txt` and the IndexNow key file. Do not add `public/sitemap.xml` or `public/robots.txt`. nginx: `try_files $uri $uri.html $uri/ =404; error_page 404 /404.html;`.
