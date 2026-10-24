@@ -1,8 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { screen, fireEvent, waitFor, render } from '@testing-library/react';
+import { screen, fireEvent, waitFor, render, within } from '@testing-library/react';
 import App from '../../App';
 import { createWebSocketMock, waitForAsync } from '../utils/testUtils';
 import { mockApiResponses, generateWebSocketMessage } from '../mocks/mockData';
+import { getNavGroups } from '../../navigation';
+
+// Open the page's group in the phone bottom bar and return its link.
+// (jsdom renders both bars; the bottom bar keeps every page one tap away.)
+async function navLink(label) {
+  const bar = screen.getByRole('navigation', { name: 'Bottom navigation' });
+  if (label === 'Home') return within(bar).getByRole('link', { name: 'Home' });
+  const group = getNavGroups(false).find((g) => g.items.some((i) => i.label === label));
+  fireEvent.click(within(bar).getByRole('button', { name: group.label }));
+  const sheet = await screen.findByRole('dialog', { name: group.label });
+  return within(sheet).getByRole('link', { name: new RegExp(`^${label}`) });
+}
 
 // Custom render for App component that already includes Router
 function renderApp(options = {}) {
@@ -98,7 +110,7 @@ describe('App Integration Tests', () => {
       expect(screen.getByText('DigiByte Blockchain Statistics')).toBeInTheDocument();
       
       // Navigate to Nodes page
-      const nodesLink = screen.getByRole('link', { name: /nodes/i });
+      const nodesLink = await navLink('Nodes');
       fireEvent.click(nodesLink);
       
       await waitFor(() => {
@@ -106,7 +118,7 @@ describe('App Integration Tests', () => {
       });
       
       // Navigate to Pools page
-      const poolsLink = screen.getByRole('link', { name: /pools/i });
+      const poolsLink = await navLink('Mining Pools');
       fireEvent.click(poolsLink);
       
       await waitFor(() => {
@@ -131,7 +143,7 @@ describe('App Integration Tests', () => {
       const pageWs = webSocketInstances[0];
 
       // Navigate to another page
-      const nodesLink = screen.getByRole('link', { name: /nodes/i });
+      const nodesLink = await navLink('Nodes');
       fireEvent.click(nodesLink);
 
       await waitForAsync();
@@ -176,7 +188,7 @@ describe('App Integration Tests', () => {
       expect(homeContainer).toBeTruthy();
       
       // Navigate to another page
-      const hashrateLink = screen.getByRole('link', { name: /hashrate/i });
+      const hashrateLink = await navLink('Hashrate');
       fireEvent.click(hashrateLink);
       
       await waitFor(() => {
@@ -265,7 +277,7 @@ describe('App Integration Tests', () => {
       expect(screen.getByText('DigiByte Blockchain Statistics')).toBeInTheDocument();
       
       // Should be able to navigate
-      const poolsLink = screen.getByRole('link', { name: /pools/i });
+      const poolsLink = await navLink('Mining Pools');
       fireEvent.click(poolsLink);
       
       await waitFor(() => {
@@ -277,67 +289,20 @@ describe('App Integration Tests', () => {
   });
 
   describe('Mobile Navigation', () => {
-    it('should show mobile menu on small screens', async () => {
-      // Skip this test for now - Material-UI useMediaQuery mocking is complex
-      // TODO: Investigate proper MUI v5 media query mocking
-      expect(true).toBe(true); // Placeholder assertion
-      return;
-      
-      // Set mobile media query to true
-      isMobileView = true;
-      
+    it('shows a bottom tab bar with Home and the four groups', () => {
       renderApp();
-      
-      // Wait for mobile menu button to appear
-      await waitFor(() => {
-        const menuButton = screen.getByLabelText(/menu/i);
-        expect(menuButton).toBeInTheDocument();
-      });
-      
-      // Click menu button
-      const menuButton = screen.getByLabelText(/menu/i);
-      fireEvent.click(menuButton);
-      
-      // Navigation drawer should open
-      await waitFor(() => {
-        const drawer = screen.getByRole('presentation');
-        expect(drawer).toBeInTheDocument();
-      });
+      const bar = screen.getByRole('navigation', { name: 'Bottom navigation' });
+      expect(within(bar).getByRole('link', { name: 'Home' })).toBeInTheDocument();
+      ['Blockchain', 'Mining', 'DigiDollar', 'More'].forEach((label) =>
+        expect(within(bar).getByRole('button', { name: label })).toBeInTheDocument());
     });
 
-    it('should close mobile menu after navigation', async () => {
-      // Skip this test for now - Material-UI useMediaQuery mocking is complex
-      // TODO: Investigate proper MUI v5 media query mocking
-      expect(true).toBe(true); // Placeholder assertion
-      return;
-      
-      // Set mobile media query to true
-      isMobileView = true;
-      
+    it('closes the sheet after navigation and shows the new page', async () => {
       renderApp();
-      
-      // Wait for and open menu
-      await waitFor(() => {
-        const menuButton = screen.getByLabelText(/menu/i);
-        expect(menuButton).toBeInTheDocument();
-      });
-      
-      const menuButton = screen.getByLabelText(/menu/i);
-      fireEvent.click(menuButton);
-      
-      // Wait for drawer to open
-      await waitFor(() => {
-        expect(screen.getByRole('presentation')).toBeInTheDocument();
-      });
-      
-      // Click a navigation link
-      const nodesLink = screen.getAllByRole('link', { name: /nodes/i })[1]; // Mobile menu link
-      fireEvent.click(nodesLink);
-      
-      // Menu should close and page should change
+      fireEvent.click(await navLink('Nodes'));
       await waitFor(() => {
         expect(screen.getByText('DigiByte Blockchain Nodes')).toBeInTheDocument();
-        expect(screen.queryByRole('presentation')).not.toBeInTheDocument();
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
       });
     });
   });
@@ -347,15 +312,15 @@ describe('App Integration Tests', () => {
       renderApp();
       
       const pages = [
-        { link: /nodes/i, title: 'DigiByte Blockchain Nodes' },
-        { link: /pools/i, title: 'DigiByte Mining Pools' },
-        { link: /supply/i, title: 'DigiByte Supply Statistics' },
-        { link: /hashrate/i, title: 'DigiByte Hashrate By Algo' }
+        { link: 'Nodes', title: 'DigiByte Blockchain Nodes' },
+        { link: 'Mining Pools', title: 'DigiByte Mining Pools' },
+        { link: 'Supply', title: 'DigiByte Supply Statistics' },
+        { link: 'Hashrate', title: 'DigiByte Hashrate By Algo' }
       ];
       
       // Navigate through pages rapidly
       for (const page of pages) {
-        const link = screen.getByRole('link', { name: page.link });
+        const link = await navLink(page.link);
         fireEvent.click(link);
         
         await waitFor(() => {
@@ -365,7 +330,7 @@ describe('App Integration Tests', () => {
       
       // Should end on the last page
       expect(screen.getByText('DigiByte Hashrate By Algo')).toBeInTheDocument();
-    });
+    }, 90000); // four page loads through the bottom-bar sheets
 
     it('should clean up resources when switching pages', async () => {
       renderApp();
@@ -373,7 +338,7 @@ describe('App Integration Tests', () => {
       await waitForAsync();
       
       // Navigate to a page with charts
-      const supplyLink = screen.getByRole('link', { name: /supply/i });
+      const supplyLink = await navLink('Supply');
       fireEvent.click(supplyLink);
 
       await waitFor(() => {
@@ -384,7 +349,7 @@ describe('App Integration Tests', () => {
       const supplyWs = webSocketInstances[webSocketInstances.length - 1];
 
       // Navigate away
-      const homeLink = screen.getByRole('link', { name: /home/i });
+      const homeLink = await navLink('Home');
       fireEvent.click(homeLink);
 
       await waitFor(() => {
@@ -401,7 +366,7 @@ describe('App Integration Tests', () => {
       renderApp();
       
       // Focus on a navigation link
-      const nodesLink = screen.getByRole('link', { name: /nodes/i });
+      const nodesLink = await navLink('Nodes');
       nodesLink.focus();
       expect(document.activeElement).toBe(nodesLink);
       
@@ -449,7 +414,7 @@ describe('App Integration Tests', () => {
       });
       
       // Navigate to blocks page
-      const blocksLink = screen.getByRole('link', { name: /blocks/i });
+      const blocksLink = await navLink('Blocks');
       fireEvent.click(blocksLink);
       
       await waitForAsync();

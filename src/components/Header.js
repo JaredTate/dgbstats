@@ -1,383 +1,191 @@
 import React, { useState } from 'react';
 import {
-  AppBar, Toolbar, Typography, Box, IconButton,
-  Button, Container, Drawer, List, ListItem, ListItemText, Chip, Divider
+  AppBar, Toolbar, Typography, Box, Button, Container, Chip,
+  Menu, MenuItem, ListItemIcon, ListItemText, Divider
 } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
-import GitHubIcon from '@mui/icons-material/GitHub';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { useNetwork } from '../context/NetworkContext';
+import { getNavGroups, findActiveTab, HOME_TAB } from '../navigation';
+import BottomNav from './BottomNav';
 
-const Header = () => {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const network = useNetwork();
-  const isTestnet = network?.isTestnet || false;
-  const networkTheme = network?.theme || { gradient: 'linear-gradient(135deg, #002352 0%, #0066cc 100%)' };
-  const basePath = network?.basePath || '';
-  const networkBadge = isTestnet ? 'TESTNET' : null;
-  const networkHomePath = basePath || '/';
+const navButtonSx = (active) => ({
+  color: 'white',
+  px: 1.5,
+  py: 0.75,
+  fontSize: '0.95rem',
+  textTransform: 'none',
+  fontWeight: active ? 700 : 500,
+  whiteSpace: 'nowrap',
+  borderRadius: '8px',
+  backgroundColor: active ? 'rgba(255, 255, 255, 0.16)' : 'transparent',
+  '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.22)' },
+  '&:focus-visible': { outline: '2px solid white', outlineOffset: 2 },
+});
 
-  const withBase = (path) => {
-    if (path === '/') return networkHomePath;
-    return `${basePath}${path}`;
-  };
-
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
-
-  // Primary navigation items (internal site links)
-  const primaryMenuItems = isTestnet ? [
-    { text: 'Home', path: withBase('/') },
-    { text: 'Blocks', path: withBase('/blocks') },
-    { text: 'Tips', path: withBase('/tips') },
-    { text: 'Txs', path: withBase('/txs') },
-    { text: 'Supply', path: withBase('/supply') },
-    { text: 'Algos', path: withBase('/algos') },
-    { text: 'Difficulties', path: withBase('/difficulties') },
-    { text: 'Hashrate', path: withBase('/hashrate') },
-    { text: 'Nodes', path: withBase('/nodes') },
-    { text: 'Upgrades', path: withBase('/pool-upgrades') },
-    { text: 'Oracles', path: withBase('/oracles') },
-    { text: 'DD Stats', path: withBase('/ddstats') },
-    { text: 'DigiDollar', path: withBase('/digidollar') },
-  ] : [
-    { text: 'Home', path: '/' },
-    { text: 'Blocks', path: '/blocks' },
-    { text: 'Tips', path: '/tips' },
-    { text: 'Txs', path: '/txs' },
-    { text: 'Supply', path: '/supply' },
-    { text: 'Algos', path: '/algos' },
-    { text: 'Difficulties', path: '/difficulties' },
-    { text: 'Hashrate', path: '/hashrate' },
-    { text: 'Pools', path: '/pools' },
-    { text: 'Upgrades', path: '/pool-upgrades' },
-    { text: 'Nodes', path: '/nodes' },
-    { text: 'Downloads', path: '/downloads' },
-    { text: 'Roadmap', path: '/roadmap' },
-    { text: 'DigiDollar', path: '/digidollar' },
-    { text: 'Oracles', path: '/oracles' },
-    { text: 'DD Stats', path: '/ddstats' },
-  ];
-
-  // External links
-  const externalLinks = [
-    { text: 'DigiExplorer', path: 'https://digiexplorer.info/', icon: null },
-    { text: 'DigiHash', path: 'https://digihash.digibyte.io/', icon: null },
-    { text: 'DigiByte.org', path: 'https://digibyte.org', icon: null },
-    { text: 'GitHub', path: 'https://github.com/DigiByte-Core/digibyte', icon: <GitHubIcon sx={{ fontSize: 16, mr: 0.5 }} /> },
-    { text: 'Digi-ID', path: 'https://www.digi-id.io/', icon: null },
-    { text: 'DigiScope', path: 'https://digiscope.me/', icon: null },
-  ];
-
-  // Mobile drawer content
-  const drawer = (
-    <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center', width: 280 }}>
-      {/* Drawer header */}
-      <Box sx={{
-        py: 2,
-        bgcolor: network?.theme?.primary || '#002352',
-        color: 'white',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <Box
-          component="img"
-          src="/logo.png"
-          alt="DigiByte Logo"
-          sx={{ height: 40, mr: 1 }}
-        />
-        <Typography variant="h6" fontWeight="bold">
-          DigiByte Stats
-        </Typography>
-        {networkBadge && (
-          <Chip
-            label={networkBadge}
-            size="small"
-            sx={{
-              bgcolor: network?.theme?.secondary || '#4caf50',
-              color: 'white',
-              fontWeight: 'bold',
-              ml: 1
-            }}
-          />
-        )}
+/** Mainnet / Testnet switch, shown in the top bar on every screen size. */
+const NetworkSwitch = ({ isTestnet }) => (
+  <Box
+    role="group"
+    aria-label="Network"
+    sx={{ display: 'flex', flexShrink: 0, p: '3px', borderRadius: '10px', bgcolor: 'rgba(0, 0, 0, 0.18)' }}
+  >
+    {[
+      { text: 'Mainnet', path: '/', active: !isTestnet, color: '#0066cc' },
+      { text: 'Testnet', path: '/testnet', active: isTestnet, color: '#2e7d32' },
+    ].map((item) => (
+      <Box
+        key={item.text}
+        component={RouterLink}
+        to={item.path}
+        aria-current={item.active ? 'true' : undefined}
+        sx={{
+          px: { xs: 1, sm: 1.5 },
+          py: 0.5,
+          borderRadius: '8px',
+          fontSize: { xs: '0.78rem', sm: '0.85rem' },
+          fontWeight: item.active ? 700 : 500,
+          textDecoration: 'none',
+          color: item.active ? item.color : 'white',
+          bgcolor: item.active ? '#ffffff' : 'transparent',
+          '&:hover': { bgcolor: item.active ? '#ffffff' : 'rgba(255, 255, 255, 0.15)' },
+          '&:focus-visible': { outline: '2px solid white', outlineOffset: 1 },
+        }}
+      >
+        {item.text}
       </Box>
+    ))}
+  </Box>
+);
 
-      {/* Primary navigation */}
-      <List>
-        {primaryMenuItems.map((item) => (
-          <ListItem
-            button
-            component={RouterLink}
-            to={item.path}
-            key={item.text}
-            sx={{
-              '&:hover': { bgcolor: '#e3f2fd' }
-            }}
-          >
-            <ListItemText primary={item.text} />
-          </ListItem>
-        ))}
-      </List>
-
-      {/* External links section */}
-      <Divider />
-      <Typography variant="caption" sx={{ display: 'block', mt: 2, mb: 1, color: 'text.secondary' }}>
-        External Resources
-      </Typography>
-      <List>
-        {externalLinks.map((item) => (
-          <ListItem
-            button
-            component="a"
-            href={item.path}
-            target="_blank"
-            rel="noopener noreferrer"
-            key={item.text}
-            sx={{
-              '&:hover': { bgcolor: '#e3f2fd' }
-            }}
-          >
-            <ListItemText
-              primary={
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  {item.icon}
-                  {item.text}
-                  <OpenInNewIcon sx={{ fontSize: 14, ml: 0.5, color: 'text.secondary' }} />
-                </Box>
-              }
-            />
-          </ListItem>
-        ))}
-      </List>
-
-      {/* Network switch */}
-      <Divider />
-      <List>
-        {[
-          { text: 'Mainnet', path: '/', active: network?.isMainnet },
-          { text: 'Testnet', path: '/testnet', active: isTestnet }
-        ].map((item) => (
-          <ListItem
-            button
-            component={RouterLink}
-            to={item.path}
-            key={item.text}
-            sx={{
-              bgcolor: item.active ? 'rgba(0, 102, 204, 0.12)' : 'transparent',
-              '&:hover': { bgcolor: 'rgba(0, 102, 204, 0.18)' }
-            }}
-          >
-            <ListItemText
-              primary={item.text}
-              sx={{ textAlign: 'center', fontWeight: item.active ? 'bold' : 'normal' }}
-            />
-          </ListItem>
-        ))}
-      </List>
-    </Box>
-  );
+/**
+ * Site header. Desktop (900px+): one bar with Home and four group menus
+ * (Blockchain, Mining, DigiDollar, More). Phones: a slim top bar plus a
+ * bottom tab bar (BottomNav). Both read the same config in navigation.js.
+ */
+const Header = () => {
+  const network = useNetwork();
+  const location = useLocation();
+  const [menu, setMenu] = useState({ id: null, anchor: null });
+  const isTestnet = network?.isTestnet || false;
+  const basePath = network?.basePath || '';
+  const homePath = basePath || '/';
+  const gradient = network?.theme?.gradient || 'linear-gradient(135deg, #002352 0%, #0066cc 100%)';
+  const accent = isTestnet ? '#2e7d32' : '#0066cc';
+  const groups = getNavGroups(isTestnet);
+  const activeTab = findActiveTab(location.pathname, basePath);
+  const closeMenu = () => setMenu({ id: null, anchor: null });
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      {/* Primary Navigation Bar */}
-      <AppBar
-        position="sticky"
-        sx={{
-          background: isTestnet ? networkTheme.gradient : '#0066cc',
-          boxShadow: 'none'
-        }}
-      >
+      <AppBar position="sticky" sx={{ background: gradient, boxShadow: 'none' }}>
         <Container maxWidth="lg">
-          <Toolbar disableGutters sx={{ minHeight: { xs: 56, md: 64 } }}>
+          <Toolbar disableGutters sx={{ minHeight: { xs: 56, md: 64 }, gap: 1 }}>
             {/* Logo and title */}
             <Box
               component={RouterLink}
-              to={networkHomePath}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                textDecoration: 'none',
-                color: 'white',
-                flexShrink: 0,
-                mr: 3
-              }}
+              to={homePath}
+              aria-label="DigiByte Stats home"
+              sx={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'white', flexShrink: 0, minWidth: 0, mr: { md: 2 } }}
             >
-              <Box
-                component="img"
-                src="/logo.png"
-                alt="DigiByte Logo"
-                sx={{ height: 36, mr: 1 }}
-              />
-              <Typography
-                variant="h6"
-                noWrap
-                component="div"
-                sx={{
-                  fontWeight: 'bold',
-                  fontSize: { xs: '1rem', md: '1.2rem' }
-                }}
-              >
+              <Box component="img" src="/logo.png" alt="DigiByte Logo" sx={{ height: { xs: 30, md: 36 }, mr: 1 }} />
+              <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 'bold', fontSize: { xs: '1.05rem', md: '1.2rem' } }}>
                 DigiByte Stats
               </Typography>
-              {networkBadge && (
+              {isTestnet && (
                 <Chip
-                  label={networkBadge}
+                  label="TESTNET"
                   size="small"
-                  sx={{
-                    bgcolor: network?.theme?.secondary || '#4caf50',
-                    color: 'white',
-                    fontWeight: 'bold',
-                    ml: 1,
-                    height: 24
-                  }}
+                  sx={{ display: { xs: 'none', sm: 'inline-flex' }, bgcolor: network?.theme?.secondary || '#4caf50', color: 'white', fontWeight: 'bold', ml: 1, height: 24 }}
                 />
               )}
             </Box>
 
-            {/* Desktop primary navigation. The links wrap onto a second row
-                when they do not fit (1200-1440px), so the page never scrolls
-                sideways. */}
+            {/* Desktop menus */}
             <Box
               component="nav"
               aria-label="Primary navigation"
-              sx={{
-                display: { xs: 'none', lg: 'flex' },
-                flexGrow: 1,
-                flexWrap: 'wrap',
-                minWidth: 0,
-                justifyContent: 'flex-end',
-                alignItems: 'center',
-                gap: 0.25,
-                py: 0.5
-              }}
+              sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 0.5, flexGrow: 1 }}
             >
-              {primaryMenuItems.map((item) => (
-                <Button
-                  key={item.text}
-                  component={RouterLink}
-                  to={item.path}
-                  size="small"
-                  sx={{
-                    color: 'white',
-                    px: 0.75,
-                    py: 0.5,
-                    fontSize: '0.8rem',
-                    textTransform: 'none',
-                    fontWeight: '500',
-                    whiteSpace: 'nowrap',
-                    minWidth: 'auto',
-                    '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.15)'
-                    }
-                  }}
-                >
-                  {item.text}
-                </Button>
-              ))}
+              <Button
+                component={RouterLink}
+                to={homePath}
+                aria-current={activeTab === HOME_TAB ? 'page' : undefined}
+                sx={navButtonSx(activeTab === HOME_TAB)}
+              >
+                Home
+              </Button>
+              {groups.map((group) => {
+                const open = menu.id === group.id;
+                const active = activeTab === group.id;
+                return (
+                  <React.Fragment key={group.id}>
+                    <Button
+                      id={`nav-${group.id}-button`}
+                      aria-haspopup="true"
+                      aria-expanded={open ? 'true' : 'false'}
+                      aria-controls={open ? `nav-${group.id}-menu` : undefined}
+                      aria-current={active ? 'true' : undefined}
+                      endIcon={<KeyboardArrowDownIcon sx={{ transition: 'transform .15s', transform: open ? 'rotate(180deg)' : 'none' }} />}
+                      onClick={(e) => setMenu({ id: group.id, anchor: e.currentTarget })}
+                      sx={navButtonSx(active)}
+                    >
+                      {group.label}
+                    </Button>
+                    <Menu
+                      id={`nav-${group.id}-menu`}
+                      anchorEl={menu.anchor}
+                      open={open}
+                      onClose={closeMenu}
+                      MenuListProps={{ 'aria-labelledby': `nav-${group.id}-button`, sx: { py: 1 } }}
+                      PaperProps={{ sx: { borderRadius: '12px', minWidth: 300, mt: 0.5 } }}
+                    >
+                      {group.items.map((item, i) => {
+                        const Icon = item.icon;
+                        const firstExternal = item.external && !group.items[i - 1]?.external;
+                        const linkProps = item.external
+                          ? { component: 'a', href: item.path, target: '_blank', rel: 'noopener noreferrer' }
+                          : { component: RouterLink, to: item.path };
+                        return [
+                          firstExternal && i > 0 && <Divider key={`${item.label}-divider`} sx={{ my: 0.5 }} />,
+                          firstExternal && (
+                            <Typography key={`${item.label}-heading`} variant="caption" color="text.secondary" sx={{ display: 'block', px: 2, pt: 0.5, pb: 0.25, fontWeight: 600 }}>
+                              Other DigiByte sites
+                            </Typography>
+                          ),
+                          <MenuItem
+                            key={item.label}
+                            {...linkProps}
+                            onClick={closeMenu}
+                            selected={!item.external && location.pathname === item.path}
+                            sx={{ py: 1, px: 2, borderRadius: '8px', mx: 1, alignItems: 'flex-start' }}
+                          >
+                            <ListItemIcon sx={{ color: accent, mt: 0.25 }}><Icon fontSize="small" /></ListItemIcon>
+                            <ListItemText
+                              primary={item.label}
+                              secondary={item.description}
+                              primaryTypographyProps={{ fontWeight: 600 }}
+                              secondaryTypographyProps={{ fontSize: '0.8rem' }}
+                            />
+                            {item.external && <OpenInNewIcon sx={{ fontSize: 14, color: 'text.secondary', ml: 1, mt: 0.5 }} aria-label="opens in a new tab" />}
+                          </MenuItem>,
+                        ];
+                      })}
+                    </Menu>
+                  </React.Fragment>
+                );
+              })}
             </Box>
 
-            {/* Mobile menu button */}
-            <Box sx={{ display: { xs: 'flex', lg: 'none' }, ml: 'auto' }}>
-              <IconButton
-                size="large"
-                color="inherit"
-                aria-label="menu"
-                onClick={handleDrawerToggle}
-              >
-                <MenuIcon />
-              </IconButton>
-              <Drawer
-                anchor="right"
-                open={mobileOpen}
-                onClose={handleDrawerToggle}
-              >
-                {drawer}
-              </Drawer>
+            <Box sx={{ ml: 'auto' }}>
+              <NetworkSwitch isTestnet={isTestnet} />
             </Box>
           </Toolbar>
         </Container>
       </AppBar>
 
-      {/* Secondary Bar - External Links (Desktop only) */}
-      <Box
-        sx={{
-          display: { xs: 'none', lg: 'block' },
-          bgcolor: '#002352'
-        }}
-      >
-        <Container maxWidth="lg">
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-              alignItems: 'center',
-              py: 0.75
-            }}
-          >
-              {externalLinks.map((item) => (
-                <Button
-                  key={item.text}
-                  component="a"
-                  href={item.path}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  size="small"
-                  startIcon={item.icon}
-                  endIcon={<OpenInNewIcon sx={{ fontSize: 12 }} />}
-                  sx={{
-                    color: 'white',
-                    fontSize: '0.8rem',
-                    textTransform: 'none',
-                    py: 0.5,
-                    px: 1.5,
-                    minWidth: 'auto',
-                    '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)'
-                    }
-                  }}
-                >
-                  {item.text}
-                </Button>
-              ))}
-
-              {/* Divider */}
-              <Box sx={{ width: '1px', height: 20, bgcolor: 'rgba(255, 255, 255, 0.3)', mx: 2 }} />
-
-              {/* Network switch */}
-              {[
-                { text: 'Mainnet', path: '/', active: network?.isMainnet, color: '#0066cc' },
-                { text: 'Testnet', path: '/testnet', active: isTestnet, color: '#4caf50' }
-              ].map((item) => (
-                <Button
-                  key={item.text}
-                  component={RouterLink}
-                  to={item.path}
-                  size="small"
-                  sx={{
-                    color: 'white',
-                    fontSize: '0.78rem',
-                    textTransform: 'none',
-                    fontWeight: item.active ? 'bold' : 500,
-                    py: 0.5,
-                    px: 1.25,
-                    ml: 0.5,
-                    bgcolor: item.active ? item.color : 'rgba(255,255,255,0.12)',
-                    border: `1px solid ${item.active ? item.color : 'rgba(255,255,255,0.24)'}`,
-                    '&:hover': {
-                      backgroundColor: item.active ? item.color : 'rgba(255,255,255,0.2)'
-                    }
-                  }}
-                >
-                  {item.text}
-                </Button>
-              ))}
-          </Box>
-        </Container>
-      </Box>
+      <BottomNav groups={groups} homePath={homePath} activeTab={activeTab} color={accent} />
     </Box>
   );
 };

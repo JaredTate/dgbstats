@@ -1,309 +1,181 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { screen, fireEvent, within } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { screen, fireEvent, within, waitFor } from '@testing-library/react';
 import { renderWithProviders } from '../../utils/testUtils';
 import Header from '../../../components/Header';
 
-describe('Header', () => {
-  describe('Mainnet Mode', () => {
-    it('should render DigiByte Stats title', () => {
-      renderWithProviders(<Header />, { network: 'mainnet' });
+const primaryNav = () => screen.getByRole('navigation', { name: 'Primary navigation' });
+const bottomNav = () => screen.getByRole('navigation', { name: 'Bottom navigation' });
 
-      expect(screen.getByText('DigiByte Stats')).toBeInTheDocument();
+describe('Header', () => {
+  describe('Top bar', () => {
+    it('shows the logo and title as a link home', () => {
+      renderWithProviders(<Header />, { network: 'mainnet' });
+      expect(screen.getByAltText('DigiByte Logo')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /DigiByte Stats home/i })).toHaveAttribute('href', '/');
     });
 
-    it('should NOT show TESTNET chip on mainnet', () => {
-      renderWithProviders(<Header />, { network: 'mainnet' });
+    it('links the logo to the testnet home on testnet and shows the TESTNET chip', () => {
+      renderWithProviders(<Header />, { network: 'testnet', route: '/testnet' });
+      expect(screen.getByRole('link', { name: /DigiByte Stats home/i })).toHaveAttribute('href', '/testnet');
+      expect(screen.getAllByText('TESTNET').length).toBeGreaterThan(0);
+    });
 
+    it('does not show the TESTNET chip on mainnet', () => {
+      renderWithProviders(<Header />, { network: 'mainnet' });
       expect(screen.queryByText('TESTNET')).not.toBeInTheDocument();
     });
 
-    it('should have navigation links without /testnet prefix', () => {
-      renderWithProviders(<Header />, { network: 'mainnet' });
-
-      // Check for mainnet navigation links (desktop buttons)
-      const homeLinks = screen.getAllByRole('link').filter(link =>
-        link.getAttribute('href') === '/'
-      );
-      expect(homeLinks.length).toBeGreaterThan(0);
-
-      // Check that Blocks link is /blocks not /testnet/blocks
-      const blocksLinks = screen.getAllByRole('link').filter(link =>
-        link.getAttribute('href') === '/blocks'
-      );
-      expect(blocksLinks.length).toBeGreaterThan(0);
+    it('has a Mainnet / Testnet switch that marks the current network', () => {
+      renderWithProviders(<Header />, { network: 'testnet', route: '/testnet' });
+      const sw = screen.getByRole('group', { name: 'Network' });
+      expect(within(sw).getByRole('link', { name: 'Mainnet' })).toHaveAttribute('href', '/');
+      const testnet = within(sw).getByRole('link', { name: 'Testnet' });
+      expect(testnet).toHaveAttribute('href', '/testnet');
+      expect(testnet).toHaveAttribute('aria-current', 'true');
     });
 
-    it('should show external links section on mainnet (desktop)', () => {
+    it('has no hamburger menu button', () => {
       renderWithProviders(<Header />, { network: 'mainnet' });
-
-      // External links should be present
-      expect(screen.getByText('DigiExplorer')).toBeInTheDocument();
-      expect(screen.getByText('DigiHash')).toBeInTheDocument();
-      expect(screen.getByText('DigiByte.org')).toBeInTheDocument();
-      expect(screen.getByText('GitHub')).toBeInTheDocument();
-    });
-
-    it('should show Testnet switch button on mainnet', () => {
-      renderWithProviders(<Header />, { network: 'mainnet' });
-
-      const testnetButton = screen.getAllByRole('link', { name: /^Testnet$/i }).find(link =>
-        link.getAttribute('href') === '/testnet'
-      );
-      expect(testnetButton).toHaveAttribute('href', '/testnet');
-    });
-
-    it('should have all mainnet navigation items', () => {
-      renderWithProviders(<Header />, { network: 'mainnet' });
-
-      // Mainnet should have Pools, Downloads, Roadmap which testnet doesn't
-      expect(screen.getByRole('link', { name: 'Pools' })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'Downloads' })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'Roadmap' })).toBeInTheDocument();
-    });
-
-    it('should have the Upgrades nav item linking to /pool-upgrades', () => {
-      renderWithProviders(<Header />, { network: 'mainnet' });
-
-      expect(screen.getByRole('link', { name: 'Upgrades' }))
-        .toHaveAttribute('href', '/pool-upgrades');
-    });
-
-    it('should not link to the Activation page (DigiDollar is active)', () => {
-      renderWithProviders(<Header />, { network: 'mainnet' });
-
-      expect(screen.queryByRole('link', { name: 'Activation' })).not.toBeInTheDocument();
-    });
-
-    it('should have the Tips nav item linking to /tips', () => {
-      renderWithProviders(<Header />, { network: 'mainnet' });
-
-      expect(screen.getByRole('link', { name: 'Tips' }))
-        .toHaveAttribute('href', '/tips');
+      expect(screen.queryByRole('button', { name: /^menu$/i })).not.toBeInTheDocument();
+      expect(screen.queryByTestId('MenuIcon')).not.toBeInTheDocument();
     });
   });
 
-  describe('Testnet Mode', () => {
-    it('should render DigiByte Stats title', () => {
-      renderWithProviders(<Header />, { network: 'testnet' });
-
-      expect(screen.getByText('DigiByte Stats')).toBeInTheDocument();
-    });
-
-    it('should show TESTNET chip when on testnet', () => {
-      renderWithProviders(<Header />, { network: 'testnet' });
-
-      // There are 2 TESTNET chips - one in desktop header, one in mobile drawer
-      const testnetChips = screen.getAllByText('TESTNET');
-      expect(testnetChips.length).toBeGreaterThan(0);
-    });
-
-    it('should have navigation links with /testnet prefix', () => {
-      renderWithProviders(<Header />, { network: 'testnet' });
-
-      // Check for testnet navigation links
-      const homeLinks = screen.getAllByRole('link').filter(link =>
-        link.getAttribute('href') === '/testnet'
-      );
-      expect(homeLinks.length).toBeGreaterThan(0);
-
-      // Check that Blocks link is /testnet/blocks
-      const blocksLinks = screen.getAllByRole('link').filter(link =>
-        link.getAttribute('href') === '/testnet/blocks'
-      );
-      expect(blocksLinks.length).toBeGreaterThan(0);
-    });
-
-    it('should show Mainnet switch button on testnet', () => {
-      renderWithProviders(<Header />, { network: 'testnet' });
-
-      const mainnetButton = screen.getAllByRole('link', { name: /^Mainnet$/i }).find(link =>
-        link.getAttribute('href') === '/'
-      );
-      expect(mainnetButton).toHaveAttribute('href', '/');
-    });
-
-    it('should NOT show external links section on testnet', () => {
-      renderWithProviders(<Header />, { network: 'testnet' });
-
-      // External links should NOT be present as separate buttons
-      // They may still exist in mobile drawer but we check that External Resources text is not shown
-      expect(screen.queryByText('External Resources')).not.toBeInTheDocument();
-    });
-
-    it('should have testnet-specific navigation items', () => {
-      renderWithProviders(<Header />, { network: 'testnet' });
-
-      // Testnet does NOT have Pools, Downloads, Roadmap
-      expect(screen.queryByRole('link', { name: 'Pools' })).not.toBeInTheDocument();
-      expect(screen.queryByRole('link', { name: 'Downloads' })).not.toBeInTheDocument();
-      expect(screen.queryByRole('link', { name: 'Roadmap' })).not.toBeInTheDocument();
-    });
-
-    it('should have the Upgrades nav item linking to /testnet/pool-upgrades', () => {
-      renderWithProviders(<Header />, { network: 'testnet' });
-
-      expect(screen.getByRole('link', { name: 'Upgrades' }))
-        .toHaveAttribute('href', '/testnet/pool-upgrades');
-    });
-
-    it('should not link to the testnet Activation page', () => {
-      renderWithProviders(<Header />, { network: 'testnet' });
-
-      expect(screen.queryByRole('link', { name: 'Activation' })).not.toBeInTheDocument();
-    });
-
-    it('should have the Tips nav item linking to /testnet/tips', () => {
-      renderWithProviders(<Header />, { network: 'testnet' });
-
-      expect(screen.getByRole('link', { name: 'Tips' }))
-        .toHaveAttribute('href', '/testnet/tips');
-    });
-
-    it('should use testnet gradient color for app bar', () => {
-      renderWithProviders(<Header />, { network: 'testnet' });
-
-      // The AppBar should have testnet styling
-      const appBar = screen.getByRole('banner');
-      expect(appBar).toBeInTheDocument();
-    });
-  });
-
-  describe('Mobile Drawer', () => {
-    it('should open mobile drawer when menu button is clicked', () => {
+  describe('Desktop menus', () => {
+    it('shows Home and four group menus', () => {
       renderWithProviders(<Header />, { network: 'mainnet' });
-
-      // Find and click the menu button
-      const menuButton = screen.getByLabelText('menu');
-      fireEvent.click(menuButton);
-
-      expect(screen.getAllByRole('link', { name: /^Mainnet$/i }).length).toBeGreaterThan(0);
-      expect(screen.getAllByRole('link', { name: /^Testnet$/i }).length).toBeGreaterThan(0);
-      // Mainnet-PRE was removed from the network switch in v9.26.2.
-      expect(screen.queryAllByRole('link', { name: /^Mainnet-PRE$/i }).length).toBe(0);
-    });
-
-    it('should show correct network switch in mobile drawer for mainnet', () => {
-      renderWithProviders(<Header />, { network: 'mainnet' });
-
-      const menuButton = screen.getByLabelText('menu');
-      fireEvent.click(menuButton);
-
-      const testnetLinks = screen.getAllByRole('link', { name: /^Testnet$/i }).filter(link =>
-        link.getAttribute('href') === '/testnet'
-      );
-      expect(testnetLinks.length).toBeGreaterThan(0);
-      // Only Mainnet and Testnet remain; Mainnet-PRE is gone.
-      expect(screen.queryAllByRole('link', { name: /^Mainnet-PRE$/i }).length).toBe(0);
-    });
-
-    it('should show correct network switch in mobile drawer for testnet', () => {
-      renderWithProviders(<Header />, { network: 'testnet' });
-
-      const menuButton = screen.getByLabelText('menu');
-      fireEvent.click(menuButton);
-
-      const mainnetLinks = screen.getAllByRole('link', { name: /^Mainnet$/i }).filter(link =>
-        link.getAttribute('href') === '/'
-      );
-      expect(mainnetLinks.length).toBeGreaterThan(0);
-      // Only Mainnet and Testnet remain; Mainnet-PRE is gone.
-      expect(screen.queryAllByRole('link', { name: /^Mainnet-PRE$/i }).length).toBe(0);
-    });
-
-    it('should show TESTNET chip in mobile drawer when on testnet', () => {
-      renderWithProviders(<Header />, { network: 'testnet' });
-
-      const menuButton = screen.getByLabelText('menu');
-      fireEvent.click(menuButton);
-
-      // Should see TESTNET chip in drawer
-      const testnetChips = screen.getAllByText('TESTNET');
-      expect(testnetChips.length).toBeGreaterThanOrEqual(2); // One in header, one in drawer
-    });
-
-    it('should have testnet prefixed links in mobile drawer when on testnet', () => {
-      renderWithProviders(<Header />, { network: 'testnet' });
-
-      const menuButton = screen.getByLabelText('menu');
-      fireEvent.click(menuButton);
-
-      // Find the drawer and verify links have /testnet prefix
-      const drawerLinks = screen.getAllByRole('link');
-      const testnetLinks = drawerLinks.filter(link => {
-        const href = link.getAttribute('href');
-        return href && href.startsWith('/testnet');
+      const nav = primaryNav();
+      expect(within(nav).getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
+      ['Blockchain', 'Mining', 'DigiDollar', 'More'].forEach((label) => {
+        const btn = within(nav).getByRole('button', { name: label });
+        expect(btn).toHaveAttribute('aria-haspopup', 'true');
+        expect(btn).toHaveAttribute('aria-expanded', 'false');
       });
+    });
 
-      // Should have multiple testnet links (Home, Blocks, Txs, etc.)
-      expect(testnetLinks.length).toBeGreaterThan(5);
+    it('opens a group menu with plain descriptions and closes it with Escape', async () => {
+      renderWithProviders(<Header />, { network: 'mainnet' });
+      const miningButton = within(primaryNav()).getByRole('button', { name: 'Mining' });
+      fireEvent.click(miningButton);
+      const menu = await screen.findByRole('menu', { name: 'Mining' });
+      const difficulty = within(menu).getByRole('menuitem', { name: /Difficulty/ });
+      expect(difficulty).toHaveAttribute('href', '/difficulties');
+      expect(within(menu).getByText('How hard each algorithm is to mine now')).toBeInTheDocument();
+      expect(miningButton).toHaveAttribute('aria-expanded', 'true');
+      fireEvent.keyDown(menu, { key: 'Escape' });
+      await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
+    });
+
+    it('opens outside sites from the More menu in a new tab', async () => {
+      renderWithProviders(<Header />, { network: 'mainnet' });
+      fireEvent.click(within(primaryNav()).getByRole('button', { name: 'More' }));
+      const menu = await screen.findByRole('menu', { name: 'More' });
+      const explorer = within(menu).getByRole('menuitem', { name: /DigiExplorer/ });
+      expect(explorer).toHaveAttribute('href', 'https://digiexplorer.info/');
+      expect(explorer).toHaveAttribute('target', '_blank');
+      expect(explorer).toHaveAttribute('rel', 'noopener noreferrer');
+      expect(within(menu).getByRole('menuitem', { name: /Downloads/ })).toHaveAttribute('href', '/downloads');
+    });
+
+    it('marks the group of the current page', () => {
+      renderWithProviders(<Header />, { network: 'mainnet', route: '/hashrate' });
+      expect(within(primaryNav()).getByRole('button', { name: 'Mining' })).toHaveAttribute('aria-current', 'true');
+      expect(within(primaryNav()).getByRole('button', { name: 'Blockchain' })).not.toHaveAttribute('aria-current');
+    });
+
+    it('marks Home on the home page', () => {
+      renderWithProviders(<Header />, { network: 'mainnet', route: '/' });
+      expect(within(primaryNav()).getByRole('link', { name: 'Home' })).toHaveAttribute('aria-current', 'page');
+    });
+
+    it('uses /testnet paths and testnet pages on testnet', async () => {
+      renderWithProviders(<Header />, { network: 'testnet', route: '/testnet' });
+      expect(within(primaryNav()).getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/testnet');
+      fireEvent.click(within(primaryNav()).getByRole('button', { name: 'DigiDollar' }));
+      const menu = await screen.findByRole('menu', { name: 'DigiDollar' });
+      expect(within(menu).getByRole('menuitem', { name: /Wallet Convert/ })).toHaveAttribute('href', '/testnet/convert');
+      expect(within(menu).getByRole('menuitem', { name: /Price Oracles/ })).toHaveAttribute('href', '/testnet/oracles');
     });
   });
 
-  describe('Logo and Branding', () => {
-    it('should display logo image', () => {
+  describe('Phone bottom bar', () => {
+    it('shows five tabs, each with an icon and a word', () => {
       renderWithProviders(<Header />, { network: 'mainnet' });
-
-      const logos = screen.getAllByRole('img', { name: /DigiByte Logo/i });
-      expect(logos.length).toBeGreaterThan(0);
+      const nav = bottomNav();
+      const home = within(nav).getByRole('link', { name: 'Home' });
+      expect(home).toHaveAttribute('href', '/');
+      expect(home.querySelector('svg')).not.toBeNull();
+      ['Blockchain', 'Mining', 'DigiDollar', 'More'].forEach((label) => {
+        const tab = within(nav).getByRole('button', { name: label });
+        expect(tab.querySelector('svg')).not.toBeNull();
+        expect(tab).toHaveTextContent(label);
+        expect(tab).toHaveAttribute('aria-haspopup', 'dialog');
+      });
     });
 
-    it('should link logo to correct home path for mainnet', () => {
+    it('slides up a sheet with the group pages and their descriptions', async () => {
       renderWithProviders(<Header />, { network: 'mainnet' });
-
-      // The logo should be wrapped in a link to /
-      const logoLinks = screen.getAllByRole('link').filter(link =>
-        link.getAttribute('href') === '/'
-      );
-      expect(logoLinks.length).toBeGreaterThan(0);
+      fireEvent.click(within(bottomNav()).getByRole('button', { name: 'Blockchain' }));
+      const sheet = await screen.findByRole('dialog', { name: 'Blockchain' });
+      const links = within(sheet).getAllByRole('link');
+      expect(links.map((a) => a.getAttribute('href'))).toEqual(['/blocks', '/txs', '/supply', '/tips', '/nodes']);
+      expect(within(sheet).getByText('Live and recent transactions')).toBeInTheDocument();
     });
 
-    it('should link logo to correct home path for testnet', () => {
-      renderWithProviders(<Header />, { network: 'testnet' });
+    it('closes the sheet after picking a page', async () => {
+      renderWithProviders(<Header />, { network: 'mainnet' });
+      fireEvent.click(within(bottomNav()).getByRole('button', { name: 'Mining' }));
+      const sheet = await screen.findByRole('dialog', { name: 'Mining' });
+      fireEvent.click(within(sheet).getByRole('link', { name: /Hashrate/ }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(window.location.pathname).toBe('/hashrate');
+    });
 
-      // The logo should be wrapped in a link to /testnet
-      const logoLinks = screen.getAllByRole('link').filter(link =>
-        link.getAttribute('href') === '/testnet'
-      );
-      expect(logoLinks.length).toBeGreaterThan(0);
+    it('closes the sheet with the Close button', async () => {
+      renderWithProviders(<Header />, { network: 'mainnet' });
+      fireEvent.click(within(bottomNav()).getByRole('button', { name: 'More' }));
+      const sheet = await screen.findByRole('dialog', { name: 'More' });
+      fireEvent.click(within(sheet).getByRole('button', { name: 'Close' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    });
+
+    it('highlights the tab of the current page', () => {
+      renderWithProviders(<Header />, { network: 'mainnet', route: '/oracles' });
+      expect(within(bottomNav()).getByRole('button', { name: 'DigiDollar' })).toHaveAttribute('aria-current', 'true');
+      expect(within(bottomNav()).getByRole('link', { name: 'Home' })).not.toHaveAttribute('aria-current');
+    });
+
+    it('uses testnet pages in the testnet sheets', async () => {
+      renderWithProviders(<Header />, { network: 'testnet', route: '/testnet/blocks' });
+      expect(within(bottomNav()).getByRole('button', { name: 'Blockchain' })).toHaveAttribute('aria-current', 'true');
+      fireEvent.click(within(bottomNav()).getByRole('button', { name: 'Mining' }));
+      const sheet = await screen.findByRole('dialog', { name: 'Mining' });
+      expect(within(sheet).queryByRole('link', { name: /Mining Pools/ })).not.toBeInTheDocument();
+      expect(within(sheet).getByRole('link', { name: /Pool Upgrades/ })).toHaveAttribute('href', '/testnet/pool-upgrades');
     });
   });
 
-  describe('Accessibility', () => {
-    it('should have accessible menu button', () => {
-      renderWithProviders(<Header />, { network: 'mainnet' });
+  // Fuzz: any URL on either network renders, with at most one active tab per bar.
+  describe('Header fuzz', () => {
+    let seed = 0xbeef;
+    const rand = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    const pieces = ['blocks', 'txs', 'supply', 'tips', 'nodes', 'algos', 'pools', 'convert', 'activation', 'x', '%20', '..', ''];
+    const randomRoute = (base) => {
+      const n = Math.floor(rand() * 3);
+      let p = base;
+      for (let i = 0; i < n; i += 1) p += `/${pieces[Math.floor(rand() * pieces.length)]}`;
+      return p || '/';
+    };
 
-      const menuButton = screen.getByRole('button', { name: /menu/i });
-      expect(menuButton).toBeInTheDocument();
-    });
-
-    it('should have proper link structure for navigation', () => {
-      renderWithProviders(<Header />, { network: 'mainnet' });
-
-      // All nav items should be links
-      const links = screen.getAllByRole('link');
-      expect(links.length).toBeGreaterThan(0);
-    });
-
-    it('should have external links with proper attributes', () => {
-      renderWithProviders(<Header />, { network: 'mainnet' });
-
-      // External links should have target="_blank" and rel="noopener noreferrer"
-      const digiExplorerLink = screen.getByRole('link', { name: /DigiExplorer/i });
-      expect(digiExplorerLink).toHaveAttribute('target', '_blank');
-      expect(digiExplorerLink).toHaveAttribute('rel', 'noopener noreferrer');
-    });
-  });
-
-  describe('Desktop nav fits 1200-1440px (B1)', () => {
-    it('lets the desktop nav links wrap instead of overflowing', () => {
-      renderWithProviders(<Header />, { network: 'mainnet' });
-      const nav = screen.getByRole('navigation', { name: /primary/i });
-      const style = window.getComputedStyle(nav);
-      expect(style.flexWrap).toBe('wrap');
-      // min-width 0 lets the flex item shrink below its content width.
-      expect(style.minWidth).toBe('0');
-      // Every mainnet page link is in the desktop nav.
-      expect(within(nav).getAllByRole('link')).toHaveLength(16);
+    it('renders for 60 random routes without throwing', () => {
+      for (let i = 0; i < 60; i += 1) {
+        const testnet = rand() < 0.5;
+        const route = randomRoute(testnet ? '/testnet' : '');
+        const { unmount } = renderWithProviders(<Header />, { network: testnet ? 'testnet' : 'mainnet', route });
+        const active = within(bottomNav()).queryAllByRole((role, el) => el.getAttribute('aria-current') !== null && (role === 'button' || role === 'link'));
+        expect(active.length).toBeLessThanOrEqual(1);
+        unmount();
+      }
     });
   });
 });

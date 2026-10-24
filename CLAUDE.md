@@ -249,7 +249,7 @@ npm run build         # Production build
 1. Create component in `src/pages/`
 2. Add route(s) in `App.js` (mainnet under `MainnetLayout`, testnet under `TestnetLayout`)
 3. Follow existing page structure (Hero → Content → Stats)
-4. Add nav item in `Header.js` (mind the per-network `primaryMenuItems` lists)
+4. Add the page to `src/navigation.js` in the right group (`mainnetOnly`/`testnetOnly` flags); `tests/unit/navigation.test.js` fails if a route is missing
 5. Add tests in `src/tests/unit/pages/`
 6. Add the route(s) to `public/sitemap.xml`
 
@@ -280,6 +280,7 @@ npm run build         # Production build
 - **Unlinked Route**: TaprootPage (`/taproot`) exists on both networks but has no header nav link.
 - **TAP Route / Taproot Status**: Taproot soft fork has been activated and buried. References to signaling have been removed from the UI.
 - **DigiDollar Status**: DigiDollar shipped in DigiByte Core v9.26.x; the app tracks BIP9 activation, oracle feeds, and network stats.
+- **Navigation (2026-10-24)**: one config, `src/navigation.js` — Home + 4 groups (Blockchain, Mining, DigiDollar, More). Desktop (≥900px): top-bar group menus in `Header.js`. Phones: fixed bottom tab bar with icons + slide-up sheets in `BottomNav.js` (no hamburger). Every home tile links to its page. E2E: `e2e/bottom-nav.spec.js`.
 - **Mobile First**: Always test on mobile viewports first
 - **Accessibility**: Maintain WCAG 2.1 AA compliance
 - **Performance**: Keep Lighthouse scores above 90

@@ -465,6 +465,122 @@ describe('HomePage', () => {
     });
   });
 
+  describe('Every tile is a door', () => {
+    // Each home tile: its accessible name, its path (before the network prefix),
+    // and the visible action line at the bottom of the card.
+    const SHARED_TILES = [
+      { name: 'Total Blocks: see latest blocks', path: '/blocks', action: 'See latest blocks →' },
+      { name: 'Total Transactions: view transactions', path: '/txs', action: 'View transactions →' },
+      { name: 'Total Size: see the nodes that store it', path: '/nodes', action: 'See the nodes that store it →' },
+      { name: 'Current Circulating Supply: explore supply', path: '/supply', action: 'Explore supply →' },
+      { name: 'Remaining Supply To Be Mined: see the supply schedule', path: '/supply', action: 'See the supply schedule →' },
+      { name: 'Last Block Reward: see recent blocks', path: '/blocks', action: 'See recent blocks →' },
+      { name: 'Algo Difficulties: view difficulty charts', path: '/difficulties', action: 'View difficulty charts →' },
+      { name: 'Active Softforks: see network upgrades', path: '/pool-upgrades', action: 'See network upgrades →' }
+    ];
+
+    const MAINNET_VERSION_TILE = {
+      name: 'Latest Version: download DigiByte Core', path: '/downloads', action: 'Download DigiByte Core →'
+    };
+    const GITHUB_RELEASES = 'https://github.com/DigiByte-Core/digibyte/releases';
+    const TESTNET_VERSION_TILE = {
+      name: 'Latest Version: get it on GitHub (opens in a new tab)', href: GITHUB_RELEASES, action: 'Get it on GitHub →'
+    };
+    const TESTNET_RELEASE_TILE = {
+      name: 'Testnet26 DigiDollar Status: learn about DigiDollar', path: '/digidollar', action: 'Learn about DigiDollar →'
+    };
+
+    const renderOn = (network) => renderWithProviders(
+      <HomePage
+        numberWithCommas={(x) => (x === null || x === undefined ? '0' : x.toString())}
+        formatNumber={(num) => (num === null || num === undefined ? '0' : num.toLocaleString())}
+      />,
+      { network }
+    );
+
+    const INTERACTIVE = 'a, button, input, select, textarea, [role="button"], [role="link"], [tabindex]';
+
+    const expectTileLink = (tile, prefix) => {
+      const link = screen.getByRole('link', { name: tile.name });
+      expect(link.tagName).toBe('A');
+      expect(link).toHaveAttribute('href', tile.href || `${prefix}${tile.path}`);
+      expect(link).toHaveTextContent(tile.action);
+      return link;
+    };
+
+    it('makes every mainnet tile a link to its detail page', () => {
+      renderOn('mainnet');
+      [...SHARED_TILES, MAINNET_VERSION_TILE].forEach((tile) => {
+        const link = expectTileLink(tile, '');
+        expect(link).not.toHaveAttribute('target');
+      });
+      expect(screen.getAllByRole('link')).toHaveLength(SHARED_TILES.length + 1);
+    });
+
+    it('prefixes every testnet tile link with /testnet', () => {
+      renderOn('testnet');
+      [...SHARED_TILES, TESTNET_RELEASE_TILE].forEach((tile) => expectTileLink(tile, '/testnet'));
+      expect(screen.queryByRole('link', { name: MAINNET_VERSION_TILE.name })).not.toBeInTheDocument();
+      expect(screen.getAllByRole('link')).toHaveLength(SHARED_TILES.length + 2);
+    });
+
+    it('sends the testnet Latest Version tile to GitHub in a new tab', () => {
+      renderOn('testnet');
+      const link = expectTileLink(TESTNET_VERSION_TILE, '');
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(link.getAttribute('rel')).toContain('noopener');
+      expect(link.getAttribute('rel')).toContain('noreferrer');
+    });
+
+    it.each(['mainnet', 'testnet'])('has no link or button nested inside a tile link (%s)', (network) => {
+      renderOn(network);
+      screen.getAllByRole('link').forEach((link) => {
+        expect(link.querySelectorAll(INTERACTIVE)).toHaveLength(0);
+      });
+    });
+
+    it('keeps the softfork rows inside the card link and non-interactive', async () => {
+      renderOn('mainnet');
+      await waitForAsync();
+      webSocketInstances[0].receiveMessage({
+        type: 'initialData',
+        data: {
+          blockchainInfo: { blocks: 1 },
+          deploymentInfo: { deployments: { csv: { type: 'buried', active: true } } }
+        }
+      });
+      const link = screen.getByRole('link', { name: 'Active Softforks: see network upgrades' });
+      await waitFor(() => expect(link).toHaveTextContent('csv:'));
+      expect(link.querySelectorAll(INTERACTIVE)).toHaveLength(0);
+    });
+
+    it.each(['mainnet', 'testnet'])('makes every tile link reachable by keyboard (%s)', (network) => {
+      renderOn(network);
+      screen.getAllByRole('link').forEach((link) => {
+        expect(link.tabIndex).not.toBe(-1);
+        link.focus();
+        expect(document.activeElement).toBe(link);
+      });
+    });
+
+    it('keeps keyboard focus on a tile when live data arrives', async () => {
+      renderOn('mainnet');
+      await waitForAsync();
+      screen.getByRole('link', { name: 'Total Blocks: see latest blocks' }).focus();
+      webSocketInstances[0].receiveMessage({ type: 'initialData', data: { blockchainInfo: { blocks: 42 } } });
+      await waitFor(() => expect(screen.getByText('42')).toBeInTheDocument());
+      expect(document.activeElement).toBe(screen.getByRole('link', { name: 'Total Blocks: see latest blocks' }));
+    });
+
+    it('links each tile to the card text that describes it', () => {
+      renderOn('mainnet');
+      const link = screen.getByRole('link', { name: 'Total Blocks: see latest blocks' });
+      const describedBy = link.getAttribute('aria-describedby');
+      expect(describedBy).toBeTruthy();
+      expect(document.getElementById(describedBy)).toHaveTextContent(/Total blocks in the DigiByte blockchain/);
+    });
+  });
+
   describe('Testnet Network', () => {
     // Helper function to render HomePage with testnet network
     const renderHomePageTestnet = () => {
