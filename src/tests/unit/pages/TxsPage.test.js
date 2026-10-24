@@ -343,6 +343,21 @@ describe('TxsPage', () => {
     });
   });
 
+  describe('Transaction value (FIRST-TIMER-10)', () => {
+    it('shows amounts under 1 DGB and keeps decimals, instead of rounding down', async () => {
+      const tx = (txid, value) => ({ ...sampleMempoolData.data.transactions[0], txid, value });
+      renderWithProviders(<TxsPage />);
+      await waitForAsync();
+      webSocketInstances[0].receiveMessage({ type: 'mempool', data: {
+        stats: { size: 2 },
+        transactions: [tx('aaaa'.repeat(16), 0.687), tx('bbbb'.repeat(16), 12345.771)],
+      } });
+      await waitFor(() => expect(screen.getAllByText('0.687 DGB').length).toBeGreaterThan(0));
+      expect(screen.getAllByText('12,345.771 DGB').length).toBeGreaterThan(0);
+      expect(screen.queryByText('0 DGB')).not.toBeInTheDocument();
+    });
+  });
+
   describe('Transaction Details', () => {
     it('should expand transaction to show details', async () => {
       renderWithProviders(<TxsPage />);

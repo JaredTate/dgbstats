@@ -208,6 +208,13 @@ const formatDGB = (value) => {
   return value.toFixed(8);
 };
 
+/** A DGB amount with thousands separators and up to 8 decimals (0.687 -> "0.687"). */
+const formatAmount = (value) => (
+  typeof value === 'number' && Number.isFinite(value)
+    ? value.toLocaleString('en-US', { maximumFractionDigits: 8 })
+    : '0'
+);
+
 /** A fee the backend could not work out (null) is "Unknown", not 0. */
 const formatFee = (fee) => (fee === undefined || fee === null ? 'Unknown' : formatDGB(fee));
 
@@ -650,7 +657,7 @@ const TransactionCard = ({ transaction, index, isMobile, isConfirmed = false, is
                           Value
                         </Typography>
                         <Typography variant="body2" fontWeight="bold" color="primary">
-                          {formatNumber(Math.floor(totalValue))} DGB
+                          {formatAmount(totalValue)} DGB
                         </Typography>
                       </Box>
                     </Box>
