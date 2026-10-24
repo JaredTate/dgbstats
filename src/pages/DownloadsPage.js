@@ -11,6 +11,17 @@ import ComputerIcon from '@mui/icons-material/Computer';
 import CheckIcon from '@mui/icons-material/Check';
 import UpdateIcon from '@mui/icons-material/Update';
 
+/** Wallet list on the official DigiByte site (checked: returns 200). */
+const PHONE_WALLETS_URL = 'https://www.digibyte.org/';
+
+/** True for a pre-release / release candidate / "TESTING ONLY" build. */
+export const isTestBuild = (release) => Boolean(
+  release && (
+    release.prerelease ||
+    /\b(rc\s*\d*|beta|alpha)\b|testing only/i.test(`${release.name || ''} ${release.tag_name || ''}`)
+  )
+);
+
 /**
  * DownloadsPage Component - DigiByte Core Wallet Download Statistics
  * 
@@ -71,6 +82,11 @@ const DownloadsPage = () => {
   const totalDownloads = releases.reduce((acc, release) => {
     return acc + release.assets.reduce((a, asset) => a + asset.download_count, 0);
   }, 0);
+
+  // Stable releases first; release candidates / "TESTING ONLY" builds after
+  // them under a "For testers only" heading (FIRST-TIMER-9).
+  const stableReleases = releases.filter((release) => !isTestBuild(release));
+  const testReleases = releases.filter(isTestBuild);
 
   /**
    * Determine platform based on asset filename
@@ -198,6 +214,26 @@ const DownloadsPage = () => {
   );
 
   /**
+   * PhoneNote - DigiByte Core is desktop-only; point phone users elsewhere
+   */
+  const PhoneNote = () => (
+    <Card
+      data-testid="phone-note"
+      elevation={1}
+      sx={{ p: 2, mb: 4, borderRadius: '12px', display: 'flex', alignItems: 'flex-start', gap: 1.5, borderLeft: '4px solid #0066cc' }}
+    >
+      <PhoneAndroidIcon sx={{ color: '#0066cc', mt: 0.3 }} aria-hidden="true" />
+      <Typography variant="body1">
+        <strong>On a phone?</strong> DigiByte Core is a desktop app for Windows, Mac and Linux.
+        For a phone wallet, see the wallets listed on{' '}
+        <a href={PHONE_WALLETS_URL} target="_blank" rel="noopener noreferrer" style={{ color: '#0066cc', fontWeight: 600 }}>
+          digibyte.org
+        </a>.
+      </Typography>
+    </Card>
+  );
+
+  /**
    * DownloadButtonSection - Call-to-action for downloading latest release
    */
   const DownloadButtonSection = () => (
@@ -271,9 +307,9 @@ const DownloadsPage = () => {
    * @param {Object} props.release - GitHub release object
    * @param {number} props.index - Release index (0 = latest)
    */
-  const ReleaseCard = ({ release, index }) => {
+  const ReleaseCard = ({ release, index, forTesters = false }) => {
     const releaseDownloads = release.assets.reduce((a, asset) => a + asset.download_count, 0);
-    const isLatest = index === 0;
+    const isLatest = index === 0 && !forTesters;
     
     // Group assets by platform for organized display
     const platformAssets = {};
@@ -310,6 +346,13 @@ const DownloadsPage = () => {
             <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>
               {release.name}
             </Typography>
+            {forTesters && (
+              <Chip
+                label="For testers only"
+                size="small"
+                sx={{ ml: 2, backgroundColor: '#fff3e0', color: '#e65100', fontWeight: 'bold' }}
+              />
+            )}
             {isLatest && (
               <Chip 
                 icon={<CheckIcon />}
@@ -447,9 +490,22 @@ const DownloadsPage = () => {
           </Box>
         ) : (
           <Box>
-            {releases.map((release, index) => (
+            {stableReleases.map((release, index) => (
               <ReleaseCard key={release.id} release={release} index={index} />
             ))}
+            {testReleases.length > 0 && (
+              <Box sx={{ mt: 5 }}>
+                <Typography variant="h6" component="h3" fontWeight="bold" sx={{ color: '#e65100', mb: 1 }}>
+                  For testers only
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  These are test builds (release candidates). They can have bugs. Use the releases above for real funds.
+                </Typography>
+                {testReleases.map((release, index) => (
+                  <ReleaseCard key={release.id} release={release} index={index} forTesters />
+                ))}
+              </Box>
+            )}
           </Box>
         )}
       </CardContent>
@@ -503,8 +559,8 @@ const DownloadsPage = () => {
                 Other Wallet Options
               </Typography>
               <Typography variant="body2" paragraph>
-                For more lightweight solutions, you can try DigiByte mobile wallets available on iOS and Android,
-                or use one of the various supported hardware wallets like Ledger, Trezor, or KeepKey.
+                For lighter options, such as mobile or hardware wallets, see the list of wallets that
+                support DigiByte on the official DigiByte website.
               </Typography>
               <Typography variant="body2">
                 Visit the <a href="https://digibyte.org/en-us/#download" target="_blank" rel="noopener noreferrer" style={{ color: '#0066cc' }}>official DigiByte website</a> for 
@@ -529,6 +585,9 @@ const DownloadsPage = () => {
       <Container maxWidth="lg">
         {/* Page header with title and description */}
         <HeroSection />
+
+        {/* Core is desktop-only: tell phone users where to go */}
+        <PhoneNote />
 
         {/* Download button and total statistics */}
         <DownloadButtonSection />

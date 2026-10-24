@@ -428,3 +428,45 @@ describe('DownloadsPage', () => {
     });
   });
 });
+
+// FIRST-TIMER-9: nothing for phone users, and "TESTING ONLY" builds sat right
+// under the latest release.
+describe('DownloadsPage: phones and test builds', () => {
+  const asset = (name, n = 10) => ({ name, download_count: n, browser_download_url: `https://github.com/x/${name}` });
+  const RELEASES = [
+    { id: 4, name: 'DigiByte Core v9.26.7', tag_name: 'v9.26.7', prerelease: false, assets: [asset('digibyte-9.26.7-win64-setup.exe')] },
+    { id: 3, name: 'DigiByte Core v9.26.6 RC2 - TESTING ONLY', tag_name: 'v9.26.6-rc2', prerelease: true, assets: [asset('digibyte-9.26.6rc2-win64-setup.exe')] },
+    { id: 2, name: 'DigiByte Core v9.26.6 RC1 - TESTING ONLY', tag_name: 'v9.26.6-rc1', prerelease: false, assets: [asset('digibyte-9.26.6rc1-win64-setup.exe')] },
+    { id: 1, name: 'DigiByte Core v9.26.5', tag_name: 'v9.26.5', prerelease: false, assets: [asset('digibyte-9.26.5-win64-setup.exe')] },
+  ];
+
+  beforeEach(() => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => RELEASES });
+  });
+
+  it('tells phone users that Core is desktop-only and where to find a phone wallet', async () => {
+    renderWithProviders(<DownloadsPage />);
+    const note = screen.getByTestId('phone-note');
+    expect(note).toHaveTextContent(/On a phone\?/);
+    expect(note).toHaveTextContent(/desktop/i);
+    const link = note.querySelector('a');
+    expect(link).toHaveAttribute('href', 'https://www.digibyte.org/');
+    expect(link).toHaveAttribute('target', '_blank');
+  });
+
+  it('lists stable releases first and test builds after them, labelled for testers', async () => {
+    renderWithProviders(<DownloadsPage />);
+    await screen.findByText('DigiByte Core v9.26.5');
+    const names = RELEASES.map((r) => r.name);
+    const pos = (name) => document.body.textContent.indexOf(name);
+    // Both stable releases come before both test builds.
+    expect(pos(names[3])).toBeLessThan(pos(names[1]));
+    expect(pos(names[3])).toBeLessThan(pos(names[2]));
+    expect(pos(names[0])).toBeLessThan(pos(names[3]));
+    const testers = screen.getByRole('heading', { name: /For testers only/i });
+    expect(pos(testers.textContent)).toBeGreaterThan(pos(names[3]));
+    expect(pos(testers.textContent)).toBeLessThan(pos(names[1]));
+    // Only the newest stable release is marked Latest.
+    expect(screen.getAllByText('Latest')).toHaveLength(1);
+  });
+});

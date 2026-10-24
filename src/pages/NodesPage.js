@@ -71,12 +71,11 @@ const useFetchData = (wsBaseUrl) => {
       }
     };
 
-    // Set loading state on connection issues
-    socket.onclose = () => setLoading(true);
-    socket.onerror = () => setLoading(true);
+    // The shared socket reconnects by itself; keep showing the last data
+    // meanwhile (LiveDataNotice tells the user the feed is paused).
 
-    // Cleanup WebSocket connection
-    return () => socket.readyState === WebSocket.OPEN && socket.close();
+    // Always close, even while still connecting, so no socket leaks.
+    return () => socket.close();
   }, [wsBaseUrl]);
 
   return { nodesData, versionData, addrmanInfo, loading };

@@ -148,7 +148,7 @@ describe('Home tiles fuzz', () => {
 
   const tileHrefs = (container) => {
     const map = {};
-    container.querySelectorAll('a').forEach((a) => {
+    container.querySelectorAll('a[aria-label]').forEach((a) => {
       const title = (a.getAttribute('aria-label') || '').split(':')[0];
       map[title] = a.getAttribute('href');
     });

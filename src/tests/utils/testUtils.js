@@ -107,6 +107,8 @@ export class MockWebSocket {
 
     // Simulate connection opening asynchronously wrapped in act
     setTimeout(() => {
+      // A socket closed while still connecting never opens (like a real one).
+      if (this.readyState !== WebSocket.CONNECTING) return;
       this.readyState = WebSocket.OPEN;
       if (this.onopen) {
         act(() => {

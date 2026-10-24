@@ -29,6 +29,7 @@ import QueryBuilderIcon from '@mui/icons-material/QueryBuilder';
 import SecurityIcon from '@mui/icons-material/Security';
 import { useNetwork } from '../context/NetworkContext';
 import { openNetworkSocket } from '../utils/networkSocket';
+import { explorerUrl, lookupKind } from '../utils/explorer';
 
 /**
  * Priority color mapping for transaction fee priorities
@@ -133,14 +134,38 @@ const LoadingCard = () => (
  * Empty state component displayed when no transactions match filters
  * @returns {JSX.Element} Empty state card
  */
-const EmptyState = ({ message = "No transactions found" }) => (
+const EmptyState = ({ message = "No transactions found", hint = "Waiting for new transactions to arrive..." }) => (
   <Card elevation={3} sx={{ p: 4, textAlign: 'center', borderRadius: '12px' }}>
     <Typography variant="h5" color="text.secondary">
       {message}
     </Typography>
     <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-      Waiting for new transactions to arrive...
+      {hint}
     </Typography>
+  </Card>
+);
+
+const FILTERED_HINT = 'This list only shows recent transactions.';
+
+/**
+ * Shown when the search looks like a full txid or address but matches none
+ * of the recent transactions on this page: send the user to DigiExplorer.
+ */
+const ExplorerLookup = ({ kind, query, isTestnet }) => (
+  <Card elevation={2} sx={{ p: 2, mb: 3, borderLeft: '4px solid #0066cc' }}>
+    <Typography variant="body1" sx={{ mb: 1 }}>
+      This {kind === 'tx' ? 'transaction' : 'address'} is not in the recent transactions on this page.
+      {' '}{FILTERED_HINT} DigiExplorer can find any {kind === 'tx' ? 'transaction' : 'address'}.
+    </Typography>
+    <Button
+      variant="contained"
+      href={explorerUrl(kind, query, isTestnet)}
+      target="_blank"
+      rel="noopener noreferrer"
+      sx={{ textTransform: 'none', fontWeight: 600 }}
+    >
+      Look it up on DigiExplorer →
+    </Button>
   </Card>
 );
 
@@ -183,6 +208,27 @@ const formatDGB = (value) => {
   return value.toFixed(8);
 };
 
+/** A fee the backend could not work out (null) is "Unknown", not 0. */
+const formatFee = (fee) => (fee === undefined || fee === null ? 'Unknown' : formatDGB(fee));
+
+/** Fee rate in sat/vB, or null when the fee is unknown. */
+const feeRateSatVb = (tx) => {
+  if (tx.fee_rate !== undefined && tx.fee_rate !== null) return tx.fee_rate;
+  if (tx.fee === undefined || tx.fee === null) return null;
+  const size = tx.vsize || tx.size;
+  return size ? Math.round((tx.fee * 100000000) / size) : null;
+};
+
+/** Fee bucket colors, lowest bucket first (green) to top bucket (red). */
+const FEE_BUCKET_COLORS = ['#4caf50', '#8bc34a', '#ffc107', '#ff9800', '#f44336'];
+
+/** Color for bucket `index` of `count`, spread so the top bucket is red. */
+const feeBucketColor = (index, count) => {
+  if (count <= 1) return FEE_BUCKET_COLORS[0];
+  const last = FEE_BUCKET_COLORS.length - 1;
+  return FEE_BUCKET_COLORS[Math.round((index * last) / (count - 1))];
+};
+
 /**
  * Format timestamp to relative time (e.g., "2 minutes ago")
  * @param {number} timestamp - Unix timestamp in seconds
@@ -217,6 +263,9 @@ const FeeDistributionChart = ({ feeDistribution }) => {
   
   const total = Object.values(feeDistribution).reduce((sum, count) => sum + count, 0);
   if (total === 0) return null;
+  // Order buckets by their lower bound ('0-1000' … '50000+'), whatever the keys.
+  const buckets = Object.entries(feeDistribution)
+    .sort(([a], [b]) => (parseFloat(a) || 0) - (parseFloat(b) || 0));
   
   return (
     <Card elevation={2} sx={{ p: 2, mb: 2 }}>
@@ -224,15 +273,12 @@ const FeeDistributionChart = ({ feeDistribution }) => {
         Fee Distribution
       </Typography>
       <Box sx={{ display: 'flex', height: 40, borderRadius: 1, overflow: 'hidden', mb: 1 }}>
-        {Object.entries(feeDistribution).map(([range, count]) => {
+        {buckets.map(([range, count], index) => {
           const percentage = (count / total) * 100;
-          const color = range === '500+' ? '#f44336' : 
-                       range === '100-500' ? '#ff9800' :
-                       range === '50-100' ? '#ffc107' :
-                       range === '10-50' ? '#8bc34a' : '#4caf50';
+          const color = feeBucketColor(index, buckets.length);
           
           return (
-            <Tooltip key={range} title={`${range} sat/byte: ${count} txs (${percentage.toFixed(1)}%)`}>
+            <Tooltip key={range} title={`${range} sat/vB: ${count} txs (${percentage.toFixed(1)}%)`}>
               <Box
                 sx={{
                   width: `${percentage}%`,
@@ -304,7 +350,7 @@ const MempoolStats = ({ stats, transactions }) => {
                   {stats.avgfee ? Math.round(stats.avgfee * 100000000 / 250) : 0}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  sat/byte
+                  sat/vB
                 </Typography>
               </Card>
             </Grid>
@@ -409,9 +455,9 @@ const EducationalContent = () => (
                 Transaction Priority
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Priority is determined by fee rate (satoshis per byte). <strong>High priority</strong> (100+ sat/byte) 
-                gets confirmed fastest, <strong>medium</strong> (50-100 sat/byte) for normal speed, 
-                <strong>low priority</strong> (&lt;50 sat/byte) takes longer but costs less.
+                DigiByte blocks come every 15 seconds and are rarely full, so most transactions confirm
+                within a block or two. Labels by fee rate: high 10,000+ sat/vB, medium 1,000–10,000, low under 1,000.
+                The network minimum is about 100 sat/vB (0.001 DGB per kB).
               </Typography>
             </Box>
           </Box>
@@ -526,7 +572,7 @@ const SearchAndFilter = ({ searchTerm, onSearchChange, filterPriority, onFilterC
 /**
  * Enhanced transaction card component with expandable details
  */
-const TransactionCard = ({ transaction, index, isMobile, isConfirmed = false }) => {
+const TransactionCard = ({ transaction, index, isMobile, isConfirmed = false, isTestnet = false }) => {
   const [expanded, setExpanded] = useState(false);
   const totalValue = transaction.value || calculateTotalValue(transaction.outputs);
   const hasLeftMempool = transaction.removedAt && !isConfirmed;
@@ -559,7 +605,7 @@ const TransactionCard = ({ transaction, index, isMobile, isConfirmed = false }) 
                     </Typography>
                     <Box
                       component="a"
-                      href={`https://digiexplorer.info/tx/${transaction.txid}`}
+                      href={explorerUrl('tx', transaction.txid, isTestnet)}
                       target="_blank"
                       rel="noopener noreferrer"
                       sx={{
@@ -618,7 +664,7 @@ const TransactionCard = ({ transaction, index, isMobile, isConfirmed = false }) 
                           Fee
                         </Typography>
                         <Typography variant="body2" fontWeight="medium">
-                          {formatDGB(transaction.fee)}
+                          {formatFee(transaction.fee)}
                         </Typography>
                       </Box>
                     </Box>
@@ -679,7 +725,7 @@ const TransactionCard = ({ transaction, index, isMobile, isConfirmed = false }) 
                       ) : (
                         <Chip 
                           icon={<SpeedIcon />}
-                          label={transaction.priority?.charAt(0).toUpperCase() + transaction.priority?.slice(1) || 'Unknown'} 
+                          label={transaction.priority ? transaction.priority.charAt(0).toUpperCase() + transaction.priority.slice(1) : 'Unknown'} 
                           size="small" 
                           sx={{ 
                             bgcolor: getPriorityColor(transaction.priority) + '20',
@@ -777,7 +823,7 @@ const TransactionCard = ({ transaction, index, isMobile, isConfirmed = false }) 
                 <Grid item xs={12}>
                   <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 1 }}>
                     <Typography variant="caption" color="text.secondary">
-                      <strong>Fee Rate:</strong> {transaction.fee_rate || Math.round((transaction.fee * 100000000) / (transaction.vsize || transaction.size))} sat/vB
+                      <strong>Fee Rate:</strong> {feeRateSatVb(transaction) === null ? 'Unknown' : `${feeRateSatVb(transaction)} sat/vB`}
                     </Typography>
                     {transaction.descendantcount !== undefined && (
                       <Typography variant="caption" color="text.secondary">
@@ -984,10 +1030,8 @@ const TxsPage = () => {
   const [loading, setLoading] = useState(true);
   const [confirmedLoading, setConfirmedLoading] = useState(true);
   
-  // WebSocket ref and reconnection state
+  // WebSocket ref (the shared socket reconnects by itself)
   const wsRef = useRef(null);
-  const reconnectTimeoutRef = useRef(null);
-  const reconnectAttemptsRef = useRef(0);
   
   // Connection state
   const [isConnected, setIsConnected] = useState(false);
@@ -1004,9 +1048,10 @@ const TxsPage = () => {
     let filtered = [...transactions];
     
     // Apply search filter
-    if (searchTerm) {
+    const query = searchTerm.trim().toLowerCase();
+    if (query) {
       filtered = filtered.filter(tx => 
-        tx.txid.toLowerCase().includes(searchTerm.toLowerCase())
+        tx.txid.toLowerCase().includes(query)
       );
     }
     
@@ -1023,7 +1068,8 @@ const TxsPage = () => {
           const bValue = b.value || calculateTotalValue(b.outputs);
           return bValue - aValue;
         case 'fee':
-          return (b.fee || 0) - (a.fee || 0);
+          // Unknown (null) fees sort last
+          return (b.fee ?? -1) - (a.fee ?? -1);
         case 'size':
           return (b.vsize || b.size || 0) - (a.vsize || a.size || 0);
         case 'time':
@@ -1048,18 +1094,17 @@ const TxsPage = () => {
     [confirmedTransactions, filterAndSortTransactions]
   );
 
+  // A full txid or address that is not in the list gets a DigiExplorer link
+  const searchKind = lookupKind(searchTerm);
+
   // No fallback to demo data - only show real blockchain data
 
   /**
-   * WebSocket connection setup with automatic reconnection
-   * Handles initial connection, reconnection logic, and cleanup
+   * WebSocket connection setup. openNetworkSocket reconnects with backoff
+   * by itself, so this page only tracks the connected state.
    */
   useEffect(() => {
-    let isMounted = true;
-
     const connectWebSocket = () => {
-      if (!isMounted) return;
-
       const socket = openNetworkSocket(wsBaseUrl);
       wsRef.current = socket;
 
@@ -1068,7 +1113,6 @@ const TxsPage = () => {
        */
       socket.onopen = () => {
         console.log('WebSocket connection established for transactions page');
-        reconnectAttemptsRef.current = 0;
         setIsConnected(true);
         
         // Server will immediately send cached data (mempool & confirmed transactions)
@@ -1195,24 +1239,11 @@ const TxsPage = () => {
       };
 
       /**
-       * Handle WebSocket connection closure with reconnection logic
+       * Connection lost: the shared socket reconnects by itself
        */
       socket.onclose = () => {
         console.log('WebSocket disconnected - attempting reconnection...');
-        wsRef.current = null;
         setIsConnected(false);
-
-        if (isMounted) {
-          // Exponential backoff for reconnection
-          const timeout = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
-          reconnectAttemptsRef.current++;
-          
-          reconnectTimeoutRef.current = setTimeout(() => {
-            if (isMounted) {
-              connectWebSocket();
-            }
-          }, timeout);
-        }
       };
     };
 
@@ -1220,19 +1251,12 @@ const TxsPage = () => {
     connectWebSocket();
 
     /**
-     * Cleanup function to properly close WebSocket connection
-     * and clear reconnection timeouts
+     * Cleanup: always close, even while still connecting (CHAOS-3), which
+     * also cancels any pending reconnect.
      */
     return () => {
-      isMounted = false;
-      
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-      
-      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-        wsRef.current.close();
-      }
+      wsRef.current?.close();
+      wsRef.current = null;
     };
   }, [wsBaseUrl]);
 
@@ -1334,6 +1358,10 @@ const TxsPage = () => {
                 sortBy={sortBy}
                 onSortChange={handleSortChange}
               />
+
+              {searchKind && filteredMempool.length === 0 && filteredConfirmed.length === 0 && (
+                <ExplorerLookup kind={searchKind} query={searchTerm.trim()} isTestnet={isTestnet} />
+              )}
               
               {/* Mempool Transactions Section */}
               <Box sx={{ mb: 6 }}>
@@ -1345,7 +1373,9 @@ const TxsPage = () => {
                 />
                 
                 {displayedMempool.length === 0 ? (
-                  <EmptyState message={searchTerm || filterPriority !== 'all' ? "No transactions match your filters" : "No transactions in mempool"} />
+                  searchTerm.trim() || filterPriority !== 'all'
+                    ? <EmptyState message="No transactions match your filters" hint={FILTERED_HINT} />
+                    : <EmptyState message="No transactions in mempool" />
                 ) : (
                   <>
                     <Grid container spacing={2}>
@@ -1356,6 +1386,7 @@ const TxsPage = () => {
                           index={index}
                           isMobile={isMobile}
                           isConfirmed={false}
+                          isTestnet={isTestnet}
                         />
                       ))}
                     </Grid>
@@ -1394,6 +1425,8 @@ const TxsPage = () => {
                     </Typography>
                     <LinearProgress sx={{ maxWidth: 300, mx: 'auto' }} />
                   </Card>
+                ) : confirmedTransactions.length > 0 && filteredConfirmed.length === 0 ? (
+                  <EmptyState message="No transactions match your filters" hint={FILTERED_HINT} />
                 ) : confirmedTransactions.length > 0 ? (
                   <>
                     <Grid container spacing={2}>
@@ -1404,6 +1437,7 @@ const TxsPage = () => {
                           index={index}
                           isMobile={isMobile}
                           isConfirmed={true}
+                          isTestnet={isTestnet}
                         />
                       ))}
                     </Grid>

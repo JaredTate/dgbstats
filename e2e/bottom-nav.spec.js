@@ -48,6 +48,40 @@ test.describe('Phone', () => {
     await expect(bottomBar(page).getByRole('button', { name: 'Blockchain' })).toHaveAttribute('aria-current', 'true');
   });
 
+  // CHAOS-6: the sheet stayed open (scroll locked) after browser Back.
+  test('browser Back closes an open sheet', async ({ page }) => {
+    await page.goto('/');
+    // Go to /blocks inside the app, so Back is an in-app navigation.
+    await bottomBar(page).getByRole('button', { name: 'Blockchain' }).click();
+    await page.getByRole('dialog', { name: 'Blockchain' }).getByRole('link', { name: /^Blocks/ }).click();
+    await expect(page).toHaveURL(/\/blocks$/);
+    await bottomBar(page).getByRole('button', { name: 'Mining' }).click();
+    const sheet = page.getByRole('dialog', { name: 'Mining' });
+    await expect(sheet).toBeVisible();
+    await page.goBack();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(sheet).toBeHidden();
+  });
+
+  // CHAOS-7: the 2nd tap of a double-tap hit the backdrop and closed the sheet.
+  test('double-tapping a tab leaves its sheet open', async ({ page }) => {
+    await page.goto('/blocks');
+    await bottomBar(page).getByRole('button', { name: 'More' }).dblclick();
+    await page.waitForTimeout(400);
+    await expect(page.getByRole('dialog', { name: 'More' })).toBeVisible();
+  });
+
+  // CHAOS-8: the sheet stayed open on the desktop layout after widening.
+  test('widening to desktop closes an open sheet', async ({ page }) => {
+    await page.goto('/blocks');
+    await bottomBar(page).getByRole('button', { name: 'More' }).click();
+    const sheet = page.getByRole('dialog', { name: 'More' });
+    await expect(sheet).toBeVisible();
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await expect(sheet).toBeHidden();
+    await topNav(page).getByRole('button', { name: 'Mining' }).click({ timeout: 5000 });
+  });
+
   test('every group sheet lists its pages and fits the screen', async ({ page }) => {
     await page.goto('/');
     const expected = {

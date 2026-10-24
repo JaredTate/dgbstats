@@ -160,81 +160,42 @@ const SupplyPage = ({ worldPopulation, txOutsetInfo: propTxOutsetInfo }) => {
   const supplyData = propTxOutsetInfo || localTxOutsetInfo;
 
   /**
-   * WebSocket connection management for real-time supply data
-   * Implements reconnection logic
+   * WebSocket connection for real-time supply data.
+   * openNetworkSocket reconnects with backoff by itself and stops on close(),
+   * so a retry can never open a socket after this page has gone (CHAOS-5).
    */
   useEffect(() => {
     console.log(`Connecting to WebSocket at: ${wsBaseUrl}`);
-    let socket;
-    let reconnectAttempts = 0;
-    const maxReconnectAttempts = 3;
-    const reconnectDelay = 2000; // 2 seconds
+    const socket = openNetworkSocket(wsBaseUrl);
 
-    /**
-     * Initialize WebSocket connection with retry logic
-     * Handles connection, error, and reconnection scenarios
-     */
-    const connectWebSocket = () => {
+    socket.onopen = () => {
+      console.log('Supply WebSocket connection established successfully');
+    };
+
+    socket.onerror = (error) => {
+      console.error('Supply WebSocket connection error:', error);
+    };
+
+    // Process incoming real-time data
+    socket.onmessage = (event) => {
       try {
-        // Close existing socket if it exists
-        if (socket) {
-          socket.close();
+        const message = JSON.parse(event.data);
+
+        // Update with real supply data when received
+        if (message.type === 'initialData' && message.data.txOutsetInfo) {
+          console.log('Updating supply data with real values');
+          setTxOutsetInfo(message.data.txOutsetInfo);
         }
-
-        socket = openNetworkSocket(wsBaseUrl);
-        
-        // Connection established successfully
-        socket.onopen = () => {
-          console.log('Supply WebSocket connection established successfully');
-          reconnectAttempts = 0; // Reset reconnect counter on successful connection
-        };
-        
-        // Handle connection errors
-        socket.onerror = (error) => {
-          console.error('Supply WebSocket connection error:', error);
-        };
-        
-        // Process incoming real-time data
-        socket.onmessage = (event) => {
-          try {
-            const message = JSON.parse(event.data);
-            
-            // Update with real supply data when received
-            if (message.type === 'initialData' && message.data.txOutsetInfo) {
-              console.log('Updating supply data with real values');
-              setTxOutsetInfo(message.data.txOutsetInfo);
-            }
-          } catch (err) {
-            console.error('Error processing supply WebSocket message:', err);
-          }
-        };
-        
-        // Handle connection closure with reconnection logic
-        socket.onclose = (event) => {
-          console.log('Supply WebSocket connection closed', event.code, event.reason);
-          
-          // Attempt to reconnect if not max attempts reached and not a normal closure
-          if (reconnectAttempts < maxReconnectAttempts && event.code !== 1000) {
-            console.log(`Attempting to reconnect (${reconnectAttempts + 1}/${maxReconnectAttempts})...`);
-            setTimeout(connectWebSocket, reconnectDelay);
-            reconnectAttempts++;
-          }
-        };
       } catch (err) {
-        console.error('Error creating supply WebSocket connection:', err);
+        console.error('Error processing supply WebSocket message:', err);
       }
     };
-    
-    // Initial connection attempt
-    connectWebSocket();
 
-    // Cleanup function
-    return () => {
-      if (socket) {
-        // Use normal closure code
-        socket.close(1000, "Component unmounted");
-      }
+    socket.onclose = (event) => {
+      console.log('Supply WebSocket connection closed', event.code, event.reason);
     };
+
+    return () => socket.close(1000, 'Component unmounted');
   }, [wsBaseUrl]);
 
   /**

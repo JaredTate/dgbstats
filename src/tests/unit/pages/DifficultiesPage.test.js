@@ -327,14 +327,17 @@ describe('DifficultiesPage', () => {
       consoleLogSpy.mockRestore();
     });
 
-    it('should log connection close message', async () => {
+    it('should log connection close message when the server drops the socket', async () => {
       const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       
-      const { unmount } = renderWithProviders(<DifficultiesPage />);
+      renderWithProviders(<DifficultiesPage />);
       
       await waitForAsync();
-      
-      unmount();
+      const ws = webSocketInstances[0];
+      ws.readyState = WebSocket.CLOSED;
+      act(() => {
+        ws.onclose({ type: 'close', code: 1006, reason: 'lost' });
+      });
       
       expect(consoleLogSpy).toHaveBeenCalledWith('WebSocket connection closed - difficulties page');
       

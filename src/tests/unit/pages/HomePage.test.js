@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { renderWithProviders, createWebSocketMock, waitForAsync } from '../../utils/testUtils';
 
 import HomePage from '../../../pages/HomePage';
@@ -521,7 +521,8 @@ describe('HomePage', () => {
       renderOn('testnet');
       [...SHARED_TILES, TESTNET_RELEASE_TILE].forEach((tile) => expectTileLink(tile, '/testnet'));
       expect(screen.queryByRole('link', { name: MAINNET_VERSION_TILE.name })).not.toBeInTheDocument();
-      expect(screen.getAllByRole('link')).toHaveLength(SHARED_TILES.length + 2);
+      // + testnet release tile + latest version tile + "Go to mainnet" intro link
+      expect(screen.getAllByRole('link')).toHaveLength(SHARED_TILES.length + 3);
     });
 
     it('sends the testnet Latest Version tile to GitHub in a new tab', () => {
@@ -660,6 +661,31 @@ describe('HomePage', () => {
       expect(screen.getByText('Total Transactions')).toBeInTheDocument();
       expect(screen.getByText('Total Size')).toBeInTheDocument();
       expect(screen.getByText('Current Circulating Supply')).toBeInTheDocument();
+    });
+
+    // FIRST-TIMER-2: the testnet home repeated mainnet facts and never said
+    // what testnet is or why the colors are green.
+    it('explains what testnet is, what green means, and links back to mainnet', () => {
+      renderHomePageTestnet();
+      const intro = screen.getByTestId('testnet-intro');
+      expect(intro).toHaveTextContent(/separate DigiByte network for testing/i);
+      expect(intro).toHaveTextContent(/coins have no value/i);
+      expect(intro).toHaveTextContent(/green/i);
+      expect(within(intro).getByRole('link', { name: /mainnet/i })).toHaveAttribute('href', '/');
+    });
+
+    it('does not state mainnet facts on testnet', () => {
+      renderHomePageTestnet();
+      expect(screen.queryByText(/January 10th, 2014/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Jan 10th, 2014/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/until the maximum supply of 21 billion DGB is reached/)).not.toBeInTheDocument();
+      expect(screen.getByText(/Total blocks on testnet/i)).toBeInTheDocument();
+    });
+
+    it('keeps the mainnet intro on mainnet (no testnet intro)', () => {
+      renderWithProviders(<HomePage numberWithCommas={(x) => String(x)} formatNumber={(x) => String(x)} />);
+      expect(screen.queryByTestId('testnet-intro')).not.toBeInTheDocument();
+      expect(screen.getByText(/launched on January 10th, 2014/)).toBeInTheDocument();
     });
 
     it('should close testnet WebSocket connection on unmount', async () => {

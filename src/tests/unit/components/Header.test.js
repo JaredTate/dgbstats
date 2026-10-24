@@ -1,5 +1,8 @@
-import { describe, it, expect } from 'vitest';
-import { screen, fireEvent, within, waitFor } from '@testing-library/react';
+import React from 'react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { render, screen, fireEvent, within, waitFor, act } from '@testing-library/react';
+import { MemoryRouter, useNavigate } from 'react-router-dom';
+import { NetworkProvider } from '../../../context/NetworkContext';
 import { renderWithProviders } from '../../utils/testUtils';
 import Header from '../../../components/Header';
 
@@ -177,5 +180,88 @@ describe('Header', () => {
         unmount();
       }
     });
+  });
+});
+
+// CHAOS-6/7/8/9: menus and sheets that stayed open (or closed by accident).
+describe('Header: menus and sheets close at the right time', () => {
+  let navigate;
+  const Grab = () => {
+    navigate = useNavigate();
+    return null;
+  };
+  const renderAt = (path = '/blocks') => render(
+    <NetworkProvider network="mainnet">
+      <MemoryRouter initialEntries={['/', path]} initialIndex={1}>
+        <Grab />
+        <Header />
+      </MemoryRouter>
+    </NetworkProvider>
+  );
+  const openSheet = async (label) => {
+    fireEvent.click(within(bottomNav()).getByRole('button', { name: label }));
+    return screen.findByRole('dialog', { name: label });
+  };
+  const backdrop = () => document.querySelector('.MuiBackdrop-root');
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('closes the bottom sheet on browser Back and Forward (CHAOS-6)', async () => {
+    renderAt();
+    await openSheet('Mining');
+    act(() => navigate(-1));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await openSheet('More');
+    act(() => navigate(1));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('ignores the second tap of a double-tap on a tab (CHAOS-7)', async () => {
+    let now = 1000000;
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+    renderAt();
+    await openSheet('Blockchain');
+    now += 120; // second tap lands on the backdrop
+    fireEvent.click(backdrop());
+    expect(screen.getByRole('dialog', { name: 'Blockchain' })).toBeInTheDocument();
+    now += 600; // a real tap outside later still closes it
+    fireEvent.click(backdrop());
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('closes the bottom sheet when the screen widens to desktop (CHAOS-8)', async () => {
+    let desktop = false;
+    const lists = [];
+    vi.spyOn(window, 'matchMedia').mockImplementation((query) => {
+      const isMd = /min-width:\s*900px/.test(query);
+      const mql = {
+        media: query,
+        get matches() { return isMd && desktop; },
+        listeners: [],
+        addListener(fn) { this.listeners.push(fn); },
+        removeListener(fn) { this.listeners = this.listeners.filter((l) => l !== fn); },
+        addEventListener(_t, fn) { this.listeners.push(fn); },
+        removeEventListener(_t, fn) { this.listeners = this.listeners.filter((l) => l !== fn); },
+      };
+      lists.push(mql);
+      return mql;
+    });
+    renderAt();
+    await openSheet('More');
+    desktop = true;
+    act(() => {
+      lists.forEach((mql) => mql.listeners.forEach((fn) => fn({ matches: mql.matches, media: mql.media })));
+    });
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('closes the desktop group menu on browser Back (CHAOS-9)', async () => {
+    renderAt();
+    fireEvent.click(within(primaryNav()).getByRole('button', { name: 'Mining' }));
+    await screen.findByRole('menu', { name: 'Mining' });
+    act(() => navigate(-1));
+    await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
   });
 });

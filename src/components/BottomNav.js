@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Box, ButtonBase, Drawer, GlobalStyles, IconButton, List, ListItemButton,
-  ListItemIcon, ListItemText, Typography
+  ListItemIcon, ListItemText, Typography, useMediaQuery, useTheme
 } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CloseIcon from '@mui/icons-material/Close';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { HOME_ICON, HOME_TAB } from '../navigation';
 
 export const BOTTOM_BAR_HEIGHT = 64;
+
+/** Backdrop taps this soon after opening are the 2nd tap of a double-tap. */
+export const IGNORE_BACKDROP_MS = 300;
 
 const tabSx = (active, color) => ({
   flex: 1,
@@ -40,8 +43,31 @@ const TabLabel = ({ children }) => (
  */
 const BottomNav = ({ groups, homePath, activeTab, color }) => {
   const [openId, setOpenId] = useState(null);
+  const openedAt = useRef(0);
+  const location = useLocation();
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const openGroup = groups.find((g) => g.id === openId);
   const close = () => setOpenId(null);
+  const open = (id) => {
+    openedAt.current = Date.now();
+    setOpenId(id);
+  };
+  // A double-tap on a tab: the 2nd tap lands on the backdrop. Ignore it.
+  const handleClose = (event, reason) => {
+    if (reason === 'backdropClick' && Date.now() - openedAt.current < IGNORE_BACKDROP_MS) return;
+    close();
+  };
+
+  // Close the sheet on any navigation, including browser Back / Forward.
+  useEffect(() => {
+    setOpenId(null);
+  }, [location.key, location.pathname]);
+
+  // Close it when the screen widens past the phone layout (bar is hidden).
+  useEffect(() => {
+    if (isDesktop) setOpenId(null);
+  }, [isDesktop]);
   const HomeIcon = HOME_ICON;
 
   return (
@@ -84,7 +110,7 @@ const BottomNav = ({ groups, homePath, activeTab, color }) => {
           return (
             <ButtonBase
               key={group.id}
-              onClick={() => setOpenId(group.id)}
+              onClick={() => open(group.id)}
               aria-haspopup="dialog"
               aria-expanded={openId === group.id}
               aria-current={active ? 'true' : undefined}
@@ -100,7 +126,7 @@ const BottomNav = ({ groups, homePath, activeTab, color }) => {
       <Drawer
         anchor="bottom"
         open={Boolean(openGroup)}
-        onClose={close}
+        onClose={handleClose}
         PaperProps={{
           role: 'dialog',
           'aria-modal': true,

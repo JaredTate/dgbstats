@@ -4,6 +4,7 @@ import { NetworkProvider } from '../context/NetworkContext';
 import Header from './Header';
 import Footer from './Footer';
 import ForkAlertBanner from './ForkAlertBanner';
+import LiveDataNotice from './LiveDataNotice';
 import usePageSeo from '../seo/usePageSeo';
 import styles from '../App.module.css';
 
@@ -18,6 +19,7 @@ const MainnetLayout = () => {
           <Outlet />
         </div>
         <Footer />
+        <LiveDataNotice />
       </div>
     </NetworkProvider>
   );

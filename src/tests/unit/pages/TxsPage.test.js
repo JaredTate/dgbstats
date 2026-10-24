@@ -239,6 +239,110 @@ describe('TxsPage', () => {
     });
   });
 
+  // FIRST-TIMER-7: pasting your own txid only said "No transactions match
+  // your filters", with no next step.
+  describe('Search: look up a txid or address on DigiExplorer', () => {
+    const OWN_TXID = '42f6ca23192a4ebbc1572364769111ef85193ab9889f769599db0329b749245a';
+
+    const renderWithData = async (network = 'mainnet') => {
+      renderWithProviders(<TxsPage />, { network });
+      await waitForAsync();
+      webSocketInstances[0].receiveMessage(sampleMempoolData);
+      await waitFor(() => {
+        expect(screen.queryByText('Loading transaction data...')).not.toBeInTheDocument();
+      });
+      return screen.getByPlaceholderText(/Search/i);
+    };
+
+    it('links an unknown txid (with spaces around it) to DigiExplorer', async () => {
+      const input = await renderWithData();
+      fireEvent.change(input, { target: { value: `  ${OWN_TXID}  ` } });
+      const link = await screen.findByRole('link', { name: /Look it up on DigiExplorer/ });
+      expect(link).toHaveAttribute('href', `https://digiexplorer.info/tx/${OWN_TXID}`);
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(screen.getAllByText(/only shows recent transactions/i).length).toBeGreaterThan(0);
+    });
+
+    it('links an unknown address to the DigiExplorer address page', async () => {
+      const input = await renderWithData();
+      const address = 'dgb1qw508d6qejxtdg4y5r3zarvary0c5xw7kh5gxlr';
+      fireEvent.change(input, { target: { value: address } });
+      const link = await screen.findByRole('link', { name: /Look it up on DigiExplorer/ });
+      expect(link).toHaveAttribute('href', `https://digiexplorer.info/address/${address}`);
+    });
+
+    it('uses the testnet explorer on testnet', async () => {
+      const input = await renderWithData('testnet');
+      fireEvent.change(input, { target: { value: OWN_TXID } });
+      const link = await screen.findByRole('link', { name: /Look it up on DigiExplorer/ });
+      expect(link).toHaveAttribute('href', `https://digiexplorer.info/testnet/tx/${OWN_TXID}`);
+    });
+
+    it('shows no lookup link for a partial search or a match', async () => {
+      const input = await renderWithData();
+      fireEvent.change(input, { target: { value: 'zzz' } });
+      await screen.findAllByText(/No transactions match your filters/);
+      expect(screen.queryByRole('link', { name: /Look it up on DigiExplorer/ })).not.toBeInTheDocument();
+      fireEvent.change(input, { target: { value: sampleMempoolData.data.transactions[0].txid } });
+      await waitFor(() => expect(screen.queryByText(/No transactions match your filters/)).not.toBeInTheDocument());
+      expect(screen.queryByRole('link', { name: /Look it up on DigiExplorer/ })).not.toBeInTheDocument();
+    });
+  });
+
+  // DigiByte-scale fees: the backend now sends real fees, DGB fee buckets
+  // and priorities (high >= 10,000 sat/vB, medium 1,000-9,999, low < 1,000).
+  describe('DigiByte fee buckets and unknown fees', () => {
+    const BUCKETS = { '0-1000': 5, '1000-5000': 10, '5000-10000': 20, '10000-50000': 4, '50000+': 1 };
+
+    const renderMempool = async (stats, transactions) => {
+      renderWithProviders(<TxsPage />);
+      await waitForAsync();
+      webSocketInstances[0].receiveMessage({ type: 'mempool', data: { stats, transactions } });
+      await waitFor(() => {
+        expect(screen.queryByText('Loading transaction data...')).not.toBeInTheDocument();
+      });
+    };
+
+    it('draws every new fee bucket, low to high, with sat/vB labels', async () => {
+      await renderMempool({ size: 40, bytes: 10000, feeDistribution: BUCKETS }, sampleMempoolData.data.transactions);
+      const labelled = [...document.querySelectorAll('[aria-label]')];
+      const bars = Object.keys(BUCKETS).map((range) => (
+        labelled.find((el) => el.getAttribute('aria-label').startsWith(`${range} sat/vB:`))
+      ));
+      bars.forEach((bar) => expect(bar).toBeTruthy());
+      // Lowest bucket green, top bucket ('50000+') red, all five colors distinct.
+      expect(bars[0]).toHaveStyle({ backgroundColor: '#4caf50' });
+      expect(bars[4]).toHaveStyle({ backgroundColor: '#f44336' });
+      const colors = new Set(bars.map((bar) => getComputedStyle(bar).backgroundColor));
+      expect(colors.size).toBe(5);
+      expect(document.querySelector('[aria-label*="sat/byte"]')).toBeNull();
+    });
+
+    it('explains priority with DigiByte fee rates, not Bitcoin ones', async () => {
+      await renderMempool({ size: 3 }, sampleMempoolData.data.transactions);
+      expect(screen.getByText(/high 10,000\+ sat\/vB, medium 1,000–10,000, low under 1,000/)).toBeInTheDocument();
+      expect(screen.getByText(/network minimum is about 100 sat\/vB/)).toBeInTheDocument();
+      expect(screen.queryByText(/100\+ sat\/byte/)).not.toBeInTheDocument();
+    });
+
+    it('shows "Unknown" for a null fee and still filters and sorts', async () => {
+      const unknown = {
+        ...sampleMempoolData.data.transactions[0],
+        txid: 'ffff'.repeat(16),
+        fee: null,
+        fee_rate: null,
+        priority: null,
+      };
+      await renderMempool({ size: 4 }, [unknown, ...sampleMempoolData.data.transactions]);
+      expect(screen.getAllByText('Unknown').length).toBeGreaterThan(0);
+      expect(screen.queryByText('0.00000000')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'fee' }));
+      fireEvent.click(screen.getByRole('button', { name: /high/i }));
+      expect(screen.queryByText(/ffffffff/)).not.toBeInTheDocument();
+      expect(screen.getAllByText(/e928e6/).length).toBeGreaterThan(0);
+    });
+  });
+
   describe('Transaction Details', () => {
     it('should expand transaction to show details', async () => {
       renderWithProviders(<TxsPage />);

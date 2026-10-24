@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   AppBar, Toolbar, Typography, Box, Button, Container, Chip,
   Menu, MenuItem, ListItemIcon, ListItemText, Divider
@@ -76,6 +76,11 @@ const Header = () => {
   const groups = getNavGroups(isTestnet);
   const activeTab = findActiveTab(location.pathname, basePath);
   const closeMenu = () => setMenu({ id: null, anchor: null });
+
+  // Close an open group menu on any navigation, including browser Back.
+  useEffect(() => {
+    setMenu({ id: null, anchor: null });
+  }, [location.key, location.pathname]);
 
   return (
     <Box sx={{ flexGrow: 1 }}>

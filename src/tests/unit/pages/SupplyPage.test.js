@@ -155,15 +155,14 @@ describe('SupplyPage', () => {
       // Simulate connection close with error code (not normal closure)
       ws.onclose({ type: 'close', code: 1006, reason: 'Connection lost' });
       
-      // Wait for reconnection attempt (2 seconds delay as per component)
+      // The shared socket reconnects after ~1 s (backoff with jitter)
       await waitFor(() => {
-        // Should have created one more WebSocket instance
-        expect(webSocketInstances.length).toBeGreaterThan(initialCount);
+        // Should have created exactly one more WebSocket instance
+        expect(webSocketInstances.length).toBe(initialCount + 1);
       }, { timeout: 3000 });
       
-      // Verify reconnection was logged
+      // Verify the close was logged
       expect(consoleLogSpy).toHaveBeenCalledWith('Supply WebSocket connection closed', 1006, 'Connection lost');
-      expect(consoleLogSpy).toHaveBeenCalledWith('Attempting to reconnect (1/3)...');
       
       consoleLogSpy.mockRestore();
     });

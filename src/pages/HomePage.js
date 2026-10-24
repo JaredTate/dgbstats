@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   Container, Typography, Box, Grid, Card, CardContent, CardActionArea,
-  Divider, Avatar
+  Divider, Avatar, Link
 } from '@mui/material';
 import BlockIcon from '@mui/icons-material/ViewCompact';
 import TransactionIcon from '@mui/icons-material/Sync';
@@ -477,21 +477,50 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
           This is a free & open source website to find real time data & information about DigiByte blockchain pulled directly from the blockchain via digibyted.
         </Typography>
         
-        {/* DigiByte blockchain description */}
-        <Typography 
-          variant="body1" 
-          component="p" 
-          sx={{ 
-            maxWidth: '800px', 
-            mx: 'auto',
-            color: '#444',
-            lineHeight: 1.6
-          }}
-        >
-          The DigiByte blockchain launched on January 10th, 2014. There is <strong>NO </strong> 
-          company, centralized group, mass premine, entity or person who controls DGB. 
-          DGB is a truly decentralized combination of speed, security & innovation.
-        </Typography>
+        {isTestnet ? (
+          /* Testnet intro: what testnet is and what the green color means */
+          <Box
+            data-testid="testnet-intro"
+            sx={{
+              maxWidth: '800px',
+              mx: 'auto',
+              p: 2,
+              borderRadius: 2,
+              bgcolor: `${networkTheme.primary}12`,
+              border: `1px solid ${networkTheme.primary}40`,
+              color: '#2d3a2e',
+              lineHeight: 1.6,
+            }}
+          >
+            <Typography variant="body1" component="p" sx={{ lineHeight: 1.6 }}>
+              <strong>You are on testnet.</strong> Testnet is a separate DigiByte network for testing.
+              Its coins have no value. Green colors mean testnet; the real DigiByte network (mainnet) is blue.
+            </Typography>
+            <Link
+              component={RouterLink}
+              to="/"
+              sx={{ display: 'inline-block', mt: 1, fontWeight: 600, color: networkTheme.primary }}
+            >
+              Go to mainnet →
+            </Link>
+          </Box>
+        ) : (
+          /* DigiByte blockchain description */
+          <Typography 
+            variant="body1" 
+            component="p" 
+            sx={{ 
+              maxWidth: '800px', 
+              mx: 'auto',
+              color: '#444',
+              lineHeight: 1.6
+            }}
+          >
+            The DigiByte blockchain launched on January 10th, 2014. There is <strong>NO </strong> 
+            company, centralized group, mass premine, entity or person who controls DGB. 
+            DGB is a truly decentralized combination of speed, security & innovation.
+          </Typography>
+        )}
       </CardContent>
     </Card>
   );
@@ -517,7 +546,9 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
               title="Total Blocks"
               value={blockchainInfo ? formatLive(blockchainInfo.blocks, formatNumber) : "Loading..."}
               icon={<BlockIcon />}
-              description="Total blocks in the DigiByte blockchain since the chain was started on Jan 10th, 2014."
+              description={isTestnet
+                ? "Total blocks on testnet since this test network started."
+                : "Total blocks in the DigiByte blockchain since the chain was started on Jan 10th, 2014."}
               loading={!blockchainInfo}
               link={toPage('/blocks', 'See latest blocks')}
             />
@@ -528,7 +559,9 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
               title="Total Transactions"
               value={chainTxStats ? formatLive(chainTxStats.txcount, formatNumber) : "Loading..."}
               icon={<TransactionIcon />}
-              description="Total Transactions sent on the DigiByte blockchain since launch on Jan 10th, 2014."
+              description={isTestnet
+                ? "Total transactions sent on testnet since this test network started."
+                : "Total Transactions sent on the DigiByte blockchain since launch on Jan 10th, 2014."}
               loading={!chainTxStats}
               color="#1e88e5"
               link={toPage('/txs', 'View transactions')}
@@ -540,7 +573,9 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
               title="Total Size"
               value={blockchainInfo ? (sizeOnDisk === null ? 'N/A' : `${(sizeOnDisk / (1024 * 1024 * 1024)).toFixed(2)} GB`) : "Loading..."}
               icon={<StorageIcon />}
-              description="Total size in GB needed to store the entire DGB blockchain going back to Jan 10th, 2014."
+              description={isTestnet
+                ? "Total size in GB needed to store the whole testnet blockchain."
+                : "Total size in GB needed to store the entire DGB blockchain going back to Jan 10th, 2014."}
               loading={!blockchainInfo}
               color="#43a047"
               link={toPage('/nodes', 'See the nodes that store it')}
@@ -553,7 +588,9 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
               title="Current Circulating Supply"
               value={txOutsetInfo ? formatLive(totalAmount, (n) => `${numberWithCommas(n.toFixed(2))} DGB`) : "Loading..."}
               icon={<TokenIcon />}
-              description="Current circulating supply calculated from all UTXO's as of the latest block."
+              description={isTestnet
+                ? "Testnet coins in circulation, from all UTXOs as of the latest block. Testnet coins have no value."
+                : "Current circulating supply calculated from all UTXO's as of the latest block."}
               loading={txOutsetInfoLoading}
               color="#0066cc"
               link={toPage('/supply', 'Explore supply')}
@@ -565,7 +602,9 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
               title="Remaining Supply To Be Mined"
               value={txOutsetInfo ? formatLive(totalAmount, (n) => `${numberWithCommas((21000000000 - n).toFixed(2))} DGB`) : "Loading..."}
               icon={<HourglassEmptyIcon />}
-              description="Remaining DGB to be mined until the maximum supply of 21 billion DGB is reached."
+              description={isTestnet
+                ? "Testnet coins still to be mined. Testnet coins have no value."
+                : "Remaining DGB to be mined until the maximum supply of 21 billion DGB is reached."}
               loading={txOutsetInfoLoading}
               color="#fb8c00"
               link={toPage('/supply', 'See the supply schedule')}
@@ -577,7 +616,9 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
               title="Last Block Reward"
               value={blockReward !== null && blockReward !== undefined ? formatLive(blockReward, (n) => `${n.toFixed(8)} DGB`) : "Loading..."}
               icon={<RewardIcon />}
-              description="The DigiByte mining reward amount for the most recent block on the blockchain."
+              description={isTestnet
+                ? "The mining reward for the most recent testnet block."
+                : "The DigiByte mining reward amount for the most recent block on the blockchain."}
               loading={blockReward === null || blockReward === undefined}
               color="#e53935"
               link={toPage('/blocks', 'See recent blocks')}

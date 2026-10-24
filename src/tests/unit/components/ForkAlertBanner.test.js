@@ -5,10 +5,12 @@ import { renderWithProviders, createWebSocketMock, waitForAsync } from '../../ut
 import { openNetworkSocket } from '../../../utils/networkSocket';
 
 // The banner has no socket of its own: it listens to the page's socket.
+// Returns the raw (mock) socket so tests can push messages into it.
+const pageSockets = [];
 async function openPageSocket(url = 'ws://localhost:5002') {
-  const ws = openNetworkSocket(url);
+  pageSockets.push(openNetworkSocket(url));
   await waitForAsync();
-  return ws;
+  return global.WebSocket.instances[global.WebSocket.instances.length - 1];
 }
 
 vi.mock('../../../config', () => ({
@@ -31,6 +33,7 @@ describe('ForkAlertBanner', () => {
   });
 
   afterEach(() => {
+    pageSockets.splice(0).forEach((socket) => socket.close());
     webSocketInstances.forEach((ws) => ws.close());
     wsSetup.clearInstances();
     vi.clearAllMocks();
