@@ -17,11 +17,11 @@ if (typeof window !== 'undefined') {
 }
 
 // Mock ResizeObserver
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
+global.ResizeObserver = vi.fn().mockImplementation(function () { return ({
   observe: vi.fn(),
   unobserve: vi.fn(), 
   disconnect: vi.fn(),
-}));
+}); });
 
 // Mock the config first
 vi.mock('../../../config', () => ({
@@ -39,7 +39,7 @@ vi.mock('@mui/material', async () => {
   const actual = await vi.importActual('@mui/material');
   return {
     ...actual,
-    useMediaQuery: vi.fn(() => false), // Default to desktop view
+    useMediaQuery: vi.fn(function () { return false; }), // Default to desktop view
   };
 });
 
@@ -68,7 +68,7 @@ const { mockUseHistory, HISTORY_LOADING_STATE, HISTORY_FIXTURE } = vi.hoisted(()
     error: null,
   };
   return {
-    mockUseHistory: vi.fn(() => loadingState),
+    mockUseHistory: vi.fn(function () { return loadingState; }),
     HISTORY_LOADING_STATE: loadingState,
     HISTORY_FIXTURE: fixture,
   };

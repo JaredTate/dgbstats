@@ -6,7 +6,7 @@ import RoadmapPage from '../../pages/RoadmapPage';
 
 // Mock date-fns to return consistent dates
 vi.mock('date-fns', () => ({
-  format: vi.fn((date, formatStr) => {
+  format: vi.fn(function (date, formatStr) {
     const d = new Date(date);
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return `${months[d.getMonth()]} ${d.getFullYear()}`;

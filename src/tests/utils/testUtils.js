@@ -10,7 +10,7 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
     configurable: true,
-    value: vi.fn().mockImplementation(query => {
+    value: vi.fn().mockImplementation(function (query) {
       const mediaQueryList = {
         matches: false,
         media: query,
@@ -28,7 +28,7 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
 
 // Additional safety check - make sure window.matchMedia is always defined
 if (typeof window !== 'undefined' && typeof window.matchMedia === 'undefined') {
-  window.matchMedia = vi.fn().mockImplementation(query => ({
+  window.matchMedia = vi.fn().mockImplementation(function (query) { return ({
     matches: false,
     media: query,
     onchange: null,
@@ -37,7 +37,7 @@ if (typeof window !== 'undefined' && typeof window.matchMedia === 'undefined') {
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
-  }));
+  }); });
 }
 
 // Create a default theme for tests
@@ -148,7 +148,7 @@ export class MockWebSocket {
 export function createWebSocketMock() {
   const mockInstances = [];
 
-  const MockWebSocketConstructor = vi.fn().mockImplementation((url) => {
+  const MockWebSocketConstructor = vi.fn().mockImplementation(function (url) {
     const instance = new MockWebSocket(url);
     mockInstances.push(instance);
     return instance;
@@ -182,7 +182,7 @@ export const waitForAsync = async () => {
 // Mock Chart.js
 export function mockChartJs() {
   return {
-    Chart: vi.fn().mockImplementation(() => ({
+    Chart: vi.fn().mockImplementation(function () { return ({
       destroy: vi.fn(),
       update: vi.fn(),
       render: vi.fn(),
@@ -191,7 +191,7 @@ export function mockChartJs() {
       stop: vi.fn(),
       data: {},
       options: {},
-    })),
+    }); }),
   };
 }
 
@@ -231,20 +231,20 @@ export function mockLocalStorage() {
   const store = {};
   
   return {
-    getItem: vi.fn((key) => store[key] || null),
-    setItem: vi.fn((key, value) => {
+    getItem: vi.fn(function (key) { return store[key] || null; }),
+    setItem: vi.fn(function (key, value) {
       store[key] = value.toString();
     }),
-    removeItem: vi.fn((key) => {
+    removeItem: vi.fn(function (key) {
       delete store[key];
     }),
-    clear: vi.fn(() => {
+    clear: vi.fn(function () {
       Object.keys(store).forEach(key => delete store[key]);
     }),
     get length() {
       return Object.keys(store).length;
     },
-    key: vi.fn((index) => {
+    key: vi.fn(function (index) {
       const keys = Object.keys(store);
       return keys[index] || null;
     }),

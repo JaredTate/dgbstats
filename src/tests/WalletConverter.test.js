@@ -341,7 +341,7 @@ describe('Wallet Converter — validation', () => {
 describe('WalletConvertPage — component', () => {
   beforeEach(() => {
     // Mock URL.createObjectURL and revokeObjectURL
-    global.URL.createObjectURL = vi.fn(() => 'blob:mock-url');
+    global.URL.createObjectURL = vi.fn(function () { return 'blob:mock-url'; });
     global.URL.revokeObjectURL = vi.fn();
   });
 

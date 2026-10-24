@@ -9,7 +9,7 @@ global.fetch = vi.fn();
 
 // Mock Chart.js
 vi.mock('chart.js', () => {
-  const Chart = vi.fn().mockImplementation(() => ({
+  const Chart = vi.fn().mockImplementation(function () { return ({
     destroy: vi.fn(),
     update: vi.fn(),
     render: vi.fn(),
@@ -18,7 +18,7 @@ vi.mock('chart.js', () => {
     stop: vi.fn(),
     data: {},
     options: {}
-  }));
+  }); });
   Chart.register = vi.fn();
   return {
     Chart,

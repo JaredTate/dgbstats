@@ -18,11 +18,11 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./src/tests/setup.js', './src/setupTests.js'],
     css: true,
-    deps: {
-      inline: ['vitest-canvas-mock'],
+    server: {
+      deps: {
+        inline: ['vitest-canvas-mock'],
+      },
     },
     environmentOptions: {
       jsdom: {
@@ -54,7 +54,36 @@ export default defineConfig({
       lines: 95
     },
     exclude: ['**/node_modules/**', '**/dist/**', '**/cypress/**', '**/.{idea,git,cache,output,temp}/**', '**/e2e/**'],
-    watchExclude: ['**/node_modules/**', '**/dist/**'],
+    // Two projects: the app tests run in jsdom with the DOM setup files; the
+    // build tests (src/tests/build) run Vite itself, so they need plain Node.
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          environment: 'jsdom',
+          // Vitest 1.x default. Vitest 2+ switched to 'forks', which runs this
+          // jsdom suite ~3x slower and causes 5s test timeouts.
+          pool: 'threads',
+          setupFiles: ['./src/tests/setup.js', './src/setupTests.js'],
+          exclude: ['src/tests/build/**'],
+          sequence: { groupOrder: 0 },
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'build',
+          include: ['src/tests/build/**/*.test.js'],
+          environment: 'node',
+          testTimeout: 180000,
+          hookTimeout: 180000,
+          // Run after the unit project so the CPU-heavy build does not slow
+          // the jsdom tests into timeouts.
+          sequence: { groupOrder: 1 },
+        },
+      },
+    ],
   },
   resolve: {
     alias: {

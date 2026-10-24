@@ -7,7 +7,7 @@ import { vi } from 'vitest';
 if (typeof window !== 'undefined') {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
-    value: vi.fn().mockImplementation(query => {
+    value: vi.fn().mockImplementation(function (query) {
       const mediaQuery = {
         matches: false,
         media: query,
@@ -24,7 +24,7 @@ if (typeof window !== 'undefined') {
 }
 
 // Mock HTMLCanvasElement.getContext before Chart.js loads
-HTMLCanvasElement.prototype.getContext = vi.fn().mockImplementation((contextType) => {
+HTMLCanvasElement.prototype.getContext = vi.fn().mockImplementation(function (contextType) {
   if (contextType === '2d') {
     return {
       fillStyle: '',
@@ -103,15 +103,15 @@ HTMLCanvasElement.prototype.getContext = vi.fn().mockImplementation((contextType
 import '@testing-library/jest-dom';
 
 // Mock ResizeObserver which is used by Material-UI
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
+global.ResizeObserver = vi.fn().mockImplementation(function () { return ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
-}));
+}); });
 
 // Mock IntersectionObserver
-global.IntersectionObserver = vi.fn().mockImplementation(() => ({
+global.IntersectionObserver = vi.fn().mockImplementation(function () { return ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
-}));
+}); });

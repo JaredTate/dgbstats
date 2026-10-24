@@ -15,14 +15,14 @@ vi.mock('../../../config', () => ({
 // Mock D3
 vi.mock('d3', () => ({
   select: vi.fn(),
-  arc: vi.fn(() => ({
+  arc: vi.fn(function () { return ({
     innerRadius: vi.fn().mockReturnThis(),
     outerRadius: vi.fn().mockReturnThis()
-  })),
-  pie: vi.fn(() => ({
+  }); }),
+  pie: vi.fn(function () { return ({
     sort: vi.fn().mockReturnThis(),
     value: vi.fn().mockReturnThis()
-  }))
+  }); })
 }));
 
 // Fixture: 3 days of daily algo history where the retired Myriad-Groestl share
@@ -395,7 +395,7 @@ describe('AlgosPage', () => {
       // Mock mobile viewport
       Object.defineProperty(window, 'matchMedia', {
         writable: true,
-        value: vi.fn().mockImplementation(query => ({
+        value: vi.fn().mockImplementation(function (query) { return ({
           matches: query === '(max-width:600px)',
           media: query,
           onchange: null,
@@ -404,7 +404,7 @@ describe('AlgosPage', () => {
           addEventListener: vi.fn(),
           removeEventListener: vi.fn(),
           dispatchEvent: vi.fn(),
-        })),
+        }); }),
       });
       
       renderWithProviders(<AlgosPage />);

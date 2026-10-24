@@ -12,14 +12,14 @@ DigiByte Stats is a comprehensive React-based web application that provides real
 - **Data Visualization**: D3.js v7, @visx/geo, Chart.js v4
 - **Real-time Communication**: WebSocket for live blockchain updates (per-page connections)
 - **Testing**: Vitest (unit/integration), Playwright (E2E)
-- **Build Tool**: Create React App 5.0.1
+- **Build Tool**: Vite 7 (`vite.config.js`; replaced Create React App in Oct 2026, same `build/` + `static/` output and `REACT_APP_*` env vars)
 
 ### Key Dependencies
 - `@mui/material`, `@mui/icons-material`, `@mui/lab`, `@mui/x-data-grid`: UI component libraries
 - `d3` & `d3-geo` & `@visx/geo`: Advanced data visualizations and geographic maps
 - `chart.js` & `react-chartjs-2` & `chartjs-adapter-luxon`: Time series and statistical charts
 - `axios`: HTTP client for API requests
-- `world-atlas`, `us-atlas`, `topojson-client`, `geoip-lite`: Geographic data for node visualization
+- `world-atlas`, `us-atlas`, `topojson-client`: Geographic data for node visualization
 
 ## Application Pages
 

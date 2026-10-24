@@ -19,7 +19,7 @@ const createMockChartInstance = () => ({
 // Store all created instances for testing
 const chartInstances = [];
 
-const mockChart = vi.fn().mockImplementation(() => {
+const mockChart = vi.fn().mockImplementation(function () {
   const instance = createMockChartInstance();
   chartInstances.push(instance);
   return instance;
@@ -83,7 +83,7 @@ Object.defineProperty(global, 'WebSocket', {
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: vi.fn().mockImplementation(query => ({
+  value: vi.fn().mockImplementation(function (query) { return ({
     matches: false,
     media: query,
     onchange: null,
@@ -92,22 +92,22 @@ Object.defineProperty(window, 'matchMedia', {
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
-  })),
+  }); }),
 });
 
 // Mock ResizeObserver
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
+global.ResizeObserver = vi.fn().mockImplementation(function () { return ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
-}));
+}); });
 
 // vitest-canvas-mock now handles canvas mocking
 // If needed, we can extend specific canvas methods here
 
 // Ensure canvas getContext is properly mocked
 if (typeof HTMLCanvasElement !== 'undefined') {
-  HTMLCanvasElement.prototype.getContext = vi.fn().mockImplementation((type) => {
+  HTMLCanvasElement.prototype.getContext = vi.fn().mockImplementation(function (type) {
     if (type === '2d') {
       return {
         fillRect: vi.fn(),
@@ -130,7 +130,7 @@ if (typeof HTMLCanvasElement !== 'undefined') {
         rotate: vi.fn(),
         arc: vi.fn(),
         fill: vi.fn(),
-        measureText: vi.fn(() => ({ width: 0 })),
+        measureText: vi.fn(function () { return ({ width: 0 }); }),
         transform: vi.fn(),
         rect: vi.fn(),
         clip: vi.fn(),
@@ -147,11 +147,11 @@ if (typeof HTMLCanvasElement !== 'undefined') {
 }
 
 // Mock IntersectionObserver
-global.IntersectionObserver = vi.fn().mockImplementation(() => ({
+global.IntersectionObserver = vi.fn().mockImplementation(function () { return ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
-}));
+}); });
 
 // Suppress console errors in tests unless explicitly testing error handling
 const originalError = console.error;

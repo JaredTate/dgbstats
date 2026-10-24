@@ -25,7 +25,7 @@ let isMobileView = false;
 // Mock Chart.js to avoid canvas errors
 vi.mock('chart.js', async () => {
   const actual = await vi.importActual('chart.js');
-  const Chart = vi.fn().mockImplementation(() => ({
+  const Chart = vi.fn().mockImplementation(function () { return ({
     destroy: vi.fn(),
     update: vi.fn(),
     render: vi.fn(),
@@ -34,7 +34,7 @@ vi.mock('chart.js', async () => {
     stop: vi.fn(),
     data: {},
     options: {}
-  }));
+  }); });
   Chart.register = vi.fn();
   Chart.instances = {};
   return {

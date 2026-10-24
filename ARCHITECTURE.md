@@ -454,7 +454,7 @@ Hamburger (below lg breakpoint) → right-side Drawer:
 Core Framework:
   - React: 17.0.2
   - React Router: 6.10.0
-  - Create React App (react-scripts): 5.0.1
+  - Vite: 7.3.7 (replaced Create React App / react-scripts 5.0.1)
 
 UI Components:
   - @mui/material: 5.11.15
@@ -474,7 +474,6 @@ Geospatial:
   - topojson-client: 3.1.0
   - world-atlas: 2.0.2
   - us-atlas: 3.0.1
-  - geoip-lite: 1.4.7
 
 Utilities:
   - axios: 1.3.5
@@ -523,7 +522,7 @@ SHA256D #4caf50 · Scrypt #2196f3 · Skein #ff9800 · Qubit #9c27b0 · Odo #f443
 ### Optimization Strategies
 - **Memoization**: `useMemo` for pool/algo aggregation; `React.memo` on `ForkTreeMap`, `ChainTipsExplainer`, and stat cards
 - **Real-time handling**: new blocks prepended (O(1)); max array sizes enforced (~240 blocks); chart instances cleaned up on unmount; WebSocket closed on unmount
-- **Bundle**: CRA/webpack tree shaking; production builds minified
+- **Bundle**: Vite/Rollup tree shaking; production builds minified
 
 ### Performance Targets
 ```
@@ -660,7 +659,7 @@ export default config[env];
 - **Softfork Status**: uses `getdeploymentinfo` RPC for activation status
 
 ### SEO Implementation
-- Open Graph + Twitter Card meta tags (`public/index.html`)
+- Open Graph + Twitter Card meta tags (`index.html`)
 - JSON-LD structured data
 - `robots.txt` allowing major + AI crawlers (GPTBot, ChatGPT-User, Claude-Web, anthropic-ai, Applebot)
 - **`sitemap.xml`** lists all current mainnet and testnet routes (including `/tips`, `/pool-upgrades`, `/taproot`, and `/testnet/convert`). Keep it in sync when adding pages.

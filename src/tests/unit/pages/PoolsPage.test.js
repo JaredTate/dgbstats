@@ -19,7 +19,7 @@ vi.mock('d3', () => {
     innerRadius: vi.fn().mockReturnThis(),
     outerRadius: vi.fn().mockReturnThis(),
     padAngle: vi.fn().mockReturnThis(),
-    centroid: vi.fn(() => [0, 0])
+    centroid: vi.fn(function () { return [0, 0]; })
   };
   
   const mockSelection = {
@@ -34,10 +34,10 @@ vi.mock('d3', () => {
   };
   
   return {
-    select: vi.fn(() => mockSelection),
-    arc: vi.fn(() => mockArc),
-    pie: vi.fn(() => vi.fn((data) => data.map((d, i) => ({ data: d, value: d.count })))),
-    scaleOrdinal: vi.fn(() => vi.fn()),
+    select: vi.fn(function () { return mockSelection; }),
+    arc: vi.fn(function () { return mockArc; }),
+    pie: vi.fn(function () { return vi.fn(function (data) { return data.map((d, i) => ({ data: d, value: d.count })); }); }),
+    scaleOrdinal: vi.fn(function () { return vi.fn(); }),
     schemeSet3: ['#8dd3c7', '#ffffb3', '#bebada', '#fb8072', '#80b1d3']
   };
 });

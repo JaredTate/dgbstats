@@ -24,7 +24,7 @@ vi.mock('../../../config', () => ({
 // Mock Chart.js
 vi.mock('chart.js', async () => {
   const actual = await vi.importActual('chart.js');
-  const Chart = vi.fn().mockImplementation(() => ({
+  const Chart = vi.fn().mockImplementation(function () { return ({
     destroy: vi.fn(),
     update: vi.fn(),
     render: vi.fn(),
@@ -33,7 +33,7 @@ vi.mock('chart.js', async () => {
     stop: vi.fn(),
     data: {},
     options: {}
-  }));
+  }); });
   Chart.register = vi.fn();
   Chart.instances = {};
   return {
@@ -57,7 +57,7 @@ vi.mock('chartjs-adapter-luxon', () => ({}));
 
 // Mock d3
 vi.mock('d3', () => ({
-  select: vi.fn(() => ({
+  select: vi.fn(function () { return ({
     append: vi.fn().mockReturnThis(),
     attr: vi.fn().mockReturnThis(),
     style: vi.fn().mockReturnThis(),
@@ -70,33 +70,33 @@ vi.mock('d3', () => ({
     duration: vi.fn().mockReturnThis(),
     on: vi.fn().mockReturnThis(),
     call: vi.fn().mockReturnThis(),
-    nodes: vi.fn(() => [])
-  })),
-  arc: vi.fn(() => ({
+    nodes: vi.fn(function () { return []; })
+  }); }),
+  arc: vi.fn(function () { return ({
     innerRadius: vi.fn().mockReturnThis(),
     outerRadius: vi.fn().mockReturnThis()
-  })),
-  pie: vi.fn(() => ({
+  }); }),
+  pie: vi.fn(function () { return ({
     value: vi.fn().mockReturnThis(),
     sort: vi.fn().mockReturnThis()
-  })),
-  scaleOrdinal: vi.fn(() => vi.fn()),
+  }); }),
+  scaleOrdinal: vi.fn(function () { return vi.fn(); }),
   schemeSet3: ['#1', '#2', '#3'],
-  geoNaturalEarth1: vi.fn(() => ({
+  geoNaturalEarth1: vi.fn(function () { return ({
     fitSize: vi.fn().mockReturnThis(),
-    translate: vi.fn(() => [0, 0]),
-    scale: vi.fn(() => 1)
-  })),
-  geoPath: vi.fn(() => vi.fn()),
-  zoom: vi.fn(() => ({
+    translate: vi.fn(function () { return [0, 0]; }),
+    scale: vi.fn(function () { return 1; })
+  }); }),
+  geoPath: vi.fn(function () { return vi.fn(); }),
+  zoom: vi.fn(function () { return ({
     scaleExtent: vi.fn().mockReturnThis(),
     on: vi.fn().mockReturnThis()
-  }))
+  }); })
 }));
 
 // Mock topojson
 vi.mock('topojson-client', () => ({
-  feature: vi.fn(() => ({ features: [] }))
+  feature: vi.fn(function () { return ({ features: [] }); })
 }));
 
 // Mock json imports

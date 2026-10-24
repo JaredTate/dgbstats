@@ -14,16 +14,16 @@ vi.mock('../../../config', () => ({
 
 // Mock d3
 const mockD3Select = vi.fn();
-const mockGeoNaturalEarth1 = vi.fn(() => ({
+const mockGeoNaturalEarth1 = vi.fn(function () { return ({
   fitSize: vi.fn().mockReturnThis(),
-  translate: vi.fn(() => [400, 300]),
-  scale: vi.fn(() => 100)
-}));
-const mockGeoPath = vi.fn(() => vi.fn());
-const mockZoom = vi.fn(() => ({
+  translate: vi.fn(function () { return [400, 300]; }),
+  scale: vi.fn(function () { return 100; })
+}); });
+const mockGeoPath = vi.fn(function () { return vi.fn(); });
+const mockZoom = vi.fn(function () { return ({
   scaleExtent: vi.fn().mockReturnThis(),
   on: vi.fn().mockReturnThis()
-}));
+}); });
 
 vi.mock('d3', () => ({
   select: mockD3Select,
@@ -34,13 +34,13 @@ vi.mock('d3', () => ({
 
 // Mock topojson
 vi.mock('topojson-client', () => ({
-  feature: vi.fn((topology, object) => ({
+  feature: vi.fn(function (topology, object) { return ({
     type: 'FeatureCollection',
     features: [
       { type: 'Feature', properties: { name: 'United States' }, geometry: {} },
       { type: 'Feature', properties: { name: 'United Kingdom' }, geometry: {} }
     ]
-  }))
+  }); })
 }));
 
 // Mock the world atlas JSON
