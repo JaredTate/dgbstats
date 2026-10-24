@@ -347,7 +347,11 @@ const PoolsPage = () => {
     } catch (error) {
       console.error('Error rendering pools chart:', error);
     }
-  }, [blocks, sortedAddresses, isMobile]);
+    // `loading` is a dependency because the <svg> only mounts once loading is
+    // false. React 17 does not batch setState inside WebSocket callbacks, so
+    // setBlocks renders first (no svg yet) and setLoading(false) renders after.
+    // Without `loading` here the first snapshot never drew until the next block.
+  }, [blocks, sortedAddresses, isMobile, loading]);
 
   /**
    * Pagination helper function
@@ -700,8 +704,11 @@ const PoolsPage = () => {
         {/* Mining pool operator CTA — how to add DigiDollar support */}
         <MiningGuideCallout />
 
-        {/* Interactive pie chart visualization */}
-        <PieChartSection />
+        {/* Interactive pie chart visualization. Called as a function, not
+            <PieChartSection />: it is redefined on every render, so as a
+            component React would remount it and swap in an empty <svg>,
+            wiping the D3 chart on any unrelated re-render. */}
+        {PieChartSection()}
 
         {/* Detailed mining pool listings with pagination */}
         <MiningPoolListSection />

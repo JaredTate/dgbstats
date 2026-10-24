@@ -288,6 +288,39 @@ describe('PoolsPage', () => {
   });
 
   describe('D3.js Pie Chart', () => {
+    it('draws the chart from the first recentBlocks snapshot without waiting for another message', async () => {
+      // Regression: a real WebSocket callback is NOT batched by React 17, so
+      // setBlocks renders first (spinner still up, svg not mounted) and
+      // setLoading(false) renders second. The chart must still draw then.
+      const { rerender } = renderWithProviders(<PoolsPage />);
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+
+      // Deliver outside act(), exactly like a browser WebSocket event
+      ws.onmessage({
+        data: JSON.stringify({
+          type: 'recentBlocks',
+          data: [
+            { minerAddress: 'DAddr1', poolIdentifier: 'Pool A', height: 2 },
+            { minerAddress: 'DAddr1', poolIdentifier: 'Pool A', height: 1 },
+          ],
+        }),
+      });
+
+      await waitFor(() => {
+        expect(screen.queryByText('Loading block data...')).not.toBeInTheDocument();
+      });
+      await waitFor(() => {
+        expect(d3.select).toHaveBeenCalledWith(expect.any(SVGSVGElement));
+      });
+
+      // An unrelated re-render (in production: a parent update ~50ms later)
+      // must keep the svg the chart was drawn into, not swap in an empty one.
+      rerender(<PoolsPage />);
+      const drawnInto = d3.select.mock.calls.at(-1)[0];
+      expect(drawnInto.isConnected).toBe(true);
+    });
+
     it('should initialize D3 pie chart on data load', async () => {
       renderWithProviders(<PoolsPage />);
       
