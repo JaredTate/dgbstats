@@ -68,6 +68,12 @@ describe('Header', () => {
         .toHaveAttribute('href', '/pool-upgrades');
     });
 
+    it('should not link to the Activation page (DigiDollar is active)', () => {
+      renderWithProviders(<Header />, { network: 'mainnet' });
+
+      expect(screen.queryByRole('link', { name: 'Activation' })).not.toBeInTheDocument();
+    });
+
     it('should have the Tips nav item linking to /tips', () => {
       renderWithProviders(<Header />, { network: 'mainnet' });
 
@@ -138,6 +144,12 @@ describe('Header', () => {
 
       expect(screen.getByRole('link', { name: 'Upgrades' }))
         .toHaveAttribute('href', '/testnet/pool-upgrades');
+    });
+
+    it('should not link to the testnet Activation page', () => {
+      renderWithProviders(<Header />, { network: 'testnet' });
+
+      expect(screen.queryByRole('link', { name: 'Activation' })).not.toBeInTheDocument();
     });
 
     it('should have the Tips nav item linking to /testnet/tips', () => {
@@ -291,7 +303,7 @@ describe('Header', () => {
       // min-width 0 lets the flex item shrink below its content width.
       expect(style.minWidth).toBe('0');
       // Every mainnet page link is in the desktop nav.
-      expect(within(nav).getAllByRole('link')).toHaveLength(17);
+      expect(within(nav).getAllByRole('link')).toHaveLength(16);
     });
   });
 });

@@ -39,7 +39,6 @@ const Header = () => {
     { text: 'Hashrate', path: withBase('/hashrate') },
     { text: 'Nodes', path: withBase('/nodes') },
     { text: 'Upgrades', path: withBase('/pool-upgrades') },
-    { text: 'Activation', path: withBase('/activation') },
     { text: 'Oracles', path: withBase('/oracles') },
     { text: 'DD Stats', path: withBase('/ddstats') },
     { text: 'DigiDollar', path: withBase('/digidollar') },
@@ -58,7 +57,6 @@ const Header = () => {
     { text: 'Downloads', path: '/downloads' },
     { text: 'Roadmap', path: '/roadmap' },
     { text: 'DigiDollar', path: '/digidollar' },
-    { text: 'Activation', path: '/activation' },
     { text: 'Oracles', path: '/oracles' },
     { text: 'DD Stats', path: '/ddstats' },
   ];

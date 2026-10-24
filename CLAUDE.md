@@ -63,7 +63,7 @@ Taproot activation monitoring (BIP9). Taproot is active/buried, so it shows YES 
 ### 12. **DigiDollarPage** (`/digidollar`)
 DigiDollar stablecoin explainer: use cases, benefits, collateral tier system, and implementation details, plus the reusable `IntegrationGuides` card.
 
-### 13. **DDActivationPage** (`/activation`)
+### 13. **DDActivationPage** (`/activation`) — no nav link since 2026-10-24 (DigiDollar is active); route kept for old links
 BIP9 soft-fork activation tracker for DigiDollar (bit 23) and the Algolock/Groestl-removal deployment (bit 0): status cards, DEFINED→STARTED→LOCKED_IN→ACTIVE stage flow, signaling progress bar with threshold marker, BIP9 explainer, and technical parameters. (WebSocket `ddDeploymentData` + REST `getdeploymentinfo`, 30s poll.)
 
 ### 14. **OraclesPage** (`/oracles`)
