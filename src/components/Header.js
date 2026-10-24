@@ -204,6 +204,7 @@ const Header = () => {
                 alignItems: 'center',
                 textDecoration: 'none',
                 color: 'white',
+                flexShrink: 0,
                 mr: 3
               }}
             >
@@ -239,14 +240,21 @@ const Header = () => {
               )}
             </Box>
 
-            {/* Desktop primary navigation */}
+            {/* Desktop primary navigation. The links wrap onto a second row
+                when they do not fit (1200-1440px), so the page never scrolls
+                sideways. */}
             <Box
+              component="nav"
+              aria-label="Primary navigation"
               sx={{
                 display: { xs: 'none', lg: 'flex' },
                 flexGrow: 1,
+                flexWrap: 'wrap',
+                minWidth: 0,
                 justifyContent: 'flex-end',
                 alignItems: 'center',
-                gap: 0.25
+                gap: 0.25,
+                py: 0.5
               }}
             >
               {primaryMenuItems.map((item) => (
@@ -257,9 +265,9 @@ const Header = () => {
                   size="small"
                   sx={{
                     color: 'white',
-                    px: 1,
+                    px: 0.75,
                     py: 0.5,
-                    fontSize: '0.85rem',
+                    fontSize: '0.8rem',
                     textTransform: 'none',
                     fontWeight: '500',
                     whiteSpace: 'nowrap',

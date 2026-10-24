@@ -281,4 +281,17 @@ describe('Header', () => {
       expect(digiExplorerLink).toHaveAttribute('rel', 'noopener noreferrer');
     });
   });
+
+  describe('Desktop nav fits 1200-1440px (B1)', () => {
+    it('lets the desktop nav links wrap instead of overflowing', () => {
+      renderWithProviders(<Header />, { network: 'mainnet' });
+      const nav = screen.getByRole('navigation', { name: /primary/i });
+      const style = window.getComputedStyle(nav);
+      expect(style.flexWrap).toBe('wrap');
+      // min-width 0 lets the flex item shrink below its content width.
+      expect(style.minWidth).toBe('0');
+      // Every mainnet page link is in the desktop nav.
+      expect(within(nav).getAllByRole('link')).toHaveLength(17);
+    });
+  });
 });
