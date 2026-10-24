@@ -137,8 +137,8 @@ const DigiDollarPage = () => {
         >
           <Typography variant="body2">
             <strong>Status:</strong> <strong>Shipped — released on mainnet</strong> in DigiByte v9.26.2
-            (June 29, 2026) and active on mainnet since block 23,869,440 (July 17, 2026). Current release:
-            <strong>{CORE_RELEASE}</strong>. Fully operational on testnet26, where the oracle network runs
+            (June 29, 2026) and active on mainnet since block 23,869,440 (July 17, 2026).
+            Current release: <strong>{CORE_RELEASE}</strong>. Fully operational on testnet26, where the oracle network runs
             a 7-signature MuSig2 quorum across 35 oracle slots, backed by an extensive automated test suite.
           </Typography>
         </Alert>

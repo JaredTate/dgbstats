@@ -26,6 +26,7 @@ describe('DigiDollarPage', () => {
       expect(currentRelease.length).toBeGreaterThan(0);
       expect(screen.getAllByText(/23,869,440/).length).toBeGreaterThan(0);
       expect(screen.queryByText(/in miners. hands/)).not.toBeInTheDocument();
+      expect(screen.getAllByText((_, el) => el?.tagName === 'P' && /Current release: v9\.26\.7\./.test(el.textContent)).length).toBeGreaterThan(0);
       expect(screen.queryByText(/activation pending/)).not.toBeInTheDocument();
     });
 
