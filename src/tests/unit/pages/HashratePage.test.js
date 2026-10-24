@@ -108,6 +108,17 @@ describe('HashratePage', () => {
       });
     });
 
+    it('describes Myriad-Groestl as retired, not as still being mined', async () => {
+      renderWithProviders(<HashratePage />);
+      await waitForAsync();
+      webSocketInstances[0].receiveMessage(mockRecentBlocks);
+
+      await waitFor(() => {
+        expect(screen.getByText(/rejected by consensus since mainnet block 23,808,000/)).toBeInTheDocument();
+      });
+      expect(screen.queryByText(/still counted in Blocks Last Hour/)).not.toBeInTheDocument();
+    });
+
     it('should render all algorithm cards', async () => {
       renderWithProviders(<HashratePage />);
       

@@ -491,11 +491,10 @@ const HashratePage = ({ difficultiesData }) => {
           </Grid>
         </Grid>
 
-        {/* Transitional note: retired Myriad-Groestl blocks are still being mined */}
+        {/* Myriad-Groestl is retired: consensus rejects its blocks from mainnet block 23,808,000 */}
         <Typography variant="body2" sx={{ mt: 2, textAlign: 'center', opacity: 0.85 }}>
-          Note: Total Network Hashrate covers the five active algorithms only. Blocks from the retired
-          Myriad-Groestl algorithm are still counted in Blocks Last Hour and Network Avg Block Time
-          until they are rejected by consensus at block 23,808,000.
+          Note: Total Network Hashrate covers DigiByte's five active algorithms. The retired
+          Myriad-Groestl algorithm has been rejected by consensus since mainnet block 23,808,000.
         </Typography>
       </CardContent>
     </Card>
