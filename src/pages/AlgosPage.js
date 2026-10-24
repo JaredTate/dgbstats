@@ -223,7 +223,7 @@ const MultiAlgoInfoSection = () => (
  * - D3.js pie chart showing algorithm distribution
  * - Responsive design for mobile and desktop
  * - Educational content about multi-algorithm mining
- * - Fallback data handling for connection issues
+ * - "Waiting for live data…" state until real blocks arrive (no made-up data)
  * 
  * @component
  * @returns {JSX.Element} Complete algorithms page with real-time pie chart
@@ -234,9 +234,6 @@ const AlgosPage = () => {
 
   // Block data state
   const [blocks, setBlocks] = useState([]);
-
-  // Loading state
-  const [loading, setLoading] = useState(true);
 
   // Historical algorithm distribution (shared daily/hourly history infra)
   const {
@@ -262,16 +259,12 @@ const AlgosPage = () => {
 
   /**
    * WebSocket connection effect for real-time block updates
-   * Handles initial data load, real-time updates, and fallback data
-   * 
-   * This effect includes comprehensive error handling and a fallback mechanism
-   * to ensure the page displays data even if WebSocket connection fails
+   * Handles initial data load and real-time updates. Until real blocks
+   * arrive the page shows "Waiting for live data…" (it never shows made-up data).
    */
   useEffect(() => {
     console.log(`Connecting to WebSocket at: ${wsBaseUrl}`);
     let socket;
-    // Set once real block data arrives, so the fallback timer leaves it alone.
-    let gotData = false;
 
     try {
       socket = openNetworkSocket(wsBaseUrl);
@@ -285,13 +278,11 @@ const AlgosPage = () => {
       };
       
       /**
-       * Handle WebSocket connection errors
-       * Sets loading to false to prevent infinite loading state
+       * Handle WebSocket connection errors (the page keeps waiting for data)
        * @param {Event} error - WebSocket error event
        */
       socket.onerror = (error) => {
         console.error('WebSocket connection error:', error);
-        setLoading(false);
       };
       
       /**
@@ -314,12 +305,10 @@ const AlgosPage = () => {
             const validBlocks = message.data.filter(block => block && block.algo);
             
             if (validBlocks.length > 0) {
-              gotData = true;
               setBlocks(validBlocks);
             } else {
               console.error('No valid blocks in received data');
             }
-            setLoading(false);
           } else if (message.type === 'newBlock' && message.data) {
             console.log('New block received:', message.data);
             /**
@@ -327,7 +316,6 @@ const AlgosPage = () => {
              * Triggers automatic pie chart re-rendering
              */
             if (message.data.algo) {
-              gotData = true;
               setBlocks((prevBlocks) => prependUniqueBlock(prevBlocks, message.data));
             }
           }
@@ -346,42 +334,18 @@ const AlgosPage = () => {
       };
     } catch (err) {
       console.error('Error creating WebSocket connection:', err);
-      setLoading(false);
     }
     
-    /**
-     * Fallback mechanism for testing and connection failures
-     * Creates dummy data after 2 seconds if WebSocket hasn't loaded data
-     * Ensures page functionality even with network issues
-     */
-    const timer = setTimeout(() => {
-      if (!gotData) {
-        console.log('Creating fallback test data as WebSocket connection might have failed');
-        const dummyBlocks = [
-          { algo: 'sha256d', height: 1 },
-          { algo: 'sha256d', height: 2 },
-          { algo: 'scrypt', height: 3 },
-          { algo: 'skein', height: 4 },
-          { algo: 'qubit', height: 5 },
-          { algo: 'odocrypt', height: 6 }
-        ];
-        setBlocks(dummyBlocks);
-        setLoading(false);
-      }
-    }, 2000);
     
     /**
-     * Cleanup function to close WebSocket and clear timer
+     * Cleanup function to close WebSocket
      * Prevents memory leaks when component unmounts
      */
     return () => {
-      clearTimeout(timer);
       if (socket) {
         socket.close();
       }
     };
-    // `loading` is deliberately not a dependency: it flips when data arrives,
-    // and re-running this effect would close and reopen the socket.
   }, [wsBaseUrl]);
 
 
@@ -502,10 +466,10 @@ const AlgosPage = () => {
             textAlign: 'center'
           }}
         >
-          {loading ? (
+          {blocks.length === 0 ? (
             <Box sx={{ py: 10, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
               <Typography variant="h5" sx={{ color: '#555' }}>
-                Loading block data...
+                Waiting for live data…
               </Typography>
             </Box>
           ) : (

@@ -16,19 +16,6 @@ import { openNetworkSocket } from '../utils/networkSocket';
 Chart.register(...registerables);
 
 /**
- * Default supply data for immediate display
- * Provides fallback values to prevent loading states and ensure chart renders immediately
- * These values are approximations that will be updated with real-time data when available
- */
-const DEFAULT_SUPPLY_DATA = {
-  total_amount: 18363414093, // Approximate current supply as of July 2026 (gettxoutsetinfo snapshot)
-  height: 23785928,          // Snapshot block height (July 2026)
-  bestblock: "00000000000000000000000000000000",
-  txouts: 15906225,
-  bogosize: 1190129395
-};
-
-/**
  * Helper function to convert hex color to RGB components
  * Used for creating transparent color variations in the UI
  * 
@@ -135,7 +122,7 @@ const StatCard = memo(({ title, value, percentage, percentageLabel, description,
  * - Per-person distribution statistics
  * - Mining schedule and completion timeline
  * 
- * Features real-time data updates via WebSocket with fallback to default values
+ * Features real-time data updates via WebSocket (shows "Waiting for live data…" until real data arrives)
  * for immediate rendering and better user experience.
  */
 const SupplyPage = ({ worldPopulation, txOutsetInfo: propTxOutsetInfo }) => {
@@ -143,8 +130,8 @@ const SupplyPage = ({ worldPopulation, txOutsetInfo: propTxOutsetInfo }) => {
   const chartInstanceRef = useRef(null);
   const { getApiUrl, wsBaseUrl, isTestnet, theme: networkTheme } = useNetwork();
 
-  // Initialize with default data to prevent loading states and null checks
-  const [txOutsetInfo, setTxOutsetInfo] = useState(DEFAULT_SUPPLY_DATA);
+  // Supply from the WebSocket; null until real data arrives
+  const [txOutsetInfo, setTxOutsetInfo] = useState(null);
   const [localTxOutsetInfo, setLocalTxOutsetInfo] = useState(null);
 
   // Memoize getApiUrl to use in useEffect dependencies
@@ -174,7 +161,7 @@ const SupplyPage = ({ worldPopulation, txOutsetInfo: propTxOutsetInfo }) => {
 
   /**
    * WebSocket connection management for real-time supply data
-   * Implements reconnection logic and graceful fallback to default data
+   * Implements reconnection logic
    */
   useEffect(() => {
     console.log(`Connecting to WebSocket at: ${wsBaseUrl}`);
@@ -182,19 +169,6 @@ const SupplyPage = ({ worldPopulation, txOutsetInfo: propTxOutsetInfo }) => {
     let reconnectAttempts = 0;
     const maxReconnectAttempts = 3;
     const reconnectDelay = 2000; // 2 seconds
-
-    // Start with default data to render chart immediately
-    // This ensures the page is functional even if WebSocket fails
-    const defaultSupplyData = {
-      total_amount: 18363414093, // Approximate current supply as of July 2026 (gettxoutsetinfo snapshot)
-      height: 23785928,          // Snapshot block height (July 2026)
-      bestblock: "00000000000000000000000000000000",
-      txouts: 15906225,
-      bogosize: 1190129395
-    };
-
-    // Initialize with default data for immediate display
-    setTxOutsetInfo(defaultSupplyData);
 
     /**
      * Initialize WebSocket connection with retry logic
@@ -218,7 +192,6 @@ const SupplyPage = ({ worldPopulation, txOutsetInfo: propTxOutsetInfo }) => {
         // Handle connection errors
         socket.onerror = (error) => {
           console.error('Supply WebSocket connection error:', error);
-          // Chart already displays with default data, so no user-facing error
         };
         
         // Process incoming real-time data
@@ -233,7 +206,6 @@ const SupplyPage = ({ worldPopulation, txOutsetInfo: propTxOutsetInfo }) => {
             }
           } catch (err) {
             console.error('Error processing supply WebSocket message:', err);
-            // Chart continues displaying with default data
           }
         };
         
@@ -250,7 +222,6 @@ const SupplyPage = ({ worldPopulation, txOutsetInfo: propTxOutsetInfo }) => {
         };
       } catch (err) {
         console.error('Error creating supply WebSocket connection:', err);
-        // Chart already displayed with default data
       }
     };
     
@@ -433,8 +404,9 @@ const SupplyPage = ({ worldPopulation, txOutsetInfo: propTxOutsetInfo }) => {
     if (!chartRef.current) return;
 
     // Use supplyData which combines prop, local fetch, and WebSocket data
-    // Priority: propTxOutsetInfo > localTxOutsetInfo > txOutsetInfo (WebSocket) > DEFAULT_SUPPLY_DATA
-    const effectiveSupplyData = supplyData || txOutsetInfo || DEFAULT_SUPPLY_DATA;
+    // Priority: propTxOutsetInfo > localTxOutsetInfo > txOutsetInfo (WebSocket)
+    const effectiveSupplyData = supplyData || txOutsetInfo;
+    if (!effectiveSupplyData) return;
     const currentSupply = effectiveSupplyData.total_amount;
     console.log('Rendering supply chart with data:', currentSupply);
     
@@ -517,11 +489,11 @@ const SupplyPage = ({ worldPopulation, txOutsetInfo: propTxOutsetInfo }) => {
     };
   }, [supplyData, txOutsetInfo]); // Re-render when supply data changes
 
-  // Calculate supply statistics with safe defaults
+  // Calculate supply statistics (only rendered once real data is in)
   // Use supplyData which combines prop, local fetch, and WebSocket data
-  const effectiveSupplyData = supplyData || txOutsetInfo || DEFAULT_SUPPLY_DATA;
+  const effectiveSupplyData = supplyData || txOutsetInfo;
   const totalSupply = 21000000000;
-  const currentSupply = effectiveSupplyData.total_amount;
+  const currentSupply = effectiveSupplyData?.total_amount;
   const remainingSupply = totalSupply - currentSupply;
   const currentSupplyPercentage = ((currentSupply / totalSupply) * 100).toFixed(1);
   const remainingSupplyPercentage = ((remainingSupply / totalSupply) * 100).toFixed(1);
@@ -713,14 +685,26 @@ const SupplyPage = ({ worldPopulation, txOutsetInfo: propTxOutsetInfo }) => {
         {/* Page header with title and description */}
         <HeroSection />
 
-        {/* Main supply statistics cards */}
-        <SupplyStatisticsSection />
+        {effectiveSupplyData ? (
+          <>
+            {/* Main supply statistics cards */}
+            <SupplyStatisticsSection />
 
-        {/* Additional information and mining timeline */}
-        <AdditionalInfoSection />
+            {/* Additional information and mining timeline */}
+            <AdditionalInfoSection />
 
-        {/* Interactive supply timeline chart */}
-        <ChartSection />
+            {/* Interactive supply timeline chart */}
+            <ChartSection />
+          </>
+        ) : (
+          <Card elevation={3} sx={{ borderRadius: '12px', mb: 4 }}>
+            <Box sx={{ py: 10, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <Typography variant="h5" sx={{ color: '#555' }}>
+                Waiting for live data…
+              </Typography>
+            </Box>
+          </Card>
+        )}
       </Container>
     </Box>
   );

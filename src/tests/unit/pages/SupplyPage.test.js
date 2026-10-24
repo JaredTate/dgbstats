@@ -3,6 +3,8 @@ import { screen, fireEvent, waitFor } from '@testing-library/react';
 import SupplyPage from '../../../pages/SupplyPage';
 import { renderWithProviders, createWebSocketMock, waitForAsync, mockChartJs } from '../../utils/testUtils';
 import { mockApiResponses, generateWebSocketMessage } from '../../mocks/mockData';
+import { server } from '../../mocks/server';
+import { http, HttpResponse } from 'msw';
 
 // Mock the config
 vi.mock('../../../config', () => ({
@@ -14,6 +16,9 @@ vi.mock('../../../config', () => ({
 
 // Mock chartjs-adapter-luxon
 vi.mock('chartjs-adapter-luxon', () => ({}));
+
+// Real-looking supply data passed as a prop (as App.js does on mainnet).
+const LIVE_SUPPLY = { total_amount: 18529007751, height: 24438000 };
 
 describe('SupplyPage', () => {
   let wsSetup;
@@ -61,7 +66,7 @@ describe('SupplyPage', () => {
     });
 
     it('should render all supply statistics cards', () => {
-      renderWithProviders(<SupplyPage />);
+      renderWithProviders(<SupplyPage txOutsetInfo={LIVE_SUPPLY} />);
       
       // Main statistics
       expect(screen.getByText('Current Circulating Supply')).toBeInTheDocument();
@@ -73,17 +78,44 @@ describe('SupplyPage', () => {
     });
 
     it('should render the supply timeline chart section', () => {
-      renderWithProviders(<SupplyPage />);
+      renderWithProviders(<SupplyPage txOutsetInfo={LIVE_SUPPLY} />);
       
       expect(screen.getByText('DigiByte Supply Distribution Timeline')).toBeInTheDocument();
       expect(screen.getByText(/This chart shows the historical and projected supply distribution/)).toBeInTheDocument();
     });
 
-    it('should display default values initially', () => {
+    it('shows "Waiting for live data…" and no made-up supply before data arrives', () => {
       renderWithProviders(<SupplyPage />);
-      
-      // Check for default supply value (18.36 Billion DGB, July 2026 snapshot)
-      expect(screen.getByText(/18\.36 Billion DGB/)).toBeInTheDocument();
+
+      expect(screen.getByText('Waiting for live data…')).toBeInTheDocument();
+      // The old hardcoded July 2026 snapshot (18.36 Billion DGB) must not show.
+      expect(screen.queryByText(/18\.36 Billion DGB/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Billion DGB/)).not.toBeInTheDocument();
+    });
+
+    it('keeps waiting when the REST fetch fails and no WebSocket data comes', async () => {
+      server.use(http.get('http://localhost:5001/api/gettxoutsetinfo', () => HttpResponse.error()));
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      renderWithProviders(<SupplyPage />, { network: 'mainnet' });
+      await waitForAsync();
+      await waitForAsync();
+
+      expect(screen.getByText('Waiting for live data…')).toBeInTheDocument();
+      expect(screen.queryByText(/Billion DGB/)).not.toBeInTheDocument();
+    });
+
+    it('shows real supply once the WebSocket sends it', async () => {
+      server.use(http.get('http://localhost:5001/api/gettxoutsetinfo', () => HttpResponse.error()));
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      renderWithProviders(<SupplyPage />);
+      await waitForAsync();
+      webSocketInstances[0].receiveMessage({
+        type: 'initialData',
+        data: { txOutsetInfo: { total_amount: 18529007751, height: 24438000 } },
+      });
+
+      await waitFor(() => expect(screen.getByText(/18\.53 Billion DGB/)).toBeInTheDocument());
+      expect(screen.queryByText('Waiting for live data…')).not.toBeInTheDocument();
     });
   });
 
@@ -353,7 +385,7 @@ describe('SupplyPage', () => {
     });
 
     it('should have descriptive text for all statistics', () => {
-      renderWithProviders(<SupplyPage />);
+      renderWithProviders(<SupplyPage txOutsetInfo={LIVE_SUPPLY} />);
 
       // Check for descriptive labels
       expect(screen.getByText('Current Circulating Supply')).toBeInTheDocument();
@@ -363,7 +395,7 @@ describe('SupplyPage', () => {
     });
 
     it('should have proper ARIA labels for interactive elements', () => {
-      renderWithProviders(<SupplyPage />);
+      renderWithProviders(<SupplyPage txOutsetInfo={LIVE_SUPPLY} />);
 
       // Check for cards with proper structure
       expect(screen.getByText('Current Circulating Supply')).toBeInTheDocument();
@@ -414,7 +446,7 @@ describe('SupplyPage', () => {
     });
 
     it('should render all supply statistics cards on testnet', () => {
-      renderWithProviders(<SupplyPage />, { network: 'testnet' });
+      renderWithProviders(<SupplyPage txOutsetInfo={LIVE_SUPPLY} />, { network: 'testnet' });
 
       // Check for stat card titles (same as mainnet)
       expect(screen.getByText('Current Circulating Supply')).toBeInTheDocument();

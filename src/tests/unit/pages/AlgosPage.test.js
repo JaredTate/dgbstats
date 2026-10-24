@@ -126,7 +126,7 @@ describe('AlgosPage', () => {
       renderWithProviders(<AlgosPage />);
       
       // Initially shows loading
-      expect(screen.getByText('Loading block data...')).toBeInTheDocument();
+      expect(screen.getByText('Waiting for live data…')).toBeInTheDocument();
       
       // Send block data
       await waitForAsync();
@@ -398,23 +398,54 @@ describe('AlgosPage', () => {
     it('should display loading state when no data', () => {
       renderWithProviders(<AlgosPage />);
       
-      expect(screen.getByText('Loading block data...')).toBeInTheDocument();
+      expect(screen.getByText('Waiting for live data…')).toBeInTheDocument();
     });
 
-    it('should use fallback data after timeout', async () => {
+    it('never draws a chart from made-up blocks when no data arrives', async () => {
       vi.useFakeTimers();
-      
+      try {
+        renderWithProviders(<AlgosPage />);
+        await vi.advanceTimersByTimeAsync(10000);
+
+        expect(screen.getByText('Waiting for live data…')).toBeInTheDocument();
+        expect(screen.queryByText('Mining Algorithm Distribution')).not.toBeInTheDocument();
+        expect(d3.pie).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('keeps waiting after a WebSocket error instead of showing an empty chart', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
       renderWithProviders(<AlgosPage />);
-      
-      // Advance timers by 2 seconds to trigger fallback
-      vi.advanceTimersByTime(2000);
-      
-      await waitFor(() => {
-        expect(screen.queryByText('Loading block data...')).not.toBeInTheDocument();
+      await waitForAsync();
+      webSocketInstances[0].triggerError(new Error('Connection failed'));
+      await waitForAsync();
+
+      expect(screen.getByText('Waiting for live data…')).toBeInTheDocument();
+      expect(screen.queryByText('Mining Algorithm Distribution')).not.toBeInTheDocument();
+    });
+
+    it('draws the chart when real data arrives after a long wait', async () => {
+      vi.useFakeTimers();
+      try {
+        renderWithProviders(<AlgosPage />);
+        await vi.advanceTimersByTimeAsync(10000);
+        webSocketInstances[0].receiveMessage({
+          type: 'recentBlocks',
+          data: [
+            { height: 1, algo: 'sha256d', hash: 'h1' },
+            { height: 2, algo: 'scrypt', hash: 'h2' },
+          ],
+        });
+        await vi.advanceTimersByTimeAsync(10);
+
         expect(screen.getByText('Mining Algorithm Distribution')).toBeInTheDocument();
-      });
-      
-      vi.useRealTimers();
+        expect(screen.getByText(/over the last hour \(2 blocks\)/)).toBeInTheDocument();
+        expect(d3.pie).toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 
