@@ -11,6 +11,8 @@ import PoolIcon from '@mui/icons-material/Waves';
 import TransactionsIcon from '@mui/icons-material/Sync';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import { useNetwork } from '../context/NetworkContext';
+import { prependUniqueBlock } from '../utils/blocks';
+import { openNetworkSocket } from '../utils/networkSocket';
 
 /**
  * Algorithm color mapping for consistent visual identification
@@ -425,7 +427,7 @@ const BlocksPage = () => {
    * - 'newBlock': Real-time updates when new blocks are mined
    */
   useEffect(() => {
-    const socket = new WebSocket(wsBaseUrl);
+    const socket = openNetworkSocket(wsBaseUrl);
 
     /**
      * WebSocket connection opened successfully
@@ -455,7 +457,7 @@ const BlocksPage = () => {
          * Prepends new block to the beginning of the blocks array
          * Automatically triggers pagination recalculation
          */
-        setBlocks((prevBlocks) => [message.data, ...prevBlocks]);
+        setBlocks((prevBlocks) => prependUniqueBlock(prevBlocks, message.data));
       }
     };
 

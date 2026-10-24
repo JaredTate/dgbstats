@@ -2,6 +2,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, waitFor, fireEvent, act } from '@testing-library/react';
 import ForkAlertBanner from '../../../components/ForkAlertBanner';
 import { renderWithProviders, createWebSocketMock, waitForAsync } from '../../utils/testUtils';
+import { openNetworkSocket } from '../../../utils/networkSocket';
+
+// The banner has no socket of its own: it listens to the page's socket.
+async function openPageSocket(url = 'ws://localhost:5002') {
+  const ws = openNetworkSocket(url);
+  await waitForAsync();
+  return ws;
+}
 
 vi.mock('../../../config', () => ({
   default: {
@@ -37,22 +45,22 @@ describe('ForkAlertBanner', () => {
   it('stays hidden when a level:none alert arrives', async () => {
     renderWithProviders(<ForkAlertBanner />);
     await waitForAsync();
-    const ws = webSocketInstances[0];
+    const ws = await openPageSocket();
     ws.receiveMessage({ type: 'forkAlert', data: { network: 'mainnet', level: 'none', reason: 'all clear' } });
     await waitForAsync();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('opens its WebSocket to the mainnet endpoint', async () => {
+  it('does not open a WebSocket of its own (B2)', async () => {
     renderWithProviders(<ForkAlertBanner />);
     await waitForAsync();
-    expect(mockWebSocket).toHaveBeenCalledWith('ws://localhost:5002');
+    expect(mockWebSocket).not.toHaveBeenCalled();
   });
 
   it('shows a warning Alert with a /tips link on an elevated alert', async () => {
     renderWithProviders(<ForkAlertBanner />);
     await waitForAsync();
-    const ws = webSocketInstances[0];
+    const ws = await openPageSocket();
     ws.receiveMessage({
       type: 'forkAlert',
       data: { network: 'mainnet', level: 'elevated', reason: 'competing branch at tip', height: 100, branchlen: 1 },
@@ -71,7 +79,7 @@ describe('ForkAlertBanner', () => {
   it('shows an error severity Alert on a critical alert', async () => {
     renderWithProviders(<ForkAlertBanner />);
     await waitForAsync();
-    const ws = webSocketInstances[0];
+    const ws = await openPageSocket();
     ws.receiveMessage({
       type: 'forkAlert',
       data: { network: 'mainnet', level: 'critical', reason: 'deep reorg detected', height: 200, branchlen: 4 },
@@ -87,7 +95,7 @@ describe('ForkAlertBanner', () => {
   it('can be dismissed and then stays hidden for the same severity', async () => {
     renderWithProviders(<ForkAlertBanner />);
     await waitForAsync();
-    const ws = webSocketInstances[0];
+    const ws = await openPageSocket();
     ws.receiveMessage({
       type: 'forkAlert',
       data: { network: 'mainnet', level: 'elevated', reason: 'competing branch', height: 100, branchlen: 1 },
@@ -112,7 +120,7 @@ describe('ForkAlertBanner', () => {
   it('re-shows when a higher-severity alert arrives after dismissal', async () => {
     renderWithProviders(<ForkAlertBanner />);
     await waitForAsync();
-    const ws = webSocketInstances[0];
+    const ws = await openPageSocket();
     ws.receiveMessage({
       type: 'forkAlert',
       data: { network: 'mainnet', level: 'elevated', reason: 'competing branch', height: 100, branchlen: 1 },
@@ -133,7 +141,7 @@ describe('ForkAlertBanner', () => {
   it('stays hidden for an unknown level and renders without a branch length', async () => {
     renderWithProviders(<ForkAlertBanner />);
     await waitForAsync();
-    const ws = webSocketInstances[0];
+    const ws = await openPageSocket();
     // Unknown level ranks as 0 -> hidden.
     ws.receiveMessage({ type: 'forkAlert', data: { network: 'mainnet', level: 'bogus', reason: 'weird' } });
     await waitForAsync();
@@ -148,9 +156,9 @@ describe('ForkAlertBanner', () => {
   it('ignores malformed WebSocket payloads without crashing', async () => {
     renderWithProviders(<ForkAlertBanner />);
     await waitForAsync();
-    const ws = webSocketInstances[0];
+    const ws = await openPageSocket();
     act(() => {
-      ws.onmessage({ data: '{not valid json' });
+      ws._listeners.message.forEach((listener) => listener({ data: '{not valid json' }));
     });
     await waitForAsync();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
@@ -159,7 +167,7 @@ describe('ForkAlertBanner', () => {
   it('links to the testnet tips page on testnet', async () => {
     renderWithProviders(<ForkAlertBanner />, { network: 'testnet' });
     await waitForAsync();
-    const ws = webSocketInstances[0];
+    const ws = await openPageSocket('ws://localhost:5003');
     ws.receiveMessage({
       type: 'forkAlert',
       data: { network: 'testnet', level: 'elevated', reason: 'competing branch', height: 100, branchlen: 1 },

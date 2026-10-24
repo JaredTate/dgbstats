@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Box } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { useNetwork } from '../context/NetworkContext';
+import { subscribeNetworkMessages } from '../utils/networkSocket';
 
 /**
  * ForkAlertBanner — a self-contained, site-wide fork-risk banner.
  *
- * It opens its own WebSocket (the same per-page pattern used across the app),
- * listens for `forkAlert` messages, and renders a full-width MUI Alert with a
+ * It listens for `forkAlert` messages on the current page's WebSocket (it does
+ * not open its own, so each page keeps a single connection), and renders a full-width MUI Alert with a
  * link to the Chain Tips page. It returns null when there is no active alert
  * (level === 'none'). `elevated` => amber warning; `critical` => red error with
  * a subtle pulse (respecting prefers-reduced-motion). Dismissible, but re-shows
@@ -19,31 +20,22 @@ import { useNetwork } from '../context/NetworkContext';
 const LEVEL_RANK = { none: 0, elevated: 1, critical: 2 };
 
 const ForkAlertBanner = () => {
-  const { wsBaseUrl, basePath } = useNetwork();
+  const { basePath } = useNetwork();
   const [alert, setAlert] = useState(null);
   // Severity rank the user has dismissed; -1 means nothing dismissed yet.
   const [dismissedRank, setDismissedRank] = useState(-1);
 
   const tipsPath = `${basePath || ''}/tips`;
 
-  useEffect(() => {
-    const socket = new WebSocket(wsBaseUrl);
-    socket.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data);
-        if (message.type === 'forkAlert' && message.data) {
-          const data = message.data;
-          const rank = LEVEL_RANK[data.level] ?? 0;
-          setAlert(data);
-          // A strictly higher-severity alert clears an earlier dismissal.
-          setDismissedRank((prev) => (rank > prev ? -1 : prev));
-        }
-      } catch (err) {
-        console.error('ForkAlertBanner WS parse error:', err);
-      }
-    };
-    return () => socket.close();
-  }, [wsBaseUrl]);
+  useEffect(() => subscribeNetworkMessages((message) => {
+    if (message?.type === 'forkAlert' && message.data) {
+      const data = message.data;
+      const rank = LEVEL_RANK[data.level] ?? 0;
+      setAlert(data);
+      // A strictly higher-severity alert clears an earlier dismissal.
+      setDismissedRank((prev) => (rank > prev ? -1 : prev));
+    }
+  }), []);
 
   if (!alert) return null;
   const rank = LEVEL_RANK[alert.level] ?? 0;

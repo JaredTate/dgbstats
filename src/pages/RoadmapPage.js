@@ -21,6 +21,7 @@ import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import { format } from 'date-fns';
 import config from '../config';
 import { keyframes } from '@mui/material';
+import { openNetworkSocket } from '../utils/networkSocket';
 
 // DigiDollar activated on mainnet via BIP9 (bit 23). bip9.since / "Activated At
 // Block" as reported by the node RPC on the /activation page.
@@ -667,7 +668,7 @@ const RoadmapPage = () => {
    * WebSocket connection for real-time roadmap updates
    */
   useEffect(() => {
-    const socket = new WebSocket(config.wsBaseUrl);
+    const socket = openNetworkSocket(config.wsBaseUrl);
 
     socket.onopen = () => {
       console.log('Roadmap WebSocket connection established');

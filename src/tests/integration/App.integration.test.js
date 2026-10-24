@@ -125,11 +125,10 @@ describe('App Integration Tests', () => {
       
       await waitForAsync();
 
-      // Two WebSockets: one for the home page and one for the site-wide
-      // fork-alert banner mounted in the layout.
-      expect(webSocketInstances.length).toBe(2);
-      // The page's socket is the last one created at initial render.
-      const pageWs = webSocketInstances[webSocketInstances.length - 1];
+      // One WebSocket per page. The site-wide fork-alert banner listens to
+      // the page's socket instead of opening its own (B2).
+      expect(webSocketInstances.length).toBe(1);
+      const pageWs = webSocketInstances[0];
 
       // Navigate to another page
       const nodesLink = screen.getByRole('link', { name: /nodes/i });
@@ -137,12 +136,12 @@ describe('App Integration Tests', () => {
 
       await waitForAsync();
 
-      // The page WebSocket should be closed after navigating away (the banner
-      // socket persists with the layout).
+      // The page WebSocket should be closed after navigating away.
       expect(pageWs.readyState).toBe(WebSocket.CLOSED);
 
-      // A new page WebSocket should be created and open.
-      const newPageWs = webSocketInstances[webSocketInstances.length - 1];
+      // Exactly one new page WebSocket should be created and open.
+      expect(webSocketInstances.length).toBe(2);
+      const newPageWs = webSocketInstances[1];
       expect(newPageWs.readyState).toBe(WebSocket.OPEN);
     });
   });

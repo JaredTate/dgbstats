@@ -792,4 +792,44 @@ describe('BlocksPage', () => {
       expect(ws.readyState).toBe(WebSocket.CLOSED);
     });
   });
+
+  describe('Duplicate blocks (B2a)', () => {
+    const fresh = {
+      height: 17456790,
+      hash: '0000000000000000001234567890abcdef',
+      time: Date.now(),
+      size: 2345,
+      txCount: 12,
+      poolIdentifier: 'DigiHash Pool',
+      algo: 'sha256d',
+      difficulty: 12345678.9,
+    };
+
+    it('shows a block once when the same newBlock arrives twice', async () => {
+      renderWithProviders(<BlocksPage />);
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+      ws.receiveMessage({ type: 'recentBlocks', data: mockApiResponses.blocksData.blocks });
+      await waitFor(() => expect(screen.getByText('17,456,789')).toBeInTheDocument());
+
+      ws.receiveMessage({ type: 'newBlock', data: fresh });
+      ws.receiveMessage({ type: 'newBlock', data: { ...fresh } });
+
+      await waitFor(() => expect(screen.getByText('17,456,790')).toBeInTheDocument());
+      expect(screen.getAllByText('17,456,790')).toHaveLength(1);
+    });
+
+    it('ignores a newBlock that is already in the recentBlocks list', async () => {
+      renderWithProviders(<BlocksPage />);
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+      const blocks = mockApiResponses.blocksData.blocks;
+      ws.receiveMessage({ type: 'recentBlocks', data: blocks });
+      await waitFor(() => expect(screen.getByText('17,456,789')).toBeInTheDocument());
+
+      ws.receiveMessage({ type: 'newBlock', data: { ...blocks[0] } });
+      await waitForAsync();
+      expect(screen.getAllByText('17,456,789')).toHaveLength(1);
+    });
+  });
 });

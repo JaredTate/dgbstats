@@ -19,6 +19,7 @@ import {
   splitDuration,
   formatEta as fmtEta,
 } from '../utils/activation';
+import { openNetworkSocket } from '../utils/networkSocket';
 
 /**
  * Color mapping for BIP9 activation states
@@ -226,7 +227,7 @@ const DDActivationPage = () => {
       }
     };
 
-    const socket = new WebSocket(wsBaseUrl);
+    const socket = openNetworkSocket(wsBaseUrl);
 
     socket.onopen = () => {
       console.log('WebSocket connected for DD Activation page');

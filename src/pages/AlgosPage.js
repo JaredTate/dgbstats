@@ -8,6 +8,8 @@ import * as d3 from 'd3';
 import { useNetwork } from '../context/NetworkContext';
 import HistoryChart from '../components/HistoryChart';
 import { useHistory } from '../hooks/useHistory';
+import { prependUniqueBlock } from '../utils/blocks';
+import { openNetworkSocket } from '../utils/networkSocket';
 
 /**
  * Algorithm color mapping for consistent visual identification
@@ -268,9 +270,11 @@ const AlgosPage = () => {
   useEffect(() => {
     console.log(`Connecting to WebSocket at: ${wsBaseUrl}`);
     let socket;
+    // Set once real block data arrives, so the fallback timer leaves it alone.
+    let gotData = false;
 
     try {
-      socket = new WebSocket(wsBaseUrl);
+      socket = openNetworkSocket(wsBaseUrl);
       
       /**
        * WebSocket connection opened successfully
@@ -310,6 +314,7 @@ const AlgosPage = () => {
             const validBlocks = message.data.filter(block => block && block.algo);
             
             if (validBlocks.length > 0) {
+              gotData = true;
               setBlocks(validBlocks);
             } else {
               console.error('No valid blocks in received data');
@@ -322,7 +327,8 @@ const AlgosPage = () => {
              * Triggers automatic pie chart re-rendering
              */
             if (message.data.algo) {
-              setBlocks((prevBlocks) => [message.data, ...prevBlocks]);
+              gotData = true;
+              setBlocks((prevBlocks) => prependUniqueBlock(prevBlocks, message.data));
             }
           }
         } catch (err) {
@@ -349,7 +355,7 @@ const AlgosPage = () => {
      * Ensures page functionality even with network issues
      */
     const timer = setTimeout(() => {
-      if (loading) {
+      if (!gotData) {
         console.log('Creating fallback test data as WebSocket connection might have failed');
         const dummyBlocks = [
           { algo: 'sha256d', height: 1 },
@@ -374,7 +380,9 @@ const AlgosPage = () => {
         socket.close();
       }
     };
-  }, [loading, wsBaseUrl]);
+    // `loading` is deliberately not a dependency: it flips when data arrives,
+    // and re-running this effect would close and reopen the socket.
+  }, [wsBaseUrl]);
 
 
   // Update the pie chart whenever the blocks state changes

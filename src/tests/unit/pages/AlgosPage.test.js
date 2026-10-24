@@ -306,6 +306,35 @@ describe('AlgosPage', () => {
     });
   });
 
+  describe('One WebSocket (B2)', () => {
+    it('keeps its single socket open after the first recentBlocks arrives', async () => {
+      renderWithProviders(<AlgosPage />);
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+      ws.receiveMessage({ type: 'recentBlocks', data: [{ height: 1, algo: 'sha256d', hash: 'h1' }] });
+      await waitForAsync();
+
+      expect(webSocketInstances).toHaveLength(1);
+      expect(ws.close).not.toHaveBeenCalled();
+    });
+
+    it('does not replace live data with fallback data after the timeout', async () => {
+      vi.useFakeTimers();
+      try {
+        renderWithProviders(<AlgosPage />);
+        await vi.advanceTimersByTimeAsync(10);
+        webSocketInstances[0].receiveMessage({
+          type: 'recentBlocks',
+          data: [{ height: 1, algo: 'sha256d', hash: 'h1' }],
+        });
+        await vi.advanceTimersByTimeAsync(2500);
+        expect(screen.getByText(/over the last hour \(1 blocks\)/)).toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
+
   describe('Error Handling', () => {
     it('should handle WebSocket errors gracefully', async () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});

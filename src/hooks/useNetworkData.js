@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNetwork } from '../context/NetworkContext';
+import { openNetworkSocket } from '../utils/networkSocket';
 
 /**
  * Hook for fetching blockchain info with network awareness
@@ -125,7 +126,7 @@ export const useNetworkWebSocket = (onMessage) => {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const socket = new WebSocket(wsBaseUrl);
+    const socket = openNetworkSocket(wsBaseUrl);
 
     socket.onopen = () => {
       console.log('WebSocket connection established');

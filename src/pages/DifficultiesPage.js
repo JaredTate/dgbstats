@@ -10,6 +10,7 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import { useNetwork } from '../context/NetworkContext';
 import HistoryChart from '../components/HistoryChart';
 import { useHistory } from '../hooks/useHistory';
+import { openNetworkSocket } from '../utils/networkSocket';
 
 Chart.register(...registerables);
 Chart.register(LineController);
@@ -395,7 +396,9 @@ const DifficultiesPage = ({ difficultiesData }) => {
    * - 'newBlock': Real-time updates when new blocks are mined
    */
   useEffect(() => {
-    const socket = new WebSocket(wsBaseUrl);
+    const socket = openNetworkSocket(wsBaseUrl);
+    // Hashes already plotted, so a repeated newBlock adds no extra point.
+    const seenHashes = new Set();
 
     /**
      * WebSocket connection opened successfully
@@ -413,6 +416,8 @@ const DifficultiesPage = ({ difficultiesData }) => {
       const message = JSON.parse(event.data);
 
       if (message.type === 'recentBlocks') {
+        seenHashes.clear();
+        message.data.forEach((block) => block?.hash && seenHashes.add(block.hash));
         /**
          * Process initial difficulty data for all algorithms
          * Filters blocks by algorithm and extracts difficulty values
@@ -434,6 +439,9 @@ const DifficultiesPage = ({ difficultiesData }) => {
          */
         const algo = normalizeAlgoName(message.data.algo);
         if (!algo) return;
+        const { hash } = message.data;
+        if (hash && seenHashes.has(hash)) return;
+        if (hash) seenHashes.add(hash);
 
         setDifficulties((prevDifficulties) => ({
           ...prevDifficulties,

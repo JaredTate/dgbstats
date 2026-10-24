@@ -28,6 +28,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import QueryBuilderIcon from '@mui/icons-material/QueryBuilder';
 import SecurityIcon from '@mui/icons-material/Security';
 import { useNetwork } from '../context/NetworkContext';
+import { openNetworkSocket } from '../utils/networkSocket';
 
 /**
  * Priority color mapping for transaction fee priorities
@@ -1059,7 +1060,7 @@ const TxsPage = () => {
     const connectWebSocket = () => {
       if (!isMounted) return;
 
-      const socket = new WebSocket(wsBaseUrl);
+      const socket = openNetworkSocket(wsBaseUrl);
       wsRef.current = socket;
 
       /**

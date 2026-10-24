@@ -92,6 +92,7 @@ export class MockWebSocket {
     this.onerror = null;
     this.onmessage = null;
     this._sentMessages = [];
+    this._listeners = {};
 
     // Make close a spy for verification
     // Use code 1000 (normal closure) to prevent reconnection logic from triggering
@@ -115,6 +116,14 @@ export class MockWebSocket {
     }, 0);
   }
 
+  addEventListener(type, listener) {
+    (this._listeners[type] ||= []).push(listener);
+  }
+
+  removeEventListener(type, listener) {
+    this._listeners[type] = (this._listeners[type] || []).filter((l) => l !== listener);
+  }
+
   send(data) {
     // Store sent messages for verification
     this._sentMessages.push(data);
@@ -127,9 +136,12 @@ export class MockWebSocket {
 
   // Helper method to simulate receiving a message - wrapped in act for React state updates
   receiveMessage(data) {
-    if (this.onmessage && this.readyState === WebSocket.OPEN) {
+    const listeners = this._listeners.message || [];
+    if ((this.onmessage || listeners.length) && this.readyState === WebSocket.OPEN) {
       act(() => {
-        this.onmessage({ data: JSON.stringify(data) });
+        const event = { data: JSON.stringify(data) };
+        if (this.onmessage) this.onmessage(event);
+        listeners.forEach((l) => l(event));
       });
     }
   }

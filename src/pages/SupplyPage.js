@@ -10,6 +10,7 @@ import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import PeopleIcon from '@mui/icons-material/People';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import { useNetwork } from '../context/NetworkContext';
+import { openNetworkSocket } from '../utils/networkSocket';
 
 // Register Chart.js components globally (once outside component)
 Chart.register(...registerables);
@@ -206,7 +207,7 @@ const SupplyPage = ({ worldPopulation, txOutsetInfo: propTxOutsetInfo }) => {
           socket.close();
         }
 
-        socket = new WebSocket(wsBaseUrl);
+        socket = openNetworkSocket(wsBaseUrl);
         
         // Connection established successfully
         socket.onopen = () => {

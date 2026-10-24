@@ -19,6 +19,7 @@ import VerifiedIcon from '@mui/icons-material/Verified';
 import { Link as RouterLink } from 'react-router-dom';
 import { useNetwork } from '../context/NetworkContext';
 import IntegrationGuides from '../components/IntegrationGuides';
+import { openNetworkSocket } from '../utils/networkSocket';
 
 // Empty initial state - no mock data
 const EMPTY_ORACLE_PRICE = {
@@ -155,7 +156,7 @@ const OraclesPage = () => {
 
   // WebSocket connection for real-time oracle data
   useEffect(() => {
-    const socket = new WebSocket(wsBaseUrl);
+    const socket = openNetworkSocket(wsBaseUrl);
 
     socket.onopen = () => {
       console.log('WebSocket connection established for oracles page');

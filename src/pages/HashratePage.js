@@ -9,6 +9,8 @@ import LanguageIcon from '@mui/icons-material/Language';
 import { useNetwork } from '../context/NetworkContext';
 import HistoryChart from '../components/HistoryChart';
 import { useHistory } from '../hooks/useHistory';
+import { prependUniqueBlock } from '../utils/blocks';
+import { openNetworkSocket } from '../utils/networkSocket';
 
 /**
  * DigiByte's five mining algorithms
@@ -132,7 +134,7 @@ const HashratePage = ({ difficultiesData }) => {
    * Handles initial data load and real-time updates for hashrate calculations
    */
   useEffect(() => {
-    const socket = new WebSocket(wsBaseUrl);
+    const socket = openNetworkSocket(wsBaseUrl);
 
     // Connection established
     socket.onopen = () => {
@@ -152,8 +154,7 @@ const HashratePage = ({ difficultiesData }) => {
       // Handle new blocks mined in real-time
       else if (message.type === 'newBlock') {
         // Add new block to the beginning and maintain 240 block limit
-        blocksRef.current.unshift(message.data);
-        blocksRef.current = blocksRef.current.slice(0, 240);
+        blocksRef.current = prependUniqueBlock(blocksRef.current, message.data, 240);
         calculateHashratesAndBlockTimes();
       }
     };

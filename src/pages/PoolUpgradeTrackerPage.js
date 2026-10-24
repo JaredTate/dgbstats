@@ -11,6 +11,7 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { useNetwork } from '../context/NetworkContext';
 import config from '../config';
 import MiningGuideCallout from '../components/MiningGuideCallout';
+import { openNetworkSocket } from '../utils/networkSocket';
 
 // ---------------------------------------------------------------------------
 // Post-activation pool readiness
@@ -53,7 +54,7 @@ const PoolUpgradeTrackerPage = () => {
 
   // Live block feed over WebSocket (same channel the Pools/Blocks pages use).
   useEffect(() => {
-    const socket = new WebSocket(wsBaseUrl);
+    const socket = openNetworkSocket(wsBaseUrl);
     socket.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);

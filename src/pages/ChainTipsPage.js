@@ -12,6 +12,7 @@ import ShowChartIcon from '@mui/icons-material/ShowChart';
 import { useNetwork } from '../context/NetworkContext';
 import ForkTreeMap from '../components/ForkTreeMap';
 import ChainTipsExplainer from '../components/ChainTipsExplainer';
+import { openNetworkSocket } from '../utils/networkSocket';
 
 Chart.register(...registerables);
 
@@ -132,7 +133,7 @@ const ChainTipsPage = () => {
 
   // Live feed over the network WebSocket.
   useEffect(() => {
-    const socket = new WebSocket(wsBaseUrl);
+    const socket = openNetworkSocket(wsBaseUrl);
     socket.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);

@@ -13,6 +13,7 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import UpdateIcon from '@mui/icons-material/Update';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { useNetwork } from '../context/NetworkContext';
+import { openNetworkSocket } from '../utils/networkSocket';
 
 const TESTNET_RELEASE = {
   version: 'v9.26.4',
@@ -66,7 +67,7 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
    * Establishes connection on component mount and handles incoming data
    */
   useEffect(() => {
-    const socket = new WebSocket(wsBaseUrl);
+    const socket = openNetworkSocket(wsBaseUrl);
 
     // WebSocket event handlers
     socket.onopen = () => {

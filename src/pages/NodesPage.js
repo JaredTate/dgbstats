@@ -24,6 +24,7 @@ import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import UpdateIcon from '@mui/icons-material/Update';
 import StorageIcon from '@mui/icons-material/Storage';
+import { openNetworkSocket } from '../utils/networkSocket';
 
 /**
  * Custom hook for fetching node geolocation data via WebSocket
@@ -45,7 +46,7 @@ const useFetchData = (wsBaseUrl) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const socket = new WebSocket(wsBaseUrl);
+    const socket = openNetworkSocket(wsBaseUrl);
 
     // WebSocket connection handlers
     socket.onopen = () => console.log('WebSocket connection established');

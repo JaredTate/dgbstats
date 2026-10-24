@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Container, Typography, Box, Paper, LinearProgress } from '@mui/material';
 import styles from '../App.module.css';
 import { useNetwork } from '../context/NetworkContext';
+import { prependUniqueBlock } from '../utils/blocks';
+import { openNetworkSocket } from '../utils/networkSocket';
 
 /**
  * BIP9 activation threshold (70% of miners must signal support)
@@ -344,11 +346,14 @@ const TaprootPage = () => {
   const calculateProgress = () => {
     console.log('Taproot Status:', taprootStatus);
     
+    // Active (including buried deployments with no bip9 block) shows 100%
+    if (taprootStatus?.active) return 100;
+
     // Handle null/undefined case
     if (!taprootStatus?.bip9) return 0;
     
     // Active states should show 100%
-    if (taprootStatus.active || taprootStatus.bip9.status === 'active' || taprootStatus.bip9.status === 'locked_in') {
+    if (taprootStatus.bip9.status === 'active' || taprootStatus.bip9.status === 'locked_in') {
       return 100;
     }
     
@@ -412,7 +417,7 @@ const TaprootPage = () => {
    * Handles initial blockchain data and real-time block updates
    */
   useEffect(() => {
-    const socket = new WebSocket(wsBaseUrl);
+    const socket = openNetworkSocket(wsBaseUrl);
 
     /**
      * WebSocket connection opened successfully
@@ -433,11 +438,13 @@ const TaprootPage = () => {
 
         if (message.type === 'initialData') {
         /**
-         * Process initial blockchain data including Taproot status
-         * Extracts Taproot soft fork information from blockchain info
+         * Process initial blockchain data including Taproot status.
+         * Current nodes report it in getdeploymentinfo; older nodes put it
+         * in getblockchaininfo.softforks.
          */
-        const taproot = message.data.blockchainInfo.softforks.taproot;
-        setTaprootStatus(taproot);
+        const taproot = message.data?.deploymentInfo?.deployments?.taproot
+          || message.data?.blockchainInfo?.softforks?.taproot;
+        if (taproot) setTaprootStatus(taproot);
       } else if (message.type === 'recentBlocks') {
         /**
          * Process initial block data for support calculation
@@ -451,10 +458,7 @@ const TaprootPage = () => {
          * Maintains rolling window of last 240 blocks
          */
         console.log('Received new block:', message.data);
-        setRecentBlocks(prevBlocks => {
-          const updatedBlocks = [message.data, ...prevBlocks];
-          return updatedBlocks.slice(0, 240);
-        });
+        setRecentBlocks(prevBlocks => prependUniqueBlock(prevBlocks, message.data, 240));
       }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);

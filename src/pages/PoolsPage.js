@@ -9,6 +9,8 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import * as d3 from 'd3';
 import config from '../config';
 import MiningGuideCallout from '../components/MiningGuideCallout';
+import { prependUniqueBlock } from '../utils/blocks';
+import { openNetworkSocket } from '../utils/networkSocket';
 
 /**
  * PoolsPage Component - Mining Pool Distribution Analysis
@@ -120,7 +122,7 @@ const PoolsPage = () => {
     let socket;
     
     try {
-      socket = new WebSocket(config.wsBaseUrl);
+      socket = openNetworkSocket(config.wsBaseUrl);
       
       // Connection established
       socket.onopen = () => {
@@ -162,7 +164,7 @@ const PoolsPage = () => {
           else if (message.type === 'newBlock' && message.data) {
             console.log('New block received:', message.data);
             if (message.data.minerAddress || message.data.minedTo) {
-              setBlocks((prevBlocks) => [message.data, ...prevBlocks]);
+              setBlocks((prevBlocks) => prependUniqueBlock(prevBlocks, message.data));
               // First data is data — leave the spinner even if the snapshot missed us.
               setLoading(false);
             }

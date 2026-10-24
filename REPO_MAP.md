@@ -62,8 +62,8 @@ are added or their exports change.
 ### src/components/ForkAlertBanner.js
 - Default export: `ForkAlertBanner`
 - Defines: `ForkAlertBanner`
-- Site-wide fork-risk banner; opens its own WebSocket and listens for `forkAlert` messages; links to `${basePath}/tips`
-- Imports local modules: `../context/NetworkContext`; libraries: `react`, `@mui/material`, `react-router-dom`
+- Site-wide fork-risk banner; listens for `forkAlert` messages on the current page's WebSocket (no socket of its own); links to `${basePath}/tips`
+- Imports local modules: `../context/NetworkContext`, `../utils/networkSocket`; libraries: `react`, `@mui/material`, `react-router-dom`
 
 ### src/components/ForkTreeMap.js
 - Default export: `React.memo(ForkTreeMap)`

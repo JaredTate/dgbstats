@@ -278,7 +278,7 @@ components/
 ├── XIcon.js               # Custom X (Twitter) SVG icon
 ├── MainnetLayout.js       # Mainnet route layout
 ├── TestnetLayout.js       # Testnet route layout (green theme)
-├── ForkAlertBanner.js     # Site-wide fork banner (own WebSocket, forkAlert messages)
+├── ForkAlertBanner.js     # Site-wide fork banner (listens to the page's WebSocket for forkAlert)
 ├── ForkTreeMap.js         # Responsive SVG fork-tree map (React.memo)
 ├── ChainTipsExplainer.js  # Collapsible educational section (React.memo)
 └── IntegrationGuides.js   # DigiDollar wallet/exchange integration-doc card
@@ -288,7 +288,7 @@ components/
 
 #### WebSocket Communication
 
-Each page (and the fork banner) opens its own WebSocket to `wsBaseUrl`. The frontend handles **17 inbound message types** and sends **1 outbound** message:
+Each page opens one WebSocket to `wsBaseUrl` via `openNetworkSocket()` (`src/utils/networkSocket.js`); the fork banner listens to that socket instead of opening its own. The frontend handles **17 inbound message types** and sends **1 outbound** message:
 
 ```javascript
 // Inbound (server → client)

@@ -487,6 +487,34 @@ describe('DifficultiesPage', () => {
     });
   });
 
+  describe('Duplicate blocks (B2a)', () => {
+    it('adds a difficulty point once when the same newBlock arrives twice', async () => {
+      renderWithProviders(<DifficultiesPage />);
+      await waitForAsync();
+      const ws = webSocketInstances[0];
+      ws.receiveMessage({
+        type: 'recentBlocks',
+        data: sampleRecentBlocks.map((b) => ({ ...b, hash: `h${b.height}` })),
+      });
+      await waitFor(() => {
+        expect(screen.getAllByText(/Showing difficulty changes over the last \d+ blocks/)[0])
+          .toHaveTextContent('last 2 blocks');
+      });
+
+      // A newBlock that is already in recentBlocks adds nothing.
+      ws.receiveMessage({ type: 'newBlock', data: { algo: 'SHA256D', difficulty: 12345679.1, height: 1001, hash: 'h1001' } });
+      const dup = { algo: 'SHA256D', difficulty: 12345680.5, height: 1010, hash: 'h1010' };
+      ws.receiveMessage({ type: 'newBlock', data: dup });
+      ws.receiveMessage({ type: 'newBlock', data: { ...dup } });
+
+      await waitFor(() => {
+        expect(screen.getByText('12345680.50000000')).toBeInTheDocument();
+      });
+      expect(screen.getAllByText(/Showing difficulty changes over the last \d+ blocks/)[0])
+        .toHaveTextContent('last 3 blocks');
+    });
+  });
+
   describe('Chart Management', () => {
     it('should create charts for each algorithm after data loads', async () => {
       renderWithProviders(<DifficultiesPage />);
