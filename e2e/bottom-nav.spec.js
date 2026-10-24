@@ -68,6 +68,10 @@ test.describe('Phone', () => {
 
   test('the bar does not cover the footer', async ({ page }) => {
     await page.goto('/supply');
+    // Live data keeps growing the page for a moment; scroll once it settles.
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.waitForTimeout(500);
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     const footer = page.getByRole('contentinfo');
     const fBox = await footer.boundingBox();
