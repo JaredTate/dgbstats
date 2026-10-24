@@ -373,7 +373,7 @@ const RoadmapPage = () => {
         progress: 100,
         icon: <SpeedIcon />,
         color: '#4caf50',
-        description: `DigiByte v9.26.2 shipped on mainnet June 29, 2026 and DigiDollar activated via BIP9 (bit 23) at block ${DD_ACTIVATION_HEIGHT.toLocaleString()} on July 17, 2026 — the world's first truly decentralized stablecoin on a UTXO blockchain is now live. Minting, sending, and redeeming are fully functional.`,
+        description: `DigiByte v9.26.2 shipped on mainnet June 29, 2026 and DigiDollar activated via BIP9 (bit 23) at block ${DD_ACTIVATION_HEIGHT.toLocaleString()} on July 17, 2026 — DigiDollar, a time-locked UTXO stablecoin, is now live. Minting, sending, and redeeming are available.`,
         keyFeatures: [
           '🚀 v9.26.2 mainnet release: June 29, 2026',
           `✅ Activated at block ${DD_ACTIVATION_HEIGHT.toLocaleString()}`,
@@ -953,7 +953,7 @@ const RoadmapPage = () => {
             fontSize: { xs: '0.95rem', md: '1.15rem' }
           }}
         >
-          World's First Truly Decentralized Stablecoin on a UTXO Blockchain
+          A Time-Locked UTXO Stablecoin Built into DigiByte Core
         </Typography>
 
         <Grid container spacing={2} justifyContent="center" sx={{ mb: 2 }}>

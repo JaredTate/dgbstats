@@ -15,7 +15,6 @@ import SecurityIcon from '@mui/icons-material/Security';
 import SpeedIcon from '@mui/icons-material/Speed';
 import PublicIcon from '@mui/icons-material/Public';
 import LockIcon from '@mui/icons-material/Lock';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import CodeIcon from '@mui/icons-material/Code';
 import GroupIcon from '@mui/icons-material/Group';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -24,19 +23,19 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import ConstructionIcon from '@mui/icons-material/Construction';
 import LaunchIcon from '@mui/icons-material/Launch';
 import DescriptionIcon from '@mui/icons-material/Description';
-import BusinessIcon from '@mui/icons-material/Business';
-import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
-import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
-import HomeIcon from '@mui/icons-material/Home';
 import SendIcon from '@mui/icons-material/Send';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import ListAltIcon from '@mui/icons-material/ListAlt';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import IntegrationGuides from '../components/IntegrationGuides';
 import { CORE_RELEASE } from '../coreRelease';
 
 /**
  * DigiDollarPage Component - Explainer for the DigiDollar Decentralized Stablecoin
  *
- * This page provides comprehensive information about the proposed DigiDollar stablecoin
- * on the DigiByte blockchain, including how it works, use cases, and implementation details.
+ * Plain, factual explainer for the DigiDollar stablecoin on the DigiByte blockchain:
+ * how it works, its risks, collateral math and implementation details. Keep the copy
+ * free of price or investment language (see the 'No investment or price language' tests).
  */
 const DigiDollarPage = () => {
 
@@ -107,8 +106,8 @@ const DigiDollarPage = () => {
             fontSize: '1.1rem'
           }}
         >
-          The world's first truly decentralized stablecoin native on a UTXO blockchain,
-          enabling stable value transactions without centralized control.
+          A time-locked UTXO stablecoin built into DigiByte Core, designed to track the US dollar.
+          You create it by locking your own DGB in your own wallet. No company issues it.
         </Typography>
 
         <Typography
@@ -122,8 +121,8 @@ const DigiDollarPage = () => {
             fontWeight: 600
           }}
         >
-          DGB becomes the strategic reserve asset (21B max, ~2.59 per person) • Everything happens inside DigiByte Core wallet •
-          You never give up control of your private keys
+          DGB is the collateral • Everything happens in the DigiByte Core wallet •
+          You keep your private keys
         </Typography>
 
         <Alert
@@ -136,13 +135,62 @@ const DigiDollarPage = () => {
           }}
         >
           <Typography variant="body2">
-            <strong>Status:</strong> <strong>Shipped — released on mainnet</strong> in DigiByte v9.26.2
-            (June 29, 2026) and active on mainnet since block 23,869,440 (July 17, 2026).
-            Current release: <strong>{CORE_RELEASE}</strong>. Fully operational on testnet26, where the oracle network runs
-            a 7-signature MuSig2 quorum across 35 oracle slots, backed by an extensive automated test suite.
+            <strong>Status:</strong> Active on mainnet since block 23,869,440 (July 17, 2026), first released in
+            DigiByte v9.26.2.
+            Current release: <strong>{CORE_RELEASE}</strong>. Mainnet and testnet26 both use a 7-of-35 MuSig2 oracle quorum.{' '}
+            <strong>Network upgrade:</strong> run v9.26.6 or later before mainnet block 24,490,000 (Thaw Day,
+            expected around November 1, 2026).
           </Typography>
         </Alert>
       </CardContent>
+    </Card>
+  );
+
+  // Disclaimer Section (shown right below the hero)
+  const DisclaimerSection = () => (
+    <Alert
+      severity="warning"
+      icon={<WarningAmberIcon />}
+      sx={{ mb: 4, borderRadius: '12px', '& .MuiAlert-message': { width: '100%' } }}
+    >
+      <Typography variant="h6" component="h2" fontWeight="bold" sx={{ mb: 1 }}>
+        Experimental software. Please read.
+      </Typography>
+      <Typography variant="body2">
+        DigiDollar is new, open-source software. It may have bugs. It depends on an oracle network for prices
+        and on DigiByte network rules, which change through upgrades. You can lose money. Locked DGB cannot be
+        unlocked before its lock ends, even if the DGB price falls. A DigiDollar is designed to track $1 USD,
+        but its market price is not guaranteed. This page explains how the software works. It is not financial,
+        investment, legal or tax advice, and it makes no promise of profit or returns. DigiByte has no company
+        behind it, and nobody is selling DigiDollar or DGB on this page.
+      </Typography>
+    </Alert>
+  );
+
+  // Risks Section
+  const risks = [
+    ['Software risk.', 'DigiDollar is experimental. Bugs can cause loss or locked funds.'],
+    ['Lock risk.', 'You cannot unlock early. To unlock, you must burn the full DigiDollar amount in one transaction. If you lose your keys or your DigiDollars, the DGB stays locked.'],
+    ['Price risk.', "The DGB price can fall. A DigiDollar's market price can differ from $1."],
+    ['Oracle risk.', 'Prices come from a 7-of-35 oracle network using 6 price sources. Wrong or missing prices can pause minting.'],
+    ['Pauses and adjustments.', 'Sharp DGB price moves can pause minting. When system health is low, DCA raises the collateral needed to mint and ERR raises the DigiDollars needed to redeem.'],
+    ['Network upgrades.', 'Rules change at mainnet block 24,490,000 (Thaw Day, expected around November 1, 2026). Node operators and miners must run v9.26.6 or later before then.'],
+    ['Tax and legal.', 'Rules differ by country and may be unclear. Ask a qualified professional.'],
+  ];
+
+  const RisksSection = () => (
+    <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px', borderTop: '4px solid #ed6c02' }}>
+      <Typography variant="h4" fontWeight="bold" sx={{ mb: 2, color: '#002352' }}>
+        Risks
+      </Typography>
+      <List dense>
+        {risks.map(([label, text]) => (
+          <ListItem key={label} sx={{ alignItems: 'flex-start', pl: 0 }}>
+            <ListItemIcon sx={{ minWidth: 36, mt: 0.5 }}><WarningAmberIcon sx={{ color: '#ed6c02' }} /></ListItemIcon>
+            <ListItemText primary={<><strong>{label}</strong> {text}</>} />
+          </ListItem>
+        ))}
+      </List>
     </Card>
   );
 
@@ -153,7 +201,7 @@ const DigiDollarPage = () => {
         What is DigiDollar?
       </Typography>
 
-      {/* DGB Scarcity Highlight */}
+      {/* Collateral facts */}
       <Alert
         severity="info"
         sx={{
@@ -164,12 +212,8 @@ const DigiDollarPage = () => {
         }}
       >
         <Typography variant="body1">
-          <strong>DGB is a Limited, Finite Strategic Reserve Asset:</strong> With a maximum supply of
-          21 billion DGB, there are only <strong style={{ color: '#0066cc', fontSize: '1.1em' }}>2.59 DGB
-          per person</strong> on Earth (based on 8.1 billion world population). Combined with DigiByte's
-          <strong style={{ color: '#0066cc' }}> 15-second block speed</strong> (40x faster than Bitcoin),
-          this extreme scarcity and fast settlement makes DGB ideal as collateral for DigiDollar -
-          a truly finite backing for instant, stable currency transactions.
+          <strong>Collateral: DGB.</strong> DigiByte has a fixed maximum supply of 21 billion DGB
+          and 15-second blocks.
         </Typography>
       </Alert>
 
@@ -188,19 +232,17 @@ const DigiDollarPage = () => {
               Simple Explanation
             </Typography>
             <Typography variant="body1" paragraph>
-              DigiDollar is a stable digital currency that equals $1 USD,
-              created by locking up DigiByte (DGB) as collateral. DGB becomes the
-              strategic reserve asset - with only 21 billion max supply (just ~2.59 DGB per person
-              on Earth), it's a truly finite asset backing the stability of DigiDollars.
+              DigiDollar is a stablecoin designed to track $1 USD. You create it by locking DGB
+              as collateral. The DGB you lock is worth 2 to 10 times the DigiDollars you create,
+              depending on how long you lock it.
             </Typography>
             <Typography variant="body1" paragraph>
-              Unlike traditional stablecoins backed by bank accounts, DigiDollar is
-              the world's first truly decentralized stablecoin on a UTXO blockchain.
-              No company or bank controls it.
+              Unlike stablecoins backed by bank accounts, DigiDollar is backed by DGB locked
+              on the DigiByte blockchain. No company or bank issues it.
             </Typography>
             <Typography variant="body1" sx={{ fontWeight: 600, color: '#002352' }}>
-              Most importantly: Everything happens directly in your DigiByte Core wallet -
-              you never give up control of your private keys or trust a third party.
+              Everything happens in your DigiByte Core wallet, and you keep your private keys.
+              DigiDollar does rely on the oracle network for the DGB/USD price.
             </Typography>
           </Paper>
         </Grid>
@@ -216,28 +258,28 @@ const DigiDollarPage = () => {
             }}
           >
             <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: '#002352' }}>
-              Key Benefits
+              Key Features
             </Typography>
             <List dense>
               <ListItem>
                 <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50' }} /></ListItemIcon>
-                <ListItemText primary="World's first truly decentralized stablecoin on UTXO blockchain" />
+                <ListItemText primary="Time-locked UTXO stablecoin built into DigiByte Core" />
               </ListItem>
               <ListItem>
                 <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50' }} /></ListItemIcon>
-                <ListItemText primary="Always worth $1 USD - stable and predictable" />
+                <ListItemText primary="Designed to track $1 USD (market price not guaranteed)" />
               </ListItem>
               <ListItem>
                 <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50' }} /></ListItemIcon>
-                <ListItemText primary="You keep full control of private keys in Core wallet" />
+                <ListItemText primary="You keep your private keys in DigiByte Core wallet" />
               </ListItem>
               <ListItem>
                 <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50' }} /></ListItemIcon>
-                <ListItemText primary="DGB becomes strategic reserve asset" />
+                <ListItemText primary="Backed by DGB locked on-chain" />
               </ListItem>
               <ListItem>
                 <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50' }} /></ListItemIcon>
-                <ListItemText primary="15-second blocks (40x faster than BTC), $0.01 fees" />
+                <ListItemText primary="15-second blocks. Fees paid in DGB (minimum 0.1 DGB per DigiDollar transaction)" />
               </ListItem>
             </List>
           </Paper>
@@ -269,24 +311,23 @@ const DigiDollarPage = () => {
         </Typography>
 
         <Typography variant="body1" paragraph>
-          <strong>Imagine DGB is silver</strong> stored in your basement safe. You have $1,000 worth
-          of silver but need cash today. Instead of selling your silver (and losing future gains),
-          you lock it in a special time-locked safe.
+          <strong>Imagine DGB is silver.</strong> You lock $1,000 of silver in a time-locked safe
+          in your own basement.
         </Typography>
 
         <Typography variant="body1" paragraph>
-          The safe gives you $500 cash to spend today. <strong>The silver NEVER leaves your possession</strong> -
-          it stays in YOUR basement, in YOUR safe. You just can't access it until the timelock expires.
+          The safe lets you take out $500 to spend. <strong>The silver stays yours</strong>, in your
+          own safe, but you cannot open the safe until the timer ends.
         </Typography>
 
         <Typography variant="body1" paragraph>
-          10 years later, your silver is worth $10,000 (10x gain)! To unlock: Simply return the $500
-          to the safe → get your $10,000 silver back. You kept ALL the appreciation.
+          To open it, you put the $500 back and get back the same amount of silver you locked,
+          whatever its price is then.
         </Typography>
 
         <Box sx={{ mt: 3, p: 2, backgroundColor: 'white', borderRadius: '8px' }}>
           <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: '#0066cc' }}>
-            That's EXACTLY how DigiDollar works:
+            DigiDollar works the same way:
           </Typography>
           <List dense>
             <ListItem>
@@ -303,181 +344,14 @@ const DigiDollarPage = () => {
             </ListItem>
             <ListItem>
               <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50', fontSize: '1.2rem' }} /></ListItemIcon>
-              <ListItemText primary="When timelock expires, burn DD → get your DGB back" />
+              <ListItemText primary="When the lock ends, burn the full DigiDollar amount → get back the DGB you locked" />
             </ListItem>
             <ListItem>
               <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50', fontSize: '1.2rem' }} /></ListItemIcon>
-              <ListItemText primary="Keep ALL the DGB price appreciation" />
+              <ListItemText primary="You cannot unlock early" />
             </ListItem>
           </List>
         </Box>
-      </Paper>
-
-      {/* Tax Advantage Box */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: 3,
-          mb: 4,
-          backgroundColor: 'rgba(76, 175, 80, 0.05)',
-          borderLeft: '4px solid #4caf50',
-          borderRadius: '8px'
-        }}
-      >
-        <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: '#2e7d32' }}>
-          💡 The Tax Advantage: Liquidity Without Selling
-        </Typography>
-
-        <Typography variant="body1" paragraph>
-          In most jurisdictions, <strong>borrowing against assets is NOT a taxable event</strong>.
-          This is exactly what billionaires do - they never sell their stocks, they borrow against them.
-        </Typography>
-
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle2" fontWeight="bold" color="#002352" gutterBottom>
-              Traditional Crypto Sale:
-            </Typography>
-            <Typography variant="body2" color="error">
-              ❌ Sell DGB → Pay 20-40% capital gains tax<br />
-              ❌ Lose future appreciation<br />
-              ❌ Taxable event recorded
-            </Typography>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle2" fontWeight="bold" color="#002352" gutterBottom>
-              DigiDollar Method:
-            </Typography>
-            <Typography variant="body2" color="success.main">
-              ✅ Lock DGB → Get DigiDollars<br />
-              ✅ No taxable event (in most jurisdictions)<br />
-              ✅ Keep ALL future DGB gains<br />
-              ✅ Theoretically never need to sell DGB
-            </Typography>
-          </Grid>
-        </Grid>
-
-        <Typography variant="body2" sx={{ mt: 2, fontStyle: 'italic', color: '#666' }}>
-          * Tax laws vary by jurisdiction. Consult a tax professional for your specific situation.
-        </Typography>
-      </Paper>
-
-      {/* Economic Incentives Section */}
-      <Paper
-        elevation={1}
-        sx={{
-          p: 3,
-          mb: 4,
-          backgroundColor: '#f8f9fa',
-          border: '2px solid #002352',
-          borderRadius: '8px'
-        }}
-      >
-        <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, color: '#002352' }}>
-          Economic Incentives: Why This Benefits Everyone
-        </Typography>
-
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <Box sx={{ height: '100%' }}>
-              <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: '#0066cc' }}>
-                🔒 DGB Becomes More Scarce
-              </Typography>
-
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2,
-                  mb: 2,
-                  backgroundColor: 'rgba(0, 102, 204, 0.1)',
-                  borderRadius: '8px',
-                  textAlign: 'center'
-                }}
-              >
-                <Typography variant="h4" fontWeight="bold" color="#002352">
-                  2.59 DGB
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Per person on Earth
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  (21B max supply ÷ 8.1B population)
-                </Typography>
-              </Paper>
-
-              <Typography variant="body1" paragraph>
-                With only 21 billion DGB ever to exist, locking DGB for DigiDollars makes an
-                already scarce asset even more scarce. This creates natural price support.
-              </Typography>
-              <List dense>
-                <ListItem>
-                  <ListItemIcon><TrendingUpIcon sx={{ color: '#4caf50' }} /></ListItemIcon>
-                  <ListItemText
-                    primary="Reduced selling pressure"
-                    secondary="Locked DGB can't be panic sold during market volatility"
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon><TrendingUpIcon sx={{ color: '#4caf50' }} /></ListItemIcon>
-                  <ListItemText
-                    primary="Supply shock potential"
-                    secondary="Significant locking could create supply squeeze"
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon><TrendingUpIcon sx={{ color: '#4caf50' }} /></ListItemIcon>
-                  <ListItemText
-                    primary="Benefits all DGB holders"
-                    secondary="Even unlocked DGB benefits from reduced circulating supply"
-                  />
-                </ListItem>
-              </List>
-            </Box>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Box sx={{ height: '100%' }}>
-              <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: '#0066cc' }}>
-                💰 Personal Financial Benefits
-              </Typography>
-              <Typography variant="body1" paragraph>
-                DigiDollar provides unprecedented financial flexibility for DGB holders,
-                enabling sophisticated wealth management strategies.
-              </Typography>
-              <List dense>
-                <ListItem>
-                  <ListItemIcon><AttachMoneyIcon sx={{ color: '#4caf50' }} /></ListItemIcon>
-                  <ListItemText
-                    primary="Tax-efficient liquidity"
-                    secondary="Access funds without triggering capital gains"
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon><AttachMoneyIcon sx={{ color: '#4caf50' }} /></ListItemIcon>
-                  <ListItemText
-                    primary="Keep upside potential"
-                    secondary="Maintain full exposure to DGB price appreciation"
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon><AttachMoneyIcon sx={{ color: '#4caf50' }} /></ListItemIcon>
-                  <ListItemText
-                    primary="Strategic flexibility"
-                    secondary="Lock portions based on liquidity needs"
-                  />
-                </ListItem>
-              </List>
-            </Box>
-          </Grid>
-        </Grid>
-
-        <Alert severity="success" sx={{ mt: 3 }}>
-          <Typography variant="body2">
-            <strong>The Network Effect:</strong> The more people use DigiDollar, the stronger the DGB ecosystem becomes.
-            Locked DGB creates scarcity → drives price → attracts more users → creates more demand for both DGB and DigiDollar.
-            It's a positive feedback loop that benefits all participants.
-          </Typography>
-        </Alert>
       </Paper>
 
       <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, color: '#002352' }}>
@@ -522,8 +396,8 @@ const DigiDollarPage = () => {
               2. Mint DigiDollars
             </Typography>
             <Typography variant="body2">
-              DigiDollars are automatically minted based on the locked DGB value
-              and current USD exchange rate from decentralized oracles.
+              DigiDollars are minted based on the locked DGB and the DGB/USD price from the
+              oracle network. Each mint is at least $100 and at most $100,000.
             </Typography>
           </Paper>
         </Grid>
@@ -560,7 +434,7 @@ const DigiDollarPage = () => {
       </Typography>
 
       <Typography variant="body1" paragraph>
-        DigiDollar uses a sliding collateral scale to prevent attacks while rewarding long-term participants:
+        Longer locks need less collateral. These are the protocol's fixed ratios, not price predictions:
       </Typography>
 
       <TableContainer component={Paper} elevation={0} sx={{ backgroundColor: '#f8f9fa' }}>
@@ -619,85 +493,32 @@ const DigiDollarPage = () => {
     </Card>
   );
 
-  // Revolutionary Use Cases Section
+  // Possible Uses Section
+  const uses = [
+    { icon: <AttachMoneyIcon sx={{ mr: 1, color: '#0066cc' }} />, title: 'Payments Priced in Dollars', text: 'Pay and get paid in a dollar-priced stablecoin on the DigiByte blockchain.' },
+    { icon: <SendIcon sx={{ mr: 1, color: '#002352' }} />, title: 'Sending Money Across Borders', text: 'Send dollar-priced value to anyone with a DigiByte wallet. Fees are paid in DGB.' },
+    { icon: <StorefrontIcon sx={{ mr: 1, color: '#4caf50' }} />, title: 'Merchant Checkout in Dollars', text: 'Merchants can price goods in dollars and accept DigiDollar.' },
+    { icon: <PublicIcon sx={{ mr: 1, color: '#9c27b0' }} />, title: 'More Ideas', text: 'See the community discussion of possible uses (link below).' },
+  ];
+
   const UseCasesSection = () => (
     <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px' }}>
       <Typography variant="h4" fontWeight="bold" sx={{ mb: 3, color: '#002352' }}>
-        Revolutionary Use Cases
+        Possible Uses
       </Typography>
 
       <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
-          <Paper elevation={0} sx={{ p: 2, backgroundColor: 'rgba(0, 102, 204, 0.05)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <BusinessIcon sx={{ mr: 1, color: '#0066cc' }} />
-              <Typography variant="h6" fontWeight="bold">Corporate Bonds</Typography>
-            </Box>
-            <Typography variant="body2" color="text.secondary">
-              $140.7 Trillion market - Instant settlement vs 2-3 day traditional clearing
-            </Typography>
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <Paper elevation={0} sx={{ p: 2, backgroundColor: 'rgba(0, 35, 82, 0.05)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <HomeIcon sx={{ mr: 1, color: '#002352' }} />
-              <Typography variant="h6" fontWeight="bold">Real Estate</Typography>
-            </Box>
-            <Typography variant="body2" color="text.secondary">
-              $79.7 Trillion market - Fractional ownership democratizes property investment
-            </Typography>
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <Paper elevation={0} sx={{ p: 2, backgroundColor: 'rgba(76, 175, 80, 0.05)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <DirectionsCarIcon sx={{ mr: 1, color: '#4caf50' }} />
-              <Typography variant="h6" fontWeight="bold">Autonomous Vehicles</Typography>
-            </Box>
-            <Typography variant="body2" color="text.secondary">
-              $13.7 Trillion by 2030 - Self-driving cars manage their own finances
-            </Typography>
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <Paper elevation={0} sx={{ p: 2, backgroundColor: 'rgba(255, 152, 0, 0.05)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <SendIcon sx={{ mr: 1, color: '#ff9800' }} />
-              <Typography variant="h6" fontWeight="bold">Global Remittances</Typography>
-            </Box>
-            <Typography variant="body2" color="text.secondary">
-              $685 Billion market - Reduce costs from 6.3% average to $0.01 flat fee
-            </Typography>
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <Paper elevation={0} sx={{ p: 2, backgroundColor: 'rgba(233, 30, 99, 0.05)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <LocalHospitalIcon sx={{ mr: 1, color: '#e91e63' }} />
-              <Typography variant="h6" fontWeight="bold">Healthcare Payments</Typography>
-            </Box>
-            <Typography variant="body2" color="text.secondary">
-              $550 Billion market - Real-time claim adjudication and transparent pricing
-            </Typography>
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <Paper elevation={0} sx={{ p: 2, backgroundColor: 'rgba(156, 39, 176, 0.05)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <PublicIcon sx={{ mr: 1, color: '#9c27b0' }} />
-              <Typography variant="h6" fontWeight="bold">And 45+ More</Typography>
-            </Box>
-            <Typography variant="body2" color="text.secondary">
-              From supply chain to gaming, DigiDollar enables countless innovations
-            </Typography>
-          </Paper>
-        </Grid>
+        {uses.map((u) => (
+          <Grid item xs={12} md={6} key={u.title}>
+            <Paper elevation={0} sx={{ p: 2, backgroundColor: 'rgba(0, 102, 204, 0.05)', height: '100%' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                {u.icon}
+                <Typography variant="h6" fontWeight="bold">{u.title}</Typography>
+              </Box>
+              <Typography variant="body2" color="text.secondary">{u.text}</Typography>
+            </Paper>
+          </Grid>
+        ))}
       </Grid>
     </Card>
   );
@@ -718,10 +539,9 @@ const DigiDollarPage = () => {
         }}
       >
         <Typography variant="body2">
-          <strong>Revolutionary Architecture:</strong> DigiDollar is the world's first truly
-          decentralized stablecoin built natively on a UTXO (Unspent Transaction Output) blockchain.
-          All operations occur directly in DigiByte Core wallet - users maintain complete control
-          of their private keys throughout the entire process.
+          <strong>Architecture:</strong> DigiDollar is a time-locked UTXO stablecoin built into
+          DigiByte Core and uses DigiByte's UTXO (Unspent Transaction Output) model. All steps happen
+          in the DigiByte Core wallet, and you keep your private keys.
         </Typography>
       </Alert>
 
@@ -742,7 +562,7 @@ const DigiDollarPage = () => {
               <ListItemIcon><SecurityIcon sx={{ color: '#002352' }} /></ListItemIcon>
               <ListItemText
                 primary="Decentralized Oracles"
-                secondary="Live on testnet26 (port 12033): 7-signature MuSig2 quorum, 35 active oracle slots (0-34). On-chain oracle bundle format: v0x03 (MuSig2)."
+                secondary="Live on mainnet and testnet26: 7-of-35 MuSig2 quorum. The signed price bundle (format v0x03) is in each block's coinbase."
               />
             </ListItem>
             <ListItem>
@@ -762,15 +582,7 @@ const DigiDollarPage = () => {
           <List>
             <ListItem>
               <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50' }} /></ListItemIcon>
-              <ListItemText primary="No forced liquidations during market volatility" />
-            </ListItem>
-            <ListItem>
-              <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50' }} /></ListItemIcon>
-              <ListItemText primary="All transactions appear identical on-chain (privacy)" />
-            </ListItem>
-            <ListItem>
-              <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50' }} /></ListItemIcon>
-              <ListItemText primary="Batch signature verification for efficiency" />
+              <ListItemText primary="No forced liquidations. Your DGB stays locked until the lock ends, even if the DGB price falls." />
             </ListItem>
             <ListItem>
               <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50' }} /></ListItemIcon>
@@ -790,8 +602,8 @@ const DigiDollarPage = () => {
       </Typography>
 
       <Typography variant="body1" paragraph>
-        DigiDollar leverages advanced Bitcoin Script opcodes and DigiByte's unique capabilities to create
-        a trustless, decentralized stablecoin system:
+        DigiDollar uses Bitcoin Script opcodes and DigiByte's own rules to create a decentralized
+        stablecoin system that relies on an oracle network for price:
       </Typography>
 
       <Grid container spacing={3}>
@@ -813,13 +625,6 @@ const DigiDollarPage = () => {
                 <ListItemText
                   primary="OP_CHECKLOCKTIMEVERIFY (CLTV)"
                   secondary="Enforces time-based collateral lock periods (1 hour to 10 years)"
-                />
-              </ListItem>
-              <ListItem>
-                <ListItemIcon><CodeIcon sx={{ color: '#002352' }} /></ListItemIcon>
-                <ListItemText
-                  primary="OP_CHECKSEQUENCEVERIFY (CSV)"
-                  secondary="Enables relative time locks for redemption windows"
                 />
               </ListItem>
               <ListItem>
@@ -850,7 +655,7 @@ const DigiDollarPage = () => {
                 <ListItemIcon><SecurityIcon sx={{ color: '#0066cc' }} /></ListItemIcon>
                 <ListItemText
                   primary="Oracle Validation"
-                  secondary="Live on testnet26 (port 12033): 7-signature MuSig2 quorum, 35 active oracle slots (0-34). On-chain oracle bundle format: v0x03 (MuSig2)."
+                  secondary="Live on mainnet and testnet26: 7-of-35 MuSig2 quorum. The signed price bundle (format v0x03) is in each block's coinbase."
                 />
               </ListItem>
               <ListItem>
@@ -892,9 +697,9 @@ const DigiDollarPage = () => {
                 1. Minting Process
               </Typography>
               <Typography variant="body2">
-                User creates a P2TR output with DGB collateral, embedding time lock
-                (CLTV) and oracle price data. Script validates collateral ratio and
-                mints corresponding DigiDollars.
+                The user creates a P2TR output with DGB collateral and a CLTV time lock.
+                The price comes from the oracle bundle in the block's coinbase. Validation
+                checks the collateral ratio and mints the DigiDollars.
               </Typography>
             </Box>
           </Grid>
@@ -905,7 +710,7 @@ const DigiDollarPage = () => {
                 2. Oracle Verification
               </Typography>
               <Typography variant="body2">
-                35 active oracle slots (0-34) with a 7-signature MuSig2 quorum on testnet26.
+                35 oracle slots (0-34) with a 7-of-35 MuSig2 quorum on mainnet and testnet26.
                 Six active exchange APIs (Binance, KuCoin, Gate.io, HTX,
                 Crypto.com, CoinGecko) feed oracle signatures using MuSig2 aggregate signing (v0x03).
               </Typography>
@@ -929,10 +734,9 @@ const DigiDollarPage = () => {
 
       <Alert severity="info" sx={{ mt: 3 }}>
         <Typography variant="body2">
-          <strong>Key Innovation:</strong> Unlike Ethereum-based stablecoins that require smart contracts
-          and gas fees, DigiDollar uses native UTXO script capabilities for superior security, lower costs,
-          and true decentralization. The entire system operates without intermediaries, smart contract risks,
-          or custody requirements.
+          <strong>Design:</strong> DigiDollar uses DigiByte's built-in script rules instead of a separate
+          smart-contract platform. It has no custodian. It still carries software, oracle and network-upgrade
+          risks (see Risks).
         </Typography>
       </Alert>
     </Card>
@@ -942,7 +746,7 @@ const DigiDollarPage = () => {
   const ProtectionSystemSection = () => (
     <Card elevation={3} sx={{ p: 3, mb: 4, borderRadius: '12px' }}>
       <Typography variant="h4" fontWeight="bold" sx={{ mb: 3, color: '#002352' }}>
-        Four-Layer Protection System
+        How the System Handles Price Drops
       </Typography>
 
       <Alert
@@ -979,8 +783,8 @@ const DigiDollarPage = () => {
               <Chip label="First Defense" size="small" sx={{ ml: 'auto', backgroundColor: '#e3f2fd' }} />
             </Box>
             <Typography variant="body2" paragraph>
-              The 1000%→200% sliding scale provides massive buffer against price drops.
-              The one-hour tier requires 10x collateral, protecting against short-term volatility.
+              With the 1000%→200% scale, DGB can fall 90% (1-hour tier) down to 50% (10-year tier)
+              before a position is under-collateralized.
             </Typography>
             <Typography variant="body2" color="text.secondary">
               <strong>Example:</strong> With 1000% collateral, DGB can drop 90% before undercollateralization.
@@ -1051,14 +855,14 @@ const DigiDollarPage = () => {
               <Chip label="Third Defense" size="small" sx={{ ml: 'auto', backgroundColor: '#fff3e0' }} />
             </Box>
             <Typography variant="body2" paragraph>
-              If system drops below 100% collateralized, redemptions require <strong>more DD to burn</strong>,
-              but you <strong>ALWAYS get 100% of your collateral back</strong>.
+              If the system drops below 100% collateralized, ERR kicks in: redemptions require <strong>more DD to burn</strong>,
+              and the collateral returned is not reduced.
             </Typography>
             <Typography variant="body2" color="text.secondary">
               <strong>ERR Tiers:</strong> 95-100% → burn 105.3% DD | 90-95% → burn 111.1% DD | 85-90% → burn 117.6% DD | &lt;85% → burn 125% DD
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Example: At 80% system health, burn 125 DD to redeem 100 DD position → get FULL collateral back
+              Example: At 80% system health, burn 125 DD to redeem a 100 DD position and unlock its collateral
             </Typography>
           </Paper>
         </Grid>
@@ -1076,16 +880,16 @@ const DigiDollarPage = () => {
           >
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6" fontWeight="bold" color="#4caf50">
-                4️⃣ Supply & Demand Dynamics
+                4️⃣ Volatility Pause
               </Typography>
-              <Chip label="Natural Defense" size="small" sx={{ ml: 'auto', backgroundColor: '#e8f5e9' }} />
+              <Chip label="Fourth Defense" size="small" sx={{ ml: 'auto', backgroundColor: '#e8f5e9' }} />
             </Box>
             <Typography variant="body2" paragraph>
-              Locked DGB reduces circulating supply, creating natural price support.
-              With only 21B DGB max, locking creates scarcity.
+              Sharp DGB price moves pause new minting. From mainnet block 24,490,000 (Thaw Day), a mint
+              is paused when the oracle price differs by 20% or more from the recent on-chain reference price.
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              <strong>Effect:</strong> More locking → Less supply → Higher DGB price → Better collateralization
+              <strong>Effect:</strong> No new DigiDollars are created during a sharp move. Sending and redeeming continue.
             </Typography>
           </Paper>
         </Grid>
@@ -1105,7 +909,7 @@ const DigiDollarPage = () => {
           🔍 Real-Time System Monitoring
         </Typography>
         <Typography variant="body2" paragraph>
-          The system continuously tracks critical health metrics to ensure stability:
+          The system tracks health metrics so anyone can see its state:
         </Typography>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={6}>
@@ -1134,11 +938,10 @@ const DigiDollarPage = () => {
         </Typography>
       </Paper>
 
-      <Alert severity="success" sx={{ mt: 3 }}>
+      <Alert severity="info" sx={{ mt: 3 }}>
         <Typography variant="body2">
-          <strong>Key Insight:</strong> These four layers work together without forced liquidations.
-          Prevention (higher collateral), adaptation (dynamic adjustment), crisis management (emergency ratios),
-          and market forces (scarcity) create a self-balancing, resilient system.
+          <strong>Keep in mind:</strong> These layers reduce risk. They do not remove it. If DGB falls far enough,
+          positions can become under-collateralized.
         </Typography>
       </Alert>
     </Card>
@@ -1234,7 +1037,7 @@ const DigiDollarPage = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <CheckCircleIcon sx={{ color: '#4caf50', mr: 1, fontSize: '1.2rem' }} />
                 <Typography variant="body2">
-                  <strong>Oracle System</strong> - 7-signature MuSig2 quorum across 35 active oracle slots, live on testnet26
+                  <strong>Oracle System</strong> - 7-of-35 MuSig2 quorum, live on mainnet and testnet26
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -1257,7 +1060,7 @@ const DigiDollarPage = () => {
 
             <Alert severity="success" sx={{ mt: 2 }}>
               <Typography variant="caption">
-                <strong>RELEASED:</strong> DigiByte v9.26.2 launched on mainnet June 29, 2026 — miners can now signal for DigiDollar activation
+                <strong>ACTIVE:</strong> DigiDollar activated on mainnet at block 23,869,440 (July 17, 2026).
               </Typography>
             </Alert>
           </Paper>
@@ -1298,7 +1101,7 @@ const DigiDollarPage = () => {
                 <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
                   primary="OP_ORACLE opcode (0xbf) Integration"
-                  secondary="Complete - Compact 22-byte oracle format"
+                  secondary="Complete - MuSig2 oracle bundle (v0x03, about 86 bytes)"
                 />
               </ListItem>
               <ListItem sx={{ pl: 0 }}>
@@ -1319,7 +1122,7 @@ const DigiDollarPage = () => {
                 <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
                   primary="Testnet/Regtest Block Validation"
-                  secondary="Complete - Activation heights: Testnet26 600, Regtest 650"
+                  secondary="Complete - Activation heights: Testnet26 600; regtest active from block 0"
                 />
               </ListItem>
               <ListItem sx={{ pl: 0 }}>
@@ -1333,7 +1136,7 @@ const DigiDollarPage = () => {
                 <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
                   primary="Oracle Consensus (7-signature MuSig2)"
-                  secondary="Active on testnet26 - 35 active oracle slots (0-34), 7 signatures required"
+                  secondary="Active on mainnet and testnet26 - 35 oracle slots (0-34), 7 signatures required"
                 />
               </ListItem>
               <ListItem sx={{ pl: 0 }}>
@@ -1361,11 +1164,9 @@ const DigiDollarPage = () => {
 
       <Alert severity="success" sx={{ mt: 3 }}>
         <Typography variant="body2">
-          <strong>Current Status:</strong> DigiByte <strong>v9.26.2 released on mainnet June 29, 2026</strong> with DigiDollar
-          and a 7-signature MuSig2 oracle quorum across 35 active oracle slots (0-34). DigiDollar is already active on testnet26.
-          On mainnet, DigiDollar activates through BIP9 miner signaling (version bit 23, 70% threshold — 28,224 of 40,320
-          blocks per signaling window; the minimum activation height of 23,627,520 has already passed, so activation now
-          depends solely on miner signaling). For complete details and all other upgrades, see the full{' '}
+          <strong>Current Status:</strong> DigiDollar is active on mainnet since block 23,869,440 and on testnet26.
+          Both use a 7-of-35 MuSig2 oracle quorum. Next network upgrade: Thaw Day at mainnet block 24,490,000
+          (run v9.26.6 or later). For complete details and all other upgrades, see the full{' '}
           <a href="/roadmap" style={{ color: '#0066cc', fontWeight: 'bold' }}>
             DigiByte Roadmap
           </a>.
@@ -1434,7 +1235,7 @@ const DigiDollarPage = () => {
             <Button
               fullWidth
               variant="contained"
-              startIcon={<TrendingUpIcon />}
+              startIcon={<ListAltIcon />}
               endIcon={<LaunchIcon />}
               sx={{
                 py: 1.5,
@@ -1481,9 +1282,8 @@ const DigiDollarPage = () => {
             fontStyle: 'italic'
           }}
         >
-          DigiDollar represents a paradigm shift in decentralized finance - the world's first truly
-          decentralized stablecoin on a UTXO blockchain where DGB becomes the strategic reserve asset
-          and users never surrender control of their private keys.
+          DigiDollar is experimental, open-source software. Read the docs and the risks before you use it.
+          Nothing on this page is financial, investment, legal or tax advice.
         </Typography>
       </CardContent>
     </Card>
@@ -1500,8 +1300,10 @@ const DigiDollarPage = () => {
     >
       <Container maxWidth="lg">
         <HeroSection />
+        <DisclaimerSection />
         <WhatIsSection />
         <HowItWorksSection />
+        <RisksSection />
         <CollateralSection />
         <TechnicalSection />
         <TechnicalDetailsSection />
