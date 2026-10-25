@@ -150,7 +150,7 @@ const IntegrationGuides = () => (
 
       <Typography
         variant="caption"
-        sx={{ mt: 2, display: 'block', textAlign: 'center', color: '#999' }}
+        sx={{ mt: 2, display: 'block', textAlign: 'center', color: '#666' }}
       >
         Both guides include a testnet quick start — begin integrating on testnet today
       </Typography>
@@ -161,7 +161,7 @@ const IntegrationGuides = () => (
           Documentation &amp; Specifications
         </Typography>
         <Typography variant="body2" sx={{ mb: 2, color: '#555' }}>
-          The complete, code-aligned DigiDollar reference docs (DigiByte Core v9.26.4). Start with the
+          The complete, code-aligned DigiDollar reference docs (written for DigiByte Core v9.26.4 and later). Start with the
           DigiDollar Explainer for a plain-language overview, then dive into the architecture, oracle,
           and activation specifications.
         </Typography>
@@ -180,6 +180,7 @@ const IntegrationGuides = () => (
                 color: '#0066cc',
                 textTransform: 'none',
                 fontWeight: 600,
+                minHeight: 44,
                 '&:hover': { borderColor: '#0066cc', backgroundColor: 'rgba(0, 102, 204, 0.05)' }
               }}
             >

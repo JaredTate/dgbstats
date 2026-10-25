@@ -148,8 +148,9 @@ describe('Home tiles fuzz', () => {
 
   const tileHrefs = (container) => {
     const map = {};
-    container.querySelectorAll('a[aria-label]').forEach((a) => {
-      const title = (a.getAttribute('aria-label') || '').split(':')[0];
+    // Each tile link's first heading (h5 or h6) is its title.
+    container.querySelectorAll('a.MuiCardActionArea-root').forEach((a) => {
+      const title = a.querySelector('h5, h6')?.textContent || '';
       map[title] = a.getAttribute('href');
     });
     return map;

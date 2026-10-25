@@ -44,6 +44,28 @@ export function isSqliteFile(buffer) {
   return str === SQLITE_MAGIC;
 }
 
+/**
+ * Why a SQLite file cannot be a whole wallet, or null when it looks complete.
+ * The header stores the page size (offset 16) and the number of pages
+ * (offset 28); a real wallet.dat is at least page size × page count bytes.
+ * Catches header-only, cut-short and damaged files (WEIRD-INPUT-10).
+ */
+export function sqliteSizeProblem(buffer) {
+  const dv = new DataView(buffer);
+  const raw = dv.getUint16(16, false);
+  const pageSize = raw === 1 ? 65536 : raw;
+  const validPageSize = pageSize >= 512 && pageSize <= 65536 && (pageSize & (pageSize - 1)) === 0;
+  if (!validPageSize) {
+    return 'This file is cut short or damaged: its SQLite header has no valid page size.';
+  }
+  const pageCount = dv.getUint32(28, false);
+  const expected = pageCount > 0 ? pageSize * pageCount : pageSize;
+  if (buffer.byteLength < expected) {
+    return `This file is cut short: the header says ${expected.toLocaleString()} bytes, but the file has only ${buffer.byteLength.toLocaleString()}. Use your original, complete wallet.dat.`;
+  }
+  return null;
+}
+
 export function readApplicationId(buffer) {
   const dv = new DataView(buffer);
   return dv.getUint32(68, false); // big-endian
@@ -107,6 +129,18 @@ const WalletConvertPage = () => {
 
       const appId = readApplicationId(buffer);
       const network = detectNetwork(appId);
+      const problem = sqliteSizeProblem(buffer)
+        || (network === 'unknown'
+          ? `This SQLite file is not a DigiByte wallet: its network ID (${toHex(appId)}) is not one this tool knows. Nothing was converted.`
+          : null);
+
+      if (problem) {
+        setError(problem);
+        setFileBuffer(null);
+        setCurrentAppId(null);
+        setCurrentNetwork('');
+        return;
+      }
 
       setFileBuffer(buffer);
       setCurrentAppId(appId);

@@ -11,6 +11,24 @@ const bottomNav = () => screen.getByRole('navigation', { name: 'Bottom navigatio
 
 describe('Header', () => {
   describe('Top bar', () => {
+    // SLOW-6: with large text the title must shrink (ellipsis) instead of
+    // pushing the page wider than the phone.
+    it('lets the logo and title shrink so the bar fits large text', () => {
+      renderWithProviders(<Header />, { network: 'mainnet' });
+      const home = screen.getByRole('link', { name: /DigiByte Stats home/i });
+      expect(getComputedStyle(home).flexShrink).toBe('1');
+      expect(getComputedStyle(home).minWidth).toBe('0');
+    });
+
+    // SLOW-8: the Mainnet / Testnet links are at least 44 px tall.
+    it('makes the Mainnet / Testnet links at least 44 px tall', () => {
+      renderWithProviders(<Header />, { network: 'mainnet' });
+      const sw = screen.getByRole('group', { name: 'Network' });
+      ['Mainnet', 'Testnet'].forEach((name) => {
+        expect(getComputedStyle(within(sw).getByRole('link', { name })).minHeight).toBe('44px');
+      });
+    });
+
     it('shows the logo and title as a link home', () => {
       renderWithProviders(<Header />, { network: 'mainnet' });
       expect(screen.getByAltText('DigiByte Logo')).toBeInTheDocument();

@@ -127,7 +127,15 @@ describe('DDStatsPage', () => {
       expect(screen.getByText('Total DD Supply')).toBeInTheDocument();
       expect(screen.getByText('DGB Locked')).toBeInTheDocument();
       expect(screen.getByText('Collateral Ratio')).toBeInTheDocument();
-      expect(screen.getByText('Active Oracles')).toBeInTheDocument();
+      expect(screen.getByText('Recently Reporting Oracles')).toBeInTheDocument();
+    });
+
+    // FIRST-TIMER-20: Core's oracle_count is "unique oracles that reported a price
+    // recently", not "active now". The label must not clash with /oracles.
+    it('labels the oracle count truthfully (not "Active Oracles")', () => {
+      renderWithProviders(<DDStatsPage />, { network: 'testnet' });
+      expect(screen.queryByText('Active Oracles')).not.toBeInTheDocument();
+      expect(screen.getByText('Recently Reporting Oracles')).toBeInTheDocument();
     });
 
     it('should render the system health explainer', async () => {

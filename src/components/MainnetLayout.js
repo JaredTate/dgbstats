@@ -5,6 +5,7 @@ import Header from './Header';
 import Footer from './Footer';
 import ForkAlertBanner from './ForkAlertBanner';
 import LiveDataNotice from './LiveDataNotice';
+import CanonicalRedirect from './CanonicalRedirect';
 import usePageSeo from '../seo/usePageSeo';
 import styles from '../App.module.css';
 
@@ -13,11 +14,12 @@ const MainnetLayout = () => {
   return (
     <NetworkProvider network="mainnet">
       <div className={styles.app}>
+        <CanonicalRedirect />
         <Header />
         <ForkAlertBanner />
-        <div className={styles.contentContainer}>
+        <main className={styles.contentContainer}>
           <Outlet />
-        </div>
+        </main>
         <Footer />
         <LiveDataNotice />
       </div>

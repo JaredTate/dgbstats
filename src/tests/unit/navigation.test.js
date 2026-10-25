@@ -151,4 +151,10 @@ describe('navigation fuzz', () => {
       if (base) expect(out.startsWith('/testnet')).toBe(true);
     }
   });
+
+  // FIRST-TIMER-15: the only health status lives on /tips; its menu text must say so.
+  it.each([false, true])('says the Chain Tips page shows network health (testnet=%s)', (isTestnet) => {
+    const tips = getNavGroups(isTestnet).flatMap((g) => g.items).find((i) => i.path.endsWith('/tips'));
+    expect(tips.description).toMatch(/network health/i);
+  });
 });

@@ -5,6 +5,7 @@ import { NetworkProvider } from '../context/NetworkContext';
 import Header from './Header';
 import Footer from './Footer';
 import ForkAlertBanner from './ForkAlertBanner';
+import CanonicalRedirect from './CanonicalRedirect';
 import LiveDataNotice from './LiveDataNotice';
 import usePageSeo from '../seo/usePageSeo';
 
@@ -59,11 +60,12 @@ const TestnetLayout = () => {
     <NetworkProvider network="testnet">
       <ThemeProvider theme={testnetTheme}>
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+          <CanonicalRedirect />
           <Header />
           <ForkAlertBanner />
-          <div style={{ flex: 1 }}>
+          <main style={{ flex: 1 }}>
             <Outlet />
-          </div>
+          </main>
           <Footer />
           <LiveDataNotice />
         </div>

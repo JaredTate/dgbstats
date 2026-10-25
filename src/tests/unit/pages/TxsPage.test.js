@@ -390,6 +390,60 @@ describe('TxsPage', () => {
   });
 
   describe('Accessibility', () => {
+    const renderWithMempool = async (stats = { size: 40, bytes: 10000, feeDistribution: { '0-1000': 5, '1000-5000': 10 } }) => {
+      renderWithProviders(<TxsPage />);
+      await waitForAsync();
+      webSocketInstances[0].receiveMessage({ type: 'mempool', data: { ...sampleMempoolData.data, stats } });
+      await waitFor(() => {
+        expect(screen.queryByText('Loading transaction data...')).not.toBeInTheDocument();
+      });
+    };
+
+    // FIRST-TIMER-19 (axe button-name, critical): the expand buttons have a name.
+    // SLOW-8: and are at least 44 px.
+    it('names every expand button and makes it 44 px', async () => {
+      await renderWithMempool();
+      const buttons = screen.getAllByRole('button', { name: 'Show transaction details' });
+      expect(buttons.length).toBe(sampleMempoolData.data.transactions.length);
+      buttons.forEach((b) => {
+        expect(b).toHaveAttribute('aria-expanded', 'false');
+        expect(getComputedStyle(b).width).toBe('44px');
+        expect(getComputedStyle(b).height).toBe('44px');
+      });
+      fireEvent.click(buttons[0]);
+      expect(screen.getByRole('button', { name: 'Hide transaction details' })).toHaveAttribute('aria-expanded', 'true');
+      document.querySelectorAll('button').forEach((b) => {
+        expect(b.textContent.trim() || b.getAttribute('aria-label') || b.getAttribute('title')).toBeTruthy();
+      });
+    });
+
+    // FIRST-TIMER-19 (axe aria-progressbar-name): the memory bar has a name.
+    it('names the memory usage progress bar', async () => {
+      await renderWithMempool({ size: 40, bytes: 10000, usage: 1000, maxmempool: 100000 });
+      screen.getAllByRole('progressbar').forEach((bar) => expect(bar).toHaveAccessibleName());
+    });
+
+    // FIRST-TIMER-19 (axe aria-prohibited-attr): no aria-label on a plain <div>.
+    it('puts aria-label only on elements with a role', async () => {
+      await renderWithMempool();
+      document.querySelectorAll('div[aria-label]').forEach((el) => {
+        expect(el.getAttribute('role')).toBeTruthy();
+      });
+    });
+
+    // FIRST-TIMER-19 (axe color-contrast): white on MUI warning orange is 3.1:1.
+    it('shows "Connecting..." with readable colors (not white on orange)', () => {
+      renderWithProviders(<TxsPage />);
+      const chip = screen.getByText('Connecting...').closest('.MuiChip-root');
+      expect(chip.className).not.toMatch(/MuiChip-colorWarning/);
+    });
+
+    // FIRST-TIMER-17: say what sat/vB means once.
+    it('explains sat/vB in plain words', async () => {
+      await renderWithMempool();
+      expect(screen.getByText(/sat\/vB means satoshis per virtual byte/)).toBeInTheDocument();
+    });
+
     it('should have proper heading hierarchy', async () => {
       renderWithProviders(<TxsPage />);
 

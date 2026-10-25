@@ -46,7 +46,7 @@ const GROUPS = [
       { label: 'Blocks', path: '/blocks', icon: GridViewIcon, description: 'The newest blocks, updated live' },
       { label: 'Transactions', path: '/txs', icon: SwapHorizIcon, description: 'Live and recent transactions' },
       { label: 'Supply', path: '/supply', icon: PieChartIcon, description: 'DGB in circulation and left to mine' },
-      { label: 'Chain Tips & Forks', path: '/tips', icon: AccountTreeIcon, description: 'Short forks and orphaned blocks' },
+      { label: 'Chain Tips & Forks', path: '/tips', icon: AccountTreeIcon, description: 'Network health, short forks and orphaned blocks' },
       { label: 'Nodes', path: '/nodes', icon: PublicIcon, description: 'World map of DigiByte nodes' },
     ],
   },

@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { screen } from '@testing-library/react';
 import DigiDollarPage from '../../../pages/DigiDollarPage';
 import { renderWithProviders } from '../../utils/testUtils';
+import { contrastRatio } from '../../utils/contrast';
+import { CORE_RELEASE } from '../../../coreRelease';
 
 const pageText = () => document.body.textContent;
 
@@ -152,7 +154,27 @@ describe('DigiDollarPage', () => {
       renderWithProviders(<DigiDollarPage />);
 
       expect(screen.getAllByText(/24,490,000/).length).toBeGreaterThan(0);
-      expect(pageText()).toMatch(/v9\.26\.6 or later/);
+      expect(pageText()).toMatch(/minimum v9\.26\.6/);
+    });
+
+    // FIRST-TIMER-20: one clear upgrade message: minimum v9.26.6, recommended = current release.
+    it('gives the minimum and the recommended version together', () => {
+      renderWithProviders(<DigiDollarPage />);
+      expect(pageText()).toMatch(new RegExp(`minimum v9\\.26\\.6, recommended ${CORE_RELEASE.replace(/\./g, '\\.')}`));
+      expect(pageText()).not.toMatch(/v9\.26\.6 or later/);
+    });
+
+    // FIRST-TIMER-17: spell out each term once, in plain words.
+    it('spells out DCA, ERR, Thaw Day and MuSig2 in plain words', () => {
+      renderWithProviders(<DigiDollarPage />);
+      const text = pageText();
+      expect(text).toMatch(/Dynamic Collateral Adjustment \(DCA\)/);
+      expect(text).toMatch(/Emergency Redemption Ratio \(ERR\)/);
+      expect(text).toMatch(/Thaw Day: the block where new DigiDollar rules start/);
+      expect(text).toMatch(/MuSig2 \(the 7 oracle signatures are combined into one\)/);
+      // DCA and ERR are spelled out where they are first used.
+      expect(text.indexOf('DCA')).toBe(text.indexOf('(DCA)') + 1);
+      expect(text.indexOf('ERR')).toBe(text.indexOf('(ERR)') + 1);
     });
 
     it('should describe the volatility pause as a protection layer', () => {
@@ -198,6 +220,46 @@ describe('DigiDollarPage', () => {
     it.each(banned.map((re) => [re]))('should not contain %s', (re) => {
       renderWithProviders(<DigiDollarPage />);
       expect(pageText()).not.toMatch(re);
+    });
+  });
+
+  // FIRST-TIMER-19: axe color-contrast and scrollable-region-focusable on /digidollar.
+  describe('Accessibility', () => {
+    const LIGHT = '#f8f9fa';
+    it.each(['2. Oracle Verification', '3. Redemption Process', '3️⃣ Emergency Redemption Ratio', '4️⃣ Volatility Pause'])(
+      'gives the "%s" heading at least 4.5:1 contrast', (heading) => {
+        renderWithProviders(<DigiDollarPage />);
+        const el = screen.getByText(heading);
+        expect(contrastRatio(getComputedStyle(el).color, LIGHT)).toBeGreaterThanOrEqual(4.5);
+      });
+
+    it.each([`SHIPPED — ${CORE_RELEASE}`, 'MAINNET RELEASED'])('gives the "%s" chip readable white text', (label) => {
+      renderWithProviders(<DigiDollarPage />);
+      const chip = screen.getByText(label).closest('.MuiChip-root');
+      expect(contrastRatio('#ffffff', getComputedStyle(chip).backgroundColor)).toBeGreaterThanOrEqual(4.5);
+    });
+
+    it('gives the testnet quick start note readable text', () => {
+      renderWithProviders(<DigiDollarPage />);
+      const el = screen.getByText(/Both guides include a testnet quick start/);
+      expect(contrastRatio(getComputedStyle(el).color, '#ffffff')).toBeGreaterThanOrEqual(4.5);
+    });
+
+    it('lets keyboard users focus every scrolling box', () => {
+      renderWithProviders(<DigiDollarPage />);
+      const scrollers = [...document.querySelectorAll('*')].filter((el) => /auto|scroll/.test(getComputedStyle(el).overflowY + getComputedStyle(el).overflowX));
+      expect(scrollers.length).toBeGreaterThanOrEqual(3);
+      scrollers.forEach((el) => {
+        expect(el.getAttribute('tabindex')).toBe('0');
+        expect(el.getAttribute('aria-label')).toBeTruthy();
+      });
+    });
+
+    // SLOW-8: the documentation buttons are at least 44 px tall.
+    it('makes the documentation buttons at least 44 px tall', () => {
+      renderWithProviders(<DigiDollarPage />);
+      const btn = screen.getByRole('link', { name: /Oracle Explainer/ });
+      expect(getComputedStyle(btn).minHeight).toBe('44px');
     });
   });
 });

@@ -103,6 +103,15 @@ describe('NodesPage', () => {
   });
 
   describe('Rendering', () => {
+    // FIRST-TIMER-23: "Scroll to zoom" alone means nothing on a phone.
+    it('tells touch users to pinch to zoom', async () => {
+      renderWithProviders(<NodesPage />);
+      await waitForAsync();
+      webSocketInstances[0].receiveMessage({ type: 'geoData', data: mockApiResponses.nodesData.nodes });
+      const hint = await screen.findByText(/to zoom/);
+      expect(hint).toHaveTextContent(/Pinch or scroll to zoom/);
+    });
+
     it('should render the hero section with title and description', () => {
       renderWithProviders(<NodesPage />);
       

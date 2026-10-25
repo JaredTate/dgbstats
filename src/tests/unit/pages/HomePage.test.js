@@ -500,8 +500,19 @@ describe('HomePage', () => {
 
     const INTERACTIVE = 'a, button, input, select, textarea, [role="button"], [role="link"], [tabindex]';
 
+    // FIRST-TIMER-19 (axe label-content-name-mismatch): a tile's accessible name is
+    // its visible text, so it starts with the title and contains the action line.
+    const tileName = (name) => {
+      const [title, rest] = name.split(': ');
+      const action = rest.replace(' (opens in a new tab)', '').toLowerCase();
+      const external = rest.includes('(opens in a new tab)');
+      return (accName) => accName.startsWith(title)
+        && accName.toLowerCase().includes(action)
+        && accName.includes('(opens in a new tab)') === external;
+    };
+
     const expectTileLink = (tile, prefix) => {
-      const link = screen.getByRole('link', { name: tile.name });
+      const link = screen.getByRole('link', { name: tileName(tile.name) });
       expect(link.tagName).toBe('A');
       expect(link).toHaveAttribute('href', tile.href || `${prefix}${tile.path}`);
       expect(link).toHaveTextContent(tile.action);
@@ -520,7 +531,7 @@ describe('HomePage', () => {
     it('prefixes every testnet tile link with /testnet', () => {
       renderOn('testnet');
       [...SHARED_TILES, TESTNET_RELEASE_TILE].forEach((tile) => expectTileLink(tile, '/testnet'));
-      expect(screen.queryByRole('link', { name: MAINNET_VERSION_TILE.name })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: tileName(MAINNET_VERSION_TILE.name) })).not.toBeInTheDocument();
       // + testnet release tile + latest version tile + "Go to mainnet" intro link
       expect(screen.getAllByRole('link')).toHaveLength(SHARED_TILES.length + 3);
     });
@@ -550,7 +561,7 @@ describe('HomePage', () => {
           deploymentInfo: { deployments: { csv: { type: 'buried', active: true } } }
         }
       });
-      const link = screen.getByRole('link', { name: 'Active Softforks: see network upgrades' });
+      const link = screen.getByRole('link', { name: tileName('Active Softforks: see network upgrades') });
       await waitFor(() => expect(link).toHaveTextContent('csv:'));
       expect(link.querySelectorAll(INTERACTIVE)).toHaveLength(0);
     });
@@ -567,18 +578,45 @@ describe('HomePage', () => {
     it('keeps keyboard focus on a tile when live data arrives', async () => {
       renderOn('mainnet');
       await waitForAsync();
-      screen.getByRole('link', { name: 'Total Blocks: see latest blocks' }).focus();
+      screen.getByRole('link', { name: tileName('Total Blocks: see latest blocks') }).focus();
       webSocketInstances[0].receiveMessage({ type: 'initialData', data: { blockchainInfo: { blocks: 42 } } });
       await waitFor(() => expect(screen.getByText('42')).toBeInTheDocument());
-      expect(document.activeElement).toBe(screen.getByRole('link', { name: 'Total Blocks: see latest blocks' }));
+      expect(document.activeElement).toBe(screen.getByRole('link', { name: tileName('Total Blocks: see latest blocks') }));
     });
 
-    it('links each tile to the card text that describes it', () => {
+    it('names each tile by its visible card text (no aria-label override)', () => {
       renderOn('mainnet');
-      const link = screen.getByRole('link', { name: 'Total Blocks: see latest blocks' });
-      const describedBy = link.getAttribute('aria-describedby');
-      expect(describedBy).toBeTruthy();
-      expect(document.getElementById(describedBy)).toHaveTextContent(/Total blocks in the DigiByte blockchain/);
+      const link = screen.getByRole('link', { name: tileName('Total Blocks: see latest blocks') });
+      expect(link).not.toHaveAttribute('aria-label');
+      expect(link).not.toHaveAttribute('aria-describedby');
+      expect(link).toHaveAccessibleName(/Total blocks in the DigiByte blockchain/);
+      screen.getAllByRole('link').forEach((l) => expect(l).not.toHaveAttribute('aria-label'));
+    });
+
+    // FIRST-TIMER-16: no menu-like icon next to the page title.
+    it.each(['mainnet', 'testnet'])('has no icon next to the page title (%s)', (network) => {
+      renderOn(network);
+      const h1 = screen.getByRole('heading', { level: 1 });
+      expect(h1.parentElement.querySelector('svg')).toBeNull();
+    });
+
+    // FIRST-TIMER-17: say what "buried" means.
+    it('explains what a "buried" softfork is', () => {
+      renderOn('mainnet');
+      expect(screen.getByText(/"buried" means the upgrade is permanent/)).toBeInTheDocument();
+    });
+
+    // SLOW-6: long difficulty numbers wrap instead of widening the page.
+    it('lets long difficulty values wrap', async () => {
+      renderOn('mainnet');
+      await waitForAsync();
+      webSocketInstances[0].receiveMessage({
+        type: 'initialData',
+        data: { blockchainInfo: { blocks: 1, difficulties: { sha256d: 571625498.0531434, scrypt: 1, skein: 1, qubit: 1, odo: 1 } } }
+      });
+      const label = await screen.findByText('SHA256d:');
+      const value = label.nextElementSibling;
+      expect(getComputedStyle(value).overflowWrap).toBe('anywhere');
     });
   });
 

@@ -43,6 +43,9 @@ const NetworkSwitch = ({ isTestnet }) => (
         sx={{
           px: { xs: 1, sm: 1.5 },
           py: 0.5,
+          minHeight: 44,
+          display: 'inline-flex',
+          alignItems: 'center',
           borderRadius: '8px',
           fontSize: { xs: '0.78rem', sm: '0.85rem' },
           fontWeight: item.active ? 700 : 500,
@@ -92,10 +95,10 @@ const Header = () => {
               component={RouterLink}
               to={homePath}
               aria-label="DigiByte Stats home"
-              sx={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'white', flexShrink: 0, minWidth: 0, mr: { md: 2 } }}
+              sx={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'white', flexShrink: 1, minWidth: 0, mr: { md: 2 } }}
             >
-              <Box component="img" src="/logo.png" alt="DigiByte Logo" sx={{ height: { xs: 30, md: 36 }, mr: 1 }} />
-              <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 'bold', fontSize: { xs: '1.05rem', md: '1.2rem' } }}>
+              <Box component="img" src="/logo.png" alt="DigiByte Logo" sx={{ height: { xs: 30, md: 36 }, mr: 1, flexShrink: 0 }} />
+              <Typography variant="h6" noWrap component="div" sx={{ minWidth: 0, fontWeight: 'bold', fontSize: { xs: '1.05rem', md: '1.2rem' } }}>
                 DigiByte Stats
               </Typography>
               {isTestnet && (

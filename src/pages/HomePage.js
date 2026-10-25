@@ -69,9 +69,7 @@ const formatLive = (value, format) => {
 const isObject = (value) => typeof value === 'object' && value !== null;
 
 /** "See latest blocks" -> "see latest blocks" (keeps "DigiByte", "GitHub" etc. as written). */
-const lowerFirst = (text) => text.charAt(0).toLowerCase() + text.slice(1);
 
-const slugify = (text) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
 const cardHoverSx = {
   height: '100%',
@@ -83,35 +81,37 @@ const cardHoverSx = {
   borderRadius: '8px'
 };
 
+/** Text for screen readers only (same as MUI's visuallyHidden). */
+const visuallyHidden = {
+  border: 0, clip: 'rect(0 0 0 0)', height: '1px', margin: '-1px', overflow: 'hidden',
+  padding: 0, position: 'absolute', whiteSpace: 'nowrap', width: '1px'
+};
+
 /**
  * TileLink - makes a whole home card one link ("every tile is a door").
  *
  * The card is a single <a>: an internal route (`to`, via React Router) or an
  * external page (`href`, opens in a new tab). A visible action line at the
- * bottom says where it goes. The accessible name is "<title>: <action>"; the
- * card text is attached as its description. Nothing inside is interactive.
+ * bottom says where it goes. The accessible name is the card's visible text
+ * (title, value, description, action), so it always matches what people see
+ * (axe label-content-name-mismatch). Nothing inside is interactive.
  *
- * @param {string} title - Card title, used in the accessible name
  * @param {string} action - Footer text, e.g. "See latest blocks"
  * @param {string} [to] - Internal route (already network-prefixed)
  * @param {string} [href] - External URL (opens in a new tab)
  * @param {string} accent - Network accent color for the action line and focus ring
  * @param {object} [sx] - Extra Card styles (border color, background)
  */
-const TileLink = ({ title, action, to, href, accent, sx, children }) => {
-  const descriptionId = `home-tile-${slugify(title)}-text`;
+const TileLink = ({ action, to, href, accent, sx, children }) => {
   const isExternal = Boolean(href);
   const linkProps = isExternal
     ? { component: 'a', href, target: '_blank', rel: 'noopener noreferrer' }
     : { component: RouterLink, to };
-  const ariaLabel = `${title}: ${lowerFirst(action)}${isExternal ? ' (opens in a new tab)' : ''}`;
 
   return (
     <Card elevation={3} sx={{ ...cardHoverSx, ...sx }}>
       <CardActionArea
         {...linkProps}
-        aria-label={ariaLabel}
-        aria-describedby={descriptionId}
         sx={{
           height: '100%',
           display: 'flex',
@@ -130,7 +130,7 @@ const TileLink = ({ title, action, to, href, accent, sx, children }) => {
           }
         }}
       >
-        <CardContent id={descriptionId} sx={{ flexGrow: 1 }}>
+        <CardContent sx={{ flexGrow: 1 }}>
           {children}
         </CardContent>
         <Box sx={{ px: 2, pb: 2 }}>
@@ -153,6 +153,7 @@ const TileLink = ({ title, action, to, href, accent, sx, children }) => {
             }}
           >
             {action} <span aria-hidden="true">→</span>
+            {isExternal && <Box component="span" sx={visuallyHidden}> (opens in a new tab)</Box>}
           </Box>
         </Box>
       </CardActionArea>
@@ -219,7 +220,10 @@ const AlgorithmDifficultiesCard = ({ blockchainInfo, link }) => {
       {difficulties ? (
         DIFFICULTY_ROWS.map(({ label, key, fallbackKey }) => (
           <Typography key={key} variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-            <span>{label}:</span> <span>{formatDifficultyValue(getDifficultyValue(difficulties, key, fallbackKey))}</span>
+            <span>{label}:</span>{' '}
+            <span style={{ overflowWrap: 'anywhere', textAlign: 'right', minWidth: 0 }}>
+              {formatDifficultyValue(getDifficultyValue(difficulties, key, fallbackKey))}
+            </span>
           </Typography>
         ))
       ) : (
@@ -288,7 +292,7 @@ const SoftforksCard = ({ deploymentInfo, blockchainInfo, link }) => {
       <Divider sx={{ my: 1 }} />
 
       <Typography variant="body2" color="text.secondary">
-        Active on-chain softforks.
+        Active on-chain softforks (rule upgrades). "buried" means the upgrade is permanent and built into the software.
       </Typography>
     </TileLink>
   );
@@ -445,7 +449,6 @@ const HomePage = ({ numberWithCommas, formatNumber }) => {
       <CardContent sx={{ py: 4, textAlign: 'center' }}>
         {/* Main title with icon */}
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
-          <StorageIcon sx={{ fontSize: '2.5rem', color: networkTheme.primary, mr: 2 }} />
           <Typography
             variant="h2"
             component="h1"

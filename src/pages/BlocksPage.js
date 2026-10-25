@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Container, Typography, Grid, Button, Card, CardContent,
   Box, Divider, Chip, useMediaQuery, useTheme, Pagination
@@ -25,6 +25,19 @@ const ALGO_COLORS = {
   'qubit': '#9c27b0',    // Purple - Lightweight algorithm
   'odo': '#f44336',      // Red - ASIC-resistant
   'odocrypt': '#f44336', // Red - ASIC-resistant variant
+};
+
+/**
+ * Darker shade of each algorithm color for chip text, so it stays readable
+ * (4.5:1 or more) on the light algorithm tint behind it.
+ */
+const ALGO_TEXT_COLORS = {
+  'sha256d': '#1b5e20',
+  'scrypt': '#0d47a1',
+  'skein': '#8a4b00',
+  'qubit': '#6a1b9a',
+  'odo': '#b71c1c',
+  'odocrypt': '#b71c1c',
 };
 
 /**
@@ -112,6 +125,9 @@ const LoadingCard = () => (
 const getAlgoColor = (algo) => {
   return ALGO_COLORS[algo.toLowerCase()] || '#0066cc';
 };
+
+/** Readable text color for an algorithm chip. */
+const getAlgoTextColor = (algo) => ALGO_TEXT_COLORS[algo.toLowerCase()] || '#004c99';
 
 /**
  * Format number with thousands separators (commas)
@@ -217,7 +233,7 @@ const BlockCard = ({ block, index, isMobile }) => (
                   size="small" 
                   sx={{ 
                     bgcolor: getAlgoColor(block.algo) + '20',
-                    color: getAlgoColor(block.algo),
+                    color: getAlgoTextColor(block.algo),
                     fontWeight: 'medium',
                     fontSize: '0.75rem'
                   }} 
@@ -337,6 +353,7 @@ const PaginationControls = ({
         borderRadius: '8px',
         boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
         width: { xs: '100%', sm: 'auto' },
+        minHeight: 44,
       }}
     >
       Previous
@@ -374,6 +391,7 @@ const PaginationControls = ({
         borderRadius: '8px',
         boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
         width: { xs: '100%', sm: 'auto' },
+        minHeight: 44,
       }}
     >
       Next
@@ -409,6 +427,9 @@ const BlocksPage = () => {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(0);
+  // Top of the block list: Next / Previous scroll back here (CHAOS-10)
+  const listTopRef = useRef(null);
+  const firstPageRender = useRef(true);
 
   // Loading state
   const [loading, setLoading] = useState(true);
@@ -514,6 +535,16 @@ const BlocksPage = () => {
     setCurrentPage(value - 1); // Convert to 0-based indexing
   };
 
+  // After a page change, show the top of the new list instead of leaving the
+  // reader at the bottom of the page (CHAOS-10). Not on the first render.
+  useEffect(() => {
+    if (firstPageRender.current) {
+      firstPageRender.current = false;
+      return;
+    }
+    listTopRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  }, [currentPage]);
+
   // Calculate total pages for pagination
   const totalPages = Math.ceil(blocks.length / 20);
 
@@ -532,7 +563,7 @@ const BlocksPage = () => {
           <LoadingCard />
         ) : (
           <>
-            <Grid container spacing={2}>
+            <Grid container spacing={2} ref={listTopRef} sx={{ scrollMarginTop: 16 }}>
               {displayedBlocks.map((block, index) => (
                 <BlockCard
                   key={`${block.hash}-${index}`}

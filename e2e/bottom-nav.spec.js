@@ -131,6 +131,41 @@ test.describe('Phone', () => {
   }
 });
 
+// SLOW-6 / SLOW-8: large text and tap sizes on a small phone.
+test.describe('Small phone, large text', () => {
+  test.beforeEach(({ isMobile, browserName }) => {
+    test.skip(!isMobile || browserName !== 'chromium', 'needs a Chromium phone (CDP font size)');
+  });
+
+  test('fits a 360 px screen at a 32 px default font, with all five tabs on screen', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 640 });
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Page.setFontSizes', { fontSizes: { standard: 32, fixed: 26 } });
+    for (const path of ['/', '/blocks']) {
+      await page.goto(path);
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      await noSideScroll(page);
+      const bar = bottomBar(page);
+      for (const label of ['Home', 'Blockchain', 'Mining', 'DigiDollar', 'More']) {
+        const box = await bar.getByText(label, { exact: true }).boundingBox();
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(361);
+      }
+    }
+    await bottomBar(page).getByRole('button', { name: 'More' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+  });
+
+  test('Mainnet / Testnet links are at least 44 px tall', async ({ page }) => {
+    await page.goto('/');
+    const sw = page.getByRole('group', { name: 'Network' });
+    for (const name of ['Mainnet', 'Testnet']) {
+      const box = await sw.getByRole('link', { name }).boundingBox();
+      expect(box.height).toBeGreaterThanOrEqual(44);
+    }
+  });
+});
+
 test.describe('Desktop', () => {
   test.beforeEach(({ isMobile }) => test.skip(isMobile, 'desktop-only'));
 
@@ -187,15 +222,34 @@ test.describe('Home tiles', () => {
   test('every tile is a door', async ({ page }) => {
     await page.goto('/');
     const tiles = [
-      [/Total Transactions: view transactions/i, /\/txs$/],
-      [/Total Blocks: see latest blocks/i, /\/blocks$/],
-      [/Algo Difficulties: view difficulty charts/i, /\/difficulties$/],
+      // A tile's accessible name is its visible text: title first, action last.
+      [/^Total Transactions.*View transactions/i, /\/txs$/],
+      [/^Total Blocks.*See latest blocks/i, /\/blocks$/],
+      [/^Algo Difficulties.*View difficulty charts/i, /\/difficulties$/],
     ];
     for (const [name, url] of tiles) {
       await page.getByRole('link', { name }).click();
       await expect(page).toHaveURL(url);
       await page.goBack();
     }
-    await expect(page.getByRole('link', { name: /Latest Version: download DigiByte Core/i })).toHaveAttribute('href', '/downloads');
+    await expect(page.getByRole('link', { name: /^Latest Version.*Download DigiByte Core/i })).toHaveAttribute('href', '/downloads');
   });
+
+  // FIRST-TIMER-16: no menu-like icon next to the home title.
+  test('the home title has no icon next to it', async ({ page }) => {
+    await page.goto('/');
+    const h1 = page.getByRole('heading', { level: 1 });
+    await expect(h1.locator('xpath=..').locator('svg')).toHaveCount(0);
+  });
+});
+
+// WEIRD-INPUT-9: near-miss URLs end on the real page.
+test.describe('Near-miss URLs', () => {
+  for (const [from, to] of [['/BLOCKS', '/blocks'], ['/blocks.html', '/blocks'], ['/index.html', '/'], ['/testnet/Blocks.html', '/testnet/blocks']]) {
+    test(`${from} goes to ${to}`, async ({ page }) => {
+      await page.goto(from);
+      await expect(page).toHaveURL(new RegExp(`${to.replace(/\//g, '\\/')}$`));
+      await expect(page.getByRole('heading', { level: 1 })).not.toHaveText('Page not found');
+    });
+  }
 });

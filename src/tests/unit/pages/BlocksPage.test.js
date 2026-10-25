@@ -3,6 +3,7 @@ import { screen, fireEvent, waitFor } from '@testing-library/react';
 import BlocksPage from '../../../pages/BlocksPage';
 import { renderWithProviders, createWebSocketMock, waitForAsync } from '../../utils/testUtils';
 import { mockApiResponses } from '../../mocks/mockData';
+import { contrastRatio, overWhite } from '../../utils/contrast';
 
 // Mock the config
 vi.mock('../../../config', () => ({
@@ -830,6 +831,66 @@ describe('BlocksPage', () => {
       ws.receiveMessage({ type: 'newBlock', data: { ...blocks[0] } });
       await waitForAsync();
       expect(screen.getAllByText('17,456,789')).toHaveLength(1);
+    });
+  });
+
+  describe('Break-it fixes', () => {
+    const manyBlocks = Array.from({ length: 45 }, (_, i) => ({
+      height: 17456789 - i,
+      hash: `00000000000000000${i.toString().padStart(7, '0')}abcdef1234567890`,
+      time: Date.now() - i * 15000,
+      size: 1234,
+      txCount: 5,
+      poolIdentifier: 'Unknown',
+      algo: ['sha256d', 'scrypt', 'skein', 'qubit', 'odocrypt'][i % 5],
+      difficulty: 1
+    }));
+
+    const renderMany = async () => {
+      renderWithProviders(<BlocksPage />);
+      await waitForAsync();
+      webSocketInstances[0].receiveMessage({ type: 'recentBlocks', data: manyBlocks });
+      await screen.findByText('Next');
+    };
+
+    // CHAOS-10: Next / Previous bring the top of the new list into view.
+    it('scrolls to the top of the list on Next and Previous, not on first load', async () => {
+      const spy = vi.fn();
+      const original = Element.prototype.scrollIntoView;
+      Element.prototype.scrollIntoView = spy;
+      try {
+        await renderMany();
+        expect(spy).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByText('Next'));
+        await waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
+        expect(spy.mock.calls[0][0]).toMatchObject({ block: 'start' });
+        fireEvent.click(screen.getByText('Previous'));
+        await waitFor(() => expect(spy).toHaveBeenCalledTimes(2));
+      } finally {
+        Element.prototype.scrollIntoView = original;
+      }
+    });
+
+    // SLOW-8: Previous / Next are at least 44 px tall.
+    it('makes Previous and Next at least 44 px tall', async () => {
+      await renderMany();
+      ['Previous', 'Next'].forEach((label) => {
+        expect(getComputedStyle(screen.getByRole('button', { name: label })).minHeight).toBe('44px');
+      });
+    });
+
+    // FIRST-TIMER-19 (axe color-contrast): algorithm chip text is readable on its tint.
+    it('gives every algorithm chip at least 4.5:1 contrast', async () => {
+      await renderMany();
+      ['sha256d', 'scrypt', 'skein', 'qubit', 'odocrypt'].forEach((algo) => {
+        const chip = screen.getAllByText(algo)[0].closest('.MuiChip-root');
+        const style = getComputedStyle(chip);
+        // The tint is the algo color at alpha 0x20 over a white card.
+        const tint = style.backgroundColor.startsWith('rgba')
+          ? overWhite(`rgb(${style.backgroundColor.match(/\d+/g).slice(0, 3).join(',')})`, Number(style.backgroundColor.match(/[\d.]+\)$/)[0].slice(0, -1)))
+          : style.backgroundColor;
+        expect(contrastRatio(style.color, tint)).toBeGreaterThanOrEqual(4.5);
+      });
     });
   });
 });

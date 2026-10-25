@@ -8,7 +8,8 @@ import WalletConvertPage, {
   CURRENT_TESTNET,
   detectNetwork,
   readApplicationId,
-  patchApplicationId
+  patchApplicationId,
+  sqliteSizeProblem
 } from '../pages/WalletConvertPage';
 import { renderWithProviders } from './utils/testUtils';
 
@@ -25,12 +26,17 @@ const SQLITE_HEADER = new Uint8Array([
   0x6f, 0x72, 0x6d, 0x61, 0x74, 0x20, 0x33, 0x00
 ]);
 
-/** Build a minimal 100-byte fake SQLite file with a given application_id */
-function makeFakeSqlite(appId) {
-  const buf = new ArrayBuffer(100);
+/**
+ * Build a minimal fake SQLite file with a given application_id. The header
+ * says `pages` pages of 512 bytes; `length` lets a test cut the file short.
+ */
+function makeFakeSqlite(appId, { pages = 1, length = 512 * pages } = {}) {
+  const buf = new ArrayBuffer(length);
   const u8 = new Uint8Array(buf);
   u8.set(SQLITE_HEADER, 0);
   const dv = new DataView(buf);
+  dv.setUint16(16, 512, false); // page size
+  dv.setUint32(28, pages, false); // database size in pages
   dv.setUint32(68, appId, false); // big-endian
   return buf;
 }
@@ -327,6 +333,24 @@ describe('Wallet Converter — real fixture files', () => {
 
 // ─── Validation tests ──────────────────────────────────────────────
 describe('Wallet Converter — validation', () => {
+  // WEIRD-INPUT-10: a header-only or cut-short file used to "convert" fine.
+  it('sqliteSizeProblem accepts a complete file and the real fixtures', () => {
+    expect(sqliteSizeProblem(makeFakeSqlite(APPLICATION_IDS.testnet25, { pages: 3 }))).toBeNull();
+    expect(sqliteSizeProblem(loadFixture('wallet-testnet20.dat'))).toBeNull();
+    expect(sqliteSizeProblem(loadFixture('wallet-testnet21.dat'))).toBeNull();
+  });
+
+  it('sqliteSizeProblem rejects a file shorter than its header says', () => {
+    expect(sqliteSizeProblem(makeFakeSqlite(APPLICATION_IDS.testnet25, { pages: 3, length: 100 }))).toMatch(/cut short/);
+    expect(sqliteSizeProblem(makeFakeSqlite(APPLICATION_IDS.testnet25, { pages: 3, length: 1024 }))).toMatch(/cut short/);
+  });
+
+  it('sqliteSizeProblem rejects a header with no valid page size (72-byte magic + zeros)', () => {
+    const buf = new ArrayBuffer(72);
+    new Uint8Array(buf).set(SQLITE_HEADER, 0);
+    expect(sqliteSizeProblem(buf)).toMatch(/cut short|damaged/);
+  });
+
   it('rejects a non-SQLite file (missing header)', () => {
     const buf = new ArrayBuffer(100);
     const u8 = new Uint8Array(buf);
@@ -399,5 +423,38 @@ describe('WalletConvertPage — component', () => {
     await waitFor(() => {
       expect(screen.getByText(/not a valid SQLite/i)).toBeInTheDocument();
     });
+  });
+
+  const load = async (buf) => {
+    renderWithProviders(<WalletConvertPage />, { network: 'testnet', route: '/testnet/convert' });
+    const file = new File([buf], 'wallet.dat', { type: 'application/octet-stream' });
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('wallet-file-input'), { target: { files: [file] } });
+    });
+  };
+
+  // WEIRD-INPUT-10: unknown network or a cut-short file gets a clear message
+  // and no Convert button.
+  it('refuses a SQLite file from an unknown network', async () => {
+    await load(makeFakeSqlite(0));
+    await waitFor(() => expect(screen.getByText(/not a DigiByte wallet/i)).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: /Convert & Download/ })).not.toBeInTheDocument();
+  });
+
+  it('refuses a cut-short wallet even when its network is known', async () => {
+    await load(makeFakeSqlite(APPLICATION_IDS.testnet25, { pages: 4, length: 100 }));
+    await waitFor(() => expect(screen.getByText(/cut short/i)).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: /Convert & Download/ })).not.toBeInTheDocument();
+  });
+
+  it('still converts a complete testnet25 wallet', async () => {
+    await load(makeFakeSqlite(APPLICATION_IDS.testnet25, { pages: 2 }));
+    const btn = await screen.findByRole('button', { name: /Convert & Download/ });
+    expect(btn).toBeEnabled();
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    fireEvent.click(btn);
+    expect(click).toHaveBeenCalled();
+    click.mockRestore();
+    expect(screen.getByText(/Done!/)).toBeInTheDocument();
   });
 });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { formatNumber, numberWithCommas } from './utils';
@@ -13,7 +13,6 @@ import DownloadsPage from './pages/DownloadsPage';
 import NodesPage from './pages/NodesPage';
 import MainnetLayout from './components/MainnetLayout';
 import TestnetLayout from './components/TestnetLayout';
-import config from './config';
 import HashratePage from './pages/HashratePage';
 import TaprootPage from './pages/TaprootPage';
 import TxsPage from './pages/TxsPage';
@@ -26,14 +25,6 @@ import WalletConvertPage from './pages/WalletConvertPage';
 import PoolUpgradeTrackerPage from './pages/PoolUpgradeTrackerPage';
 import ChainTipsPage from './pages/ChainTipsPage';
 import NotFoundPage from './pages/NotFoundPage';
-
-export const parseBlockRewardResponse = (data) => {
-  const rewardValue = data?.blockReward?.blockreward ?? data?.blockreward ?? data?.blockReward;
-  if (rewardValue == null) return null;
-
-  const parsedReward = parseFloat(rewardValue);
-  return Number.isFinite(parsedReward) ? parsedReward : null;
-};
 
 // Create a custom theme with DigiByte colors
 const theme = createTheme({
@@ -94,53 +85,10 @@ const theme = createTheme({
 });
 
 const App = () => {
-  const [blockchainInfo, setBlockchainInfo] = useState(null);
-  const [, setChainTxStats] = useState(null);
-  const [txOutsetInfo, setTxOutsetInfo] = useState(null);
-  const [, setBlockReward] = useState(null);
   const worldPopulation = 8100000000; // Assuming a world population of 8.1 billion
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchData = async () => {
-      try {
-        const response1 = await fetch(`${config.apiBaseUrl}/api/getblockchaininfo`);
-        const data1 = await response1.json();
-        if (!isMounted) return;
-        setBlockchainInfo(data1);
-
-        const response2 = await fetch(`${config.apiBaseUrl}/api/getchaintxstats`);
-        const data2 = await response2.json();
-        if (!isMounted) return;
-        setChainTxStats(data2);
-
-        const response3 = await fetch(`${config.apiBaseUrl}/api/gettxoutsetinfo`);
-        const data3 = await response3.json();
-        if (!isMounted) return;
-        setTxOutsetInfo(data3);
-
-        const response4 = await fetch(`${config.apiBaseUrl}/api/getblockreward`);
-        const data4 = await response4.json();
-        if (!isMounted) return;
-        setBlockReward(parseBlockRewardResponse(data4));
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-
-    fetchData();
-
-    const interval = setInterval(() => {
-      fetchData();
-    }, 30000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, []);
-
+  // No app-wide REST polling (SLOW-10): Supply, Difficulty and Hashrate fetch
+  // their own data and get live updates over their page's WebSocket.
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -171,10 +119,10 @@ const App = () => {
               <Route path="/nodes" element={<NodesPage />} />
               <Route path="/pools" element={<PoolsPage />} />
               <Route path="/pool-upgrades" element={<PoolUpgradeTrackerPage />} />
-              <Route path="/supply" element={<SupplyPage txOutsetInfo={txOutsetInfo} worldPopulation={worldPopulation} />} />
+              <Route path="/supply" element={<SupplyPage worldPopulation={worldPopulation} />} />
               <Route path="/algos" element={<AlgosPage />} />
-              <Route path="/difficulties" element={<DifficultiesPage difficultiesData={blockchainInfo?.difficulties} />} />
-              <Route path="/hashrate" element={<HashratePage difficultiesData={blockchainInfo?.difficulties} />} />
+              <Route path="/difficulties" element={<DifficultiesPage />} />
+              <Route path="/hashrate" element={<HashratePage />} />
               <Route path="/taproot" element={<TaprootPage />} />
               {/* Unknown routes: "Page not found" (usePageSeo sets noindex) */}
               <Route path="*" element={<NotFoundPage />} />

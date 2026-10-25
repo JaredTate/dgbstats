@@ -126,7 +126,7 @@ const HeroSection = ({ isTestnet, networkTheme }) => (
 const LoadingCard = () => (
   <Card elevation={3} sx={{ p: 4, textAlign: 'center', borderRadius: '12px' }}>
     <Typography variant="h5" sx={{ mb: 2 }}>Loading transaction data...</Typography>
-    <LinearProgress sx={{ maxWidth: 300, mx: 'auto' }} />
+    <LinearProgress aria-label="Loading transaction data" sx={{ maxWidth: 300, mx: 'auto' }} />
   </Card>
 );
 
@@ -287,6 +287,7 @@ const FeeDistributionChart = ({ feeDistribution }) => {
           return (
             <Tooltip key={range} title={`${range} sat/vB: ${count} txs (${percentage.toFixed(1)}%)`}>
               <Box
+                role="img"
                 sx={{
                   width: `${percentage}%`,
                   backgroundColor: color,
@@ -387,6 +388,7 @@ const MempoolStats = ({ stats, transactions }) => {
             </Box>
             <LinearProgress 
               variant="determinate" 
+              aria-label="Mempool memory usage"
               value={memoryUsagePercent} 
               sx={{ 
                 height: 10, 
@@ -464,7 +466,8 @@ const EducationalContent = () => (
               <Typography variant="body2" color="text.secondary">
                 DigiByte blocks come every 15 seconds and are rarely full, so most transactions confirm
                 within a block or two. Labels by fee rate: high 10,000+ sat/vB, medium 1,000–10,000, low under 1,000.
-                The network minimum is about 100 sat/vB (0.001 DGB per kB).
+                The network minimum is about 100 sat/vB (0.001 DGB per kB). sat/vB means satoshis per virtual
+                byte: 1 DGB is 100,000,000 satoshis, and a virtual byte (vB) is the unit for a transaction's size.
               </Typography>
             </Box>
           </Box>
@@ -639,8 +642,9 @@ const TransactionCard = ({ transaction, index, isMobile, isConfirmed = false, is
                   </Box>
                   <IconButton
                     onClick={() => setExpanded(!expanded)}
-                    size="small"
-                    sx={{ ml: 1 }}
+                    aria-label={expanded ? 'Hide transaction details' : 'Show transaction details'}
+                    aria-expanded={expanded}
+                    sx={{ ml: 1, width: 44, height: 44 }}
                   >
                     {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                   </IconButton>
@@ -1338,7 +1342,7 @@ const TxsPage = () => {
           <Chip
             icon={isConnected ? <CheckCircleIcon /> : <AccessTimeIcon />}
             label={isConnected ? 'Live Data Connected' : 'Connecting...'}
-            color={isConnected ? 'success' : 'warning'}
+            color={isConnected ? 'success' : 'default'}
             size="small"
             sx={{ fontSize: '0.85rem' }}
           />
@@ -1430,7 +1434,7 @@ const TxsPage = () => {
                     <Typography variant="h6" sx={{ mb: 2, color: 'text.secondary' }}>
                       Fetching recent confirmed transactions...
                     </Typography>
-                    <LinearProgress sx={{ maxWidth: 300, mx: 'auto' }} />
+                    <LinearProgress aria-label="Loading confirmed transactions" sx={{ maxWidth: 300, mx: 'auto' }} />
                   </Card>
                 ) : confirmedTransactions.length > 0 && filteredConfirmed.length === 0 ? (
                   <EmptyState message="No transactions match your filters" hint={FILTERED_HINT} />

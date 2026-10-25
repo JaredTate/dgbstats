@@ -76,7 +76,7 @@ const Footer = () => {
               <IconButton 
                 href="https://github.com/JaredTate/dgbstats" 
                 target="_blank"
-                sx={{ color: 'white', '&:hover': { color: '#0066cc' } }}
+                sx={{ color: 'white', width: 44, height: 44, '&:hover': { color: '#0066cc' } }}
                 aria-label="GitHub"
               >
                 <GitHubIcon />
@@ -84,7 +84,7 @@ const Footer = () => {
               <IconButton 
                 href="https://x.com/DGBDevs" 
                 target="_blank"
-                sx={{ color: 'white', '&:hover': { color: '#0066cc' } }}
+                sx={{ color: 'white', width: 44, height: 44, '&:hover': { color: '#0066cc' } }}
                 aria-label="X (formerly Twitter)"
               >
                 <XIcon />

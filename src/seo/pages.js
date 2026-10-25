@@ -439,6 +439,21 @@ export function findPage(pathname) {
   return (clean && BY_PATH.get(clean)) || null;
 }
 
+/**
+ * The real path for a near-miss URL: other letter case, a ".html" suffix,
+ * "/index.html" or doubled slashes (WEIRD-INPUT-9). Null when the path is
+ * already right or is not a known page.
+ */
+export function knownPathFor(pathname) {
+  if (typeof pathname !== 'string' || !pathname.startsWith('/')) return null;
+  const fixed = pathname
+    .replace(/\/{2,}/g, '/')
+    .replace(/\/index\.html$/i, '/')
+    .replace(/([^/])\.html$/i, '$1');
+  const page = findPage(fixed);
+  return page && page.path !== pathname ? page.path : null;
+}
+
 export function isTestnetPath(path) {
   return path === '/testnet' || (typeof path === 'string' && path.startsWith('/testnet/'));
 }

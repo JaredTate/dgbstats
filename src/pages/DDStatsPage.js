@@ -557,12 +557,12 @@ const DDStatsPage = () => {
           </Card>
         </Tooltip>
       </Grid>
-      {/* Active Oracles - Green */}
+      {/* Recently reporting oracles (Core getoracleprice oracle_count) - Green */}
       <Grid item xs={6} md={3}>
-        <Tooltip title="Number of oracles currently providing price feeds to the network" arrow>
+        <Tooltip title="Oracles whose signed price reached this node recently (in blocks or still waiting). The Oracles page counts only the feeds that are live right now, so its number can be lower." arrow>
           <Card elevation={2} sx={{ p: 2, textAlign: 'center', borderRadius: '12px', borderTop: '4px solid #2e7d32', cursor: 'help' }}>
             <SpeedIcon sx={{ fontSize: '2.5rem', color: '#2e7d32', mb: 1 }} />
-            <Typography variant="body2" color="text.secondary">Active Oracles</Typography>
+            <Typography variant="body2" color="text.secondary">Recently Reporting Oracles</Typography>
             <Typography variant="h5" fontWeight="bold" sx={{ color: '#2e7d32' }}>{oracleCount}</Typography>
           </Card>
         </Tooltip>

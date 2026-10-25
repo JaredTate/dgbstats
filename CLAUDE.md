@@ -212,7 +212,7 @@ npm run test:all      # All tests
 ### Configuration
 Two configuration surfaces exist:
 
-1. **`src/config.js`** (legacy, hardcoded to development) — consumed by `App.js`, `Footer.js`, `PoolsPage.js`, `RoadmapPage.js`, `DDActivationPage.js`, `PoolUpgradeTrackerPage.js`:
+1. **`src/config.js`** (legacy, hardcoded to development) — consumed by `Footer.js`, `PoolsPage.js`, `RoadmapPage.js`, `DDActivationPage.js`, `PoolUpgradeTrackerPage.js`:
 ```javascript
 const config = {
   development: { apiBaseUrl: 'http://localhost:5001', wsBaseUrl: 'ws://localhost:5002' },

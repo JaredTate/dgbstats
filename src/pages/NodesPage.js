@@ -1916,7 +1916,7 @@ const NodesPage = () => {
               color: '#666' 
             }}
           >
-            Drag to pan • Scroll to zoom • Cities appear at higher zoom levels • US state boundaries visible at 3x+ zoom
+            Drag to pan • Pinch or scroll to zoom • Cities appear at higher zoom levels • US state boundaries visible at 3x+ zoom
           </Typography>
         </Box>
       </CardContent>

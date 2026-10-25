@@ -137,9 +137,10 @@ const DigiDollarPage = () => {
           <Typography variant="body2">
             <strong>Status:</strong> Active on mainnet since block 23,869,440 (July 17, 2026), first released in
             DigiByte v9.26.2.
-            Current release: <strong>{CORE_RELEASE}</strong>. Mainnet and testnet26 both use a 7-of-35 MuSig2 oracle quorum.{' '}
-            <strong>Network upgrade:</strong> run v9.26.6 or later before mainnet block 24,490,000 (Thaw Day,
-            expected around November 1, 2026).
+            Current release: <strong>{CORE_RELEASE}</strong>. On mainnet and testnet26, 7 of the 35 oracles must
+            sign each price, using MuSig2 (the 7 oracle signatures are combined into one).{' '}
+            <strong>Network upgrade:</strong> before mainnet block 24,490,000, run minimum v9.26.6, recommended{' '}
+            {CORE_RELEASE} (Thaw Day: the block where new DigiDollar rules start, expected around November 1, 2026).
           </Typography>
         </Alert>
       </CardContent>
@@ -173,8 +174,8 @@ const DigiDollarPage = () => {
     ['Lock risk.', 'You cannot unlock early. To unlock, you must burn the full DigiDollar amount in one transaction. If you lose your keys or your DigiDollars, the DGB stays locked.'],
     ['Price risk.', "The DGB price can fall. A DigiDollar's market price can differ from $1."],
     ['Oracle risk.', 'Prices come from a 7-of-35 oracle network using 6 price sources. Wrong or missing prices can pause minting.'],
-    ['Pauses and adjustments.', 'Sharp DGB price moves can pause minting. When system health is low, DCA raises the collateral needed to mint and ERR raises the DigiDollars needed to redeem.'],
-    ['Network upgrades.', 'Rules change at mainnet block 24,490,000 (Thaw Day, expected around November 1, 2026). Node operators and miners must run v9.26.6 or later before then.'],
+    ['Pauses and adjustments.', 'Sharp DGB price moves can pause minting. When system health is low, the Dynamic Collateral Adjustment (DCA) raises the collateral needed to mint, and the Emergency Redemption Ratio (ERR) raises the DigiDollars needed to redeem.'],
+    ['Network upgrades.', `Rules change at mainnet block 24,490,000 (Thaw Day, expected around November 1, 2026). Node operators and miners must upgrade before then: minimum v9.26.6, recommended ${CORE_RELEASE}.`],
     ['Tax and legal.', 'Rules differ by country and may be unclear. Ask a qualified professional.'],
   ];
 
@@ -437,7 +438,7 @@ const DigiDollarPage = () => {
         Longer locks need less collateral. These are the protocol's fixed ratios, not price predictions:
       </Typography>
 
-      <TableContainer component={Paper} elevation={0} sx={{ backgroundColor: '#f8f9fa' }}>
+      <TableContainer component={Paper} elevation={0} role="region" aria-label="Collateral requirements" tabIndex={0} sx={{ backgroundColor: '#f8f9fa' }}>
         <Table>
           <TableHead>
             <TableRow sx={{ backgroundColor: '#002352' }}>
@@ -706,7 +707,7 @@ const DigiDollarPage = () => {
 
           <Grid item xs={12} md={4}>
             <Box sx={{ textAlign: 'center', p: 2 }}>
-              <Typography variant="subtitle1" fontWeight="bold" color="#4caf50" gutterBottom>
+              <Typography variant="subtitle1" fontWeight="bold" color="#2e7d32" gutterBottom>
                 2. Oracle Verification
               </Typography>
               <Typography variant="body2">
@@ -719,7 +720,7 @@ const DigiDollarPage = () => {
 
           <Grid item xs={12} md={4}>
             <Box sx={{ textAlign: 'center', p: 2 }}>
-              <Typography variant="subtitle1" fontWeight="bold" color="#ff9800" gutterBottom>
+              <Typography variant="subtitle1" fontWeight="bold" color="#b45309" gutterBottom>
                 3. Redemption Process
               </Typography>
               <Typography variant="body2">
@@ -849,7 +850,7 @@ const DigiDollarPage = () => {
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6" fontWeight="bold" color="#ff9800">
+              <Typography variant="h6" fontWeight="bold" color="#b45309">
                 3️⃣ Emergency Redemption Ratio
               </Typography>
               <Chip label="Third Defense" size="small" sx={{ ml: 'auto', backgroundColor: '#fff3e0' }} />
@@ -879,7 +880,7 @@ const DigiDollarPage = () => {
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6" fontWeight="bold" color="#4caf50">
+              <Typography variant="h6" fontWeight="bold" color="#2e7d32">
                 4️⃣ Volatility Pause
               </Typography>
               <Chip label="Fourth Defense" size="small" sx={{ ml: 'auto', backgroundColor: '#e8f5e9' }} />
@@ -974,7 +975,7 @@ const DigiDollarPage = () => {
                 label={`SHIPPED — ${CORE_RELEASE}`}
                 size="small"
                 sx={{
-                  backgroundColor: '#4caf50',
+                  backgroundColor: '#2e7d32',
                   color: 'white',
                   fontWeight: 'bold'
                 }}
@@ -985,7 +986,7 @@ const DigiDollarPage = () => {
               All milestones complete — shipped in v9.26.2, current release {CORE_RELEASE}
             </Typography>
 
-            <Box sx={{ mb: 3, maxHeight: '400px', overflowY: 'auto' }}>
+            <Box role="region" aria-label="DigiDollar milestones" tabIndex={0} sx={{ mb: 3, maxHeight: '400px', overflowY: 'auto' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <CheckCircleIcon sx={{ color: '#4caf50', mr: 1, fontSize: '1.2rem' }} />
                 <Typography variant="body2">
@@ -1085,7 +1086,7 @@ const DigiDollarPage = () => {
                 label="MAINNET RELEASED"
                 size="small"
                 sx={{
-                  backgroundColor: '#4caf50',
+                  backgroundColor: '#2e7d32',
                   color: 'white',
                   fontWeight: 'bold'
                 }}
@@ -1096,7 +1097,7 @@ const DigiDollarPage = () => {
               Oracle System - 35 active oracle slots (0-34), 7-signature MuSig2 quorum (BIP-327 over BIP-340 Schnorr)
             </Typography>
 
-            <List dense sx={{ pl: 0, maxHeight: '400px', overflowY: 'auto' }}>
+            <List dense aria-label="Release features" tabIndex={0} sx={{ pl: 0, maxHeight: '400px', overflowY: 'auto' }}>
               <ListItem sx={{ pl: 0 }}>
                 <ListItemIcon><CheckCircleIcon sx={{ color: '#4caf50', fontSize: '1.2rem' }} /></ListItemIcon>
                 <ListItemText
@@ -1166,7 +1167,7 @@ const DigiDollarPage = () => {
         <Typography variant="body2">
           <strong>Current Status:</strong> DigiDollar is active on mainnet since block 23,869,440 and on testnet26.
           Both use a 7-of-35 MuSig2 oracle quorum. Next network upgrade: Thaw Day at mainnet block 24,490,000
-          (run v9.26.6 or later). For complete details and all other upgrades, see the full{' '}
+          (minimum v9.26.6, recommended {CORE_RELEASE}). For complete details and all other upgrades, see the full{' '}
           <a href="/roadmap" style={{ color: '#0066cc', fontWeight: 'bold' }}>
             DigiByte Roadmap
           </a>.
